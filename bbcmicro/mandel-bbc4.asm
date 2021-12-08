@@ -400,6 +400,14 @@ mandel:
          jsr OSWORD
     jsr OSRDCH
     and #$df
+    cmp #"Q"
+    bne .noq
+
+   lda #22
+   jsr OSWRCH
+   lda #7     ;mode 7
+   jmp OSWRCH
+.noq:
     cmp #"T"
     beq *+5
     jmp mandel
@@ -573,7 +581,8 @@ msg     byte "**********************************",13
         byte "Maslovski.",13
         byte "This BBC Micro port was created by",13
         byte "Litwr, 2021.",13
-        byte "The T-key gives us timings",0
+        byte "The T-key gives us timings.",13
+        byte "Use the Q-key to quit",0
 
 init:
    lda #>msg
@@ -609,10 +618,10 @@ msgend:
    lda #$40
    stx $fe00
    sta $fe01
-;   inx
-;   lda #$60
-;   stx $fe00
-;   sta $fe01
+   inx
+   lda #$5a
+   stx $fe00
+   sta $fe01
    ldx #12
    lda #$8    ;$4000 graph mem start
    stx $fe00

@@ -267,7 +267,12 @@ lx2:pop hl
     ld (ti+2),hl
     call KM_WAIT_CHAR
     and 0dfh
-    cp 'T'
+    cp 'Q'
+    jr nz,noq
+
+    ld a,1
+    jp SCR_SET_MODE
+noq:cp 'T'
     jp nz,mandel
 
     ld a,30  ;home cursor
@@ -459,6 +464,8 @@ msg     db "**********************************",13,10
         db "Maslovski.",13,10
         db "This Amstrad CPC port was created by",13,10
         db "Litwr, 2021.",13,10
-        db "The T-key gives us timings",0
+        db "The T-key gives us timings.",13,10
+        db "Use the Q-key to quit",0
+   end start
 
    end start
