@@ -24,6 +24,7 @@ kbddtport  = ^O177662            ;kbd data, palette, timer, $ffb2
     BEQ 9$  ;BK0010
 
     mov	#75.*256., @#kbddtport  ; set pallete
+    mov #488.,ticonst     ;4 MHz,4000000/64/128
 9$:
 ;************************************************************
 ; Fixpoint squares up to approx. 8.0^2, 11 significant bits
@@ -188,9 +189,8 @@ patt1	=	.+2
          rol r3
          asl r2
          rol r3
-   ;10 or 11?
+ticonst = . + 2
          mov #366.,r1             ;3 MHz,3000000/64/128
-         ;mov #488.,r1             ;3 MHz,4000000/64/128
          call @#div32x16s
          call @#printsec
     emt 6
