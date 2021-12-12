@@ -72,13 +72,13 @@ mandel:
 	xchg dl,dh  ;swab	r5
 	shr dx,1    ;asr	r5		; r5 = 200*dy
 loop0:
-	mov bp,[x0]   ;mov	#x0, r4		;??
+	mov bp,[x0]   ;mov	#x0, r4
 loop1:
     push di
     push bx
 loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
 	add bp,[vdx] ;add	@#dxa, r4
-	mov cx,[niter] ;mov	#niter, r2	; max iter. count ;??
+	mov cx,[niter] ;mov	#niter, r2	; max iter. count
 	mov si,bp    ;mov	r4, r0
 	mov di,dx    ;mov	r5, r1
 .l1:
@@ -104,8 +104,9 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
 	loop .l1        ;sob	r2, 1$		; to next iteration
 .l2:
     and cl,15
-    mov bx,cx
-    mov al,[pat+bx]
+    ;mov bx,cx
+    ;mov al,[pat+bx]
+    mov al,cl
     mov si,[tcolor1]
     shr al,1
     rcr si,1
@@ -334,7 +335,7 @@ tcolor1: dw 0
 tcolor2: dw 0
 tcolor3: dw 0
 tcolor4: dw $8000
-pat:	db	0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15   ;??remove
+;pat:	db	0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 time dw 0,0
 
     align 2
