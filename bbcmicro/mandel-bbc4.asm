@@ -8,6 +8,7 @@
 OSWRCH = $FFE3
 OSRDCH = $FFE0
 OSWORD = $FFF1
+OSBYTE = $FFF4
 
 sqrbase = $2900 ;must be $xx00, it takes area $1250-$3fb0
 initer	= 7
@@ -585,6 +586,9 @@ msg     byte "**********************************",13
         byte "Use the Q-key to quit",0
 
 init:
+   lda #16
+   ldx #0
+   jsr OSBYTE    ;no ADC
    lda #>msg
    sta r0+1
    lda #<msg
