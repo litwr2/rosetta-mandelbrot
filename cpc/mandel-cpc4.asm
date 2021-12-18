@@ -9,10 +9,10 @@
 SCR_SET_MODE            EQU #BC0E
 SCR_SET_INK             EQU #BC32
 TXT_OUTPUT              EQU #BB5A
-KM_WAIT_CHAR			EQU #BB06
+KM_WAIT_CHAR		EQU #BB06
 KL_TIME_PLEASE          EQU #BD0D
 
-sqrbase equ $6000 ;must be $xx00
+sqrbase equ $8000 ;must be fixed here!
 initer	equ	7
 idx	equ	-36       ;-.0703125
 idy	equ	18        ;.03515625
@@ -20,7 +20,7 @@ ix0	equ	-62*idx
 imx	equ	10*idx		; x move
 sf4	equ	436/4		; sf/4
 
-org #4000
+org #9700
 
 start
     ld hl,msg
@@ -34,6 +34,7 @@ char:
     jr char
 
 ni: call KM_WAIT_CHAR
+    call setvmode
     ld hl,sqrbase
     push hl
     ld bc,0
@@ -63,7 +64,7 @@ r0l:
     adc a,b
     ld b,a
 r4l:
-    ld hl,sqrbase
+    ld hl,0   ;the sqrbase top part
     dec hl
     ld (hl),b
     dec l
@@ -77,13 +78,12 @@ r4l:
 
 mandel0: 
     pop hl
-    call setvmode
 mandel:
     call KL_TIME_PLEASE
     ld (ti),hl
     ld (ti+2),de
     ld ixl,0
-    ld hl,$c040  ;scrtop
+    ld hl,$4040  ;scrtop
     push hl
     ld hl,(dy)
     ld a,h
@@ -102,23 +102,21 @@ loop2:
     add hl,de
     ld (r4),hl
     ld b,h
-    ld c,l   ;r0
+    ld c,l      ;mov	r4, r0
 niter equ $+2
     ld ixh,initer
-    ld hl,(r5)
+    ld hl,(r5)  ;mov	r5, r1	
 loc1:
     ld d,h
     ld e,l
     res 0,l
-    ld a,high(sqrbase)
-    add a,h
-    ld h,a
+    set 7,h
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a
+    ld l,a      ;mov	sqr(r1), r3
     ex de,hl  ;de = r3 = sqr[r1&0xfffe]
-    add hl,bc   ;r1 += r0
+    add hl,bc   ;add	r0, r1
     ld a,b
     ld b,h
     ld h,a
@@ -126,14 +124,12 @@ loc1:
     ld c,l
     ld l,a
     res 0,l
-    ld a,high(sqrbase)
-    add a,h
-    ld h,a
+    set 7,h
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;r0 = sqr[r0&0xfffe]
-    add hl,de
+    ld l,a       ;mov	sqr(r0), r0
+    add hl,de    ;add	r3, r0
     ld a,h
     cp 8
     jr nc,loc2
@@ -141,19 +137,17 @@ loc1:
     push hl   ;r0 += r3
     ld h,b
     ld l,c
-    ld a,high(sqrbase)
-    add a,h
-    ld h,a
+    set 7,h
     res 0,l
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a      ;r1 = sqr[r1&0xfffe]
+    ld l,a       ;mov	sqr(r1), r1
 r5 equ $+1
     ld bc,0
     add hl,bc    ;add	r5, r1  ;sets C=0
     pop bc   ;r0
-    sbc hl,bc  ;sub	r0, r1
+    sbc hl,bc    ;sub	r0, r1
     push hl
 r4 equ $+1
     ld hl,0
@@ -161,12 +155,12 @@ r4 equ $+1
     or a   ;sets C=0
     sbc hl,de    ;r0 -= r3
     or a   ;sets C=0
-    sbc hl,de
-    ld b,h     ;r0 -= r3
+    sbc hl,de    ;sub	r3, r0
+    ld b,h
     ld c,l
     pop hl
-    dec ixh
-    jr nz,loc1
+    dec ixh     
+    jr nz,loc1   ;sob r2,1$
 loc2:
     ld a,ixh   ;color
     and 7
@@ -209,6 +203,8 @@ tcolorb equ $+1
     ld de,$840
     pop hl  ;scrtop
     add hl,de
+    ld a,h
+    rlca
     jr nc,lx10
 
     ld de,$c040
@@ -226,7 +222,8 @@ lx8:
     ld (patx),a
     ld de,(dy)
     ld hl,(r5)
-    sbc hl,de   ;it seems, C=0 is always here
+    ;or a   ;C=0 is already set
+    sbc hl,de
     ld (r5),hl
     jp nz,loop0
 
@@ -249,19 +246,21 @@ lx5:
     add a,2
     ld l,a
     push hl
-    ld de,sqrbase-sf4
+    ld de,-sf4
 dx1p equ $+1
     ld hl,(dx)
     push hl
     add hl,de
     res 0,l
+    set 7,h
     ld c,(hl)
     inc l
     ld b,(hl)
-    ld de,sqrbase+sf4
+    ld de,sf4
     pop hl
     add hl,de
     res 0,l
+    set 7,h
     or a ;sets C=0
     ld a,(hl)
     inc l
@@ -286,9 +285,7 @@ lx2:pop hl
     and 0dfh
     cp 'Q'
     jr nz,noq
-
-    ld a,1
-    jp SCR_SET_MODE
+    rst 0
 noq:cp 'T'
     jp nz,mandel
 
@@ -298,7 +295,7 @@ noq:cp 'T'
     sub 7
     ld l,a
     ld h,0
-    call PR0000
+    call PR000
     ld a," "
     call TXT_OUTPUT
     ld hl,(ti+2)
@@ -307,7 +304,7 @@ noq:cp 'T'
     call div32x16r
 	PUSH HL
 	EX DE,HL
-	call PR0000
+	call PR000
 	LD a,'.'
     call TXT_OUTPUT
 	POP hl
@@ -402,6 +399,7 @@ t3
 
 PR0000  ld de,-1000
 	CALL PR0
+PR000
 	ld de,-100
 	CALL PR0
 	ld de,-10
@@ -428,6 +426,8 @@ setvmode
     ld c,11
     ld b,c
     call SCR_SET_INK
+    ld a,$40
+    ld ($b7c6),a    ;screen base for system text output
 
 ; Wait for THE BEGINNING of a VSYNC signal
 wait_vbl_safe
@@ -457,8 +457,8 @@ halt
 halt
 
 ; Write vertical CRTC registers for a smooth transition
-ld hl,initvvideocfg+4
-ld c,2
+ld hl,initvvideocfg
+ld c,4
 jp write_CRTC
 
 ; Write register/value pairs to CRTC
@@ -479,11 +479,11 @@ ret
 inithvideocfg
 db &1,32,&2,42
 initvvideocfg
-db &4,22,&5,7,&6,32,&7,35
+db &6,32,&7,35,&c,16,&d,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*       4 colors + textures      *",13,10
+        db "*     4 colors + textures, v2    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10

@@ -2,6 +2,7 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
+;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the BBC Micro, 4 color mode simulates 8 colors using textures
 
@@ -170,7 +171,7 @@ mandel:
     lda r4+1
     adc dx+1
     sta r4+1      ;add	@#dxa, r4
-    sta r0+1      ;mov	r4, r0
+    tax           ;mov	r4, r0
 .niter = * + 1
     lda #initer   
     sta r2        ;mov	#niter, r2
@@ -194,11 +195,11 @@ mandel:
     lda r0
     adc r1    ;C=0
     sta r1
-    lda r0+1
+    txa
     adc r1+1
     sta r1+1      ;add	r0, r1
     clc
-    lda r0+1
+    txa
     adc #>sqrbase   ;sets C=0
     sta tmp+1
     lda r0
@@ -260,7 +261,7 @@ mandel:
     sta r0
     tya
     adc r4+1
-    sta r0+1       ;add	r4, r0
+    tax      ;add	r4, r0
     dec r2
     ;bne .loc1
 	beq .loc2
@@ -424,7 +425,7 @@ mandel:
     sbc #7
     tax
     lda #0
-    jsr pr0000
+    jsr pr000
     lda #" "
     jsr OSWRCH
     lda ti
@@ -443,10 +444,10 @@ mandel:
          jsr div32x16w
          ldx quotient
          lda quotient+1
-         jsr pr0000
+         jsr pr000
          lda #"."
          jsr OSWRCH
-         lda remainder  ;*100,*5
+         lda remainder  ;*10,*5
          ldx remainder+1
          asl
          rol remainder+1
@@ -458,21 +459,7 @@ mandel:
          adc remainder+1
          sta remainder+1
 
-         lda remainder  ;*5
-         ldx remainder+1
-         asl
-         rol remainder+1
-         asl
-         rol remainder+1
-         adc remainder
-         sta remainder
-         txa
-         adc remainder+1
-         sta remainder+1
-
-         lda remainder  ;*4
-         asl
-         rol remainder+1
+         lda remainder  ;*2
          asl
          rol remainder+1
          ;sta remainder
@@ -480,7 +467,7 @@ mandel:
 
          lda remainder+1
          ;ldx remainder
-         jsr pr0000
+         jsr pr000
     lda #30  ;hide cursor
     jsr OSWRCH
     jsr OSRDCH
@@ -498,12 +485,7 @@ pat2:   byte 0, $44,   4, 4, $44, $cc, $c0, $c
 
 ti byte 0,0,0,0,0
 
-pr0000:  sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
+pr000:   sta d+2
          lda #100
          sta d
          lda #0
@@ -575,7 +557,7 @@ div32x16w        ;dividend+2 < divisor, divisor < $8000
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*     4 colors + textures        *",13
+        byte "*    4 colors + textures, v2     *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13

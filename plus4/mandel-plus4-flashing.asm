@@ -2,6 +2,7 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
+;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using flashing
 
@@ -58,9 +59,9 @@ color3 = $32  ;red
 
    org $1010
        JSR JPRIMM
-       byte 9,14,"**********************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR *",13
-       byte "**********************************",13
+       byte 9,14,"**************************************",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V2F *",13
+       byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
        byte "mASLOVSKI.",13
@@ -312,7 +313,7 @@ mandel:
     lda r4+1
     adc dx+1
     sta r4+1      ;add	@#dxa, r4
-    sta r0+1      ;mov	r4, r0
+    tax           ;mov	r4, r0
 .niter = * + 1
     lda #initer   
     sta r2        ;mov	#niter, r2
@@ -336,11 +337,11 @@ mandel:
     lda r0
     adc r1    ;C=0
     sta r1
-    lda r0+1
+    txa
     adc r1+1
     sta r1+1      ;add	r0, r1
     clc
-    lda r0+1
+    txa
     adc #>sqrbase   ;sets C=0
     sta tmp+1
     lda r0
@@ -402,7 +403,7 @@ mandel:
     sta r0
     tya
     adc r4+1
-    sta r0+1       ;add	r4, r0
+    tax       ;add	r4, r0
     dec r2
     ;bne .loc1
 	beq .loc2
@@ -625,7 +626,7 @@ mandel:
     sbc #7
     tax
     lda #0
-    jsr pr0000
+    jsr pr000
          lda #" "
          jsr BSOUT
     lda ti
@@ -643,10 +644,10 @@ mandel:
          jsr div32x16w
          ldx quotient
          lda quotient+1
-         jsr pr0000
+         jsr pr000
          lda #"."
          jsr BSOUT
-         lda remainder  ;*200,*5
+         lda remainder  ;*20,*5
          ldx remainder+1
          asl
          rol remainder+1
@@ -658,21 +659,7 @@ mandel:
          adc remainder+1
          sta remainder+1
 
-         lda remainder  ;*5
-         ldx remainder+1
-         asl
-         rol remainder+1
-         asl
-         rol remainder+1
-         adc remainder
-         sta remainder
-         txa
-         adc remainder+1
-         sta remainder+1
-
-         lda remainder  ;*8
-         asl
-         rol remainder+1
+         lda remainder  ;*4
          asl
          rol remainder+1
          asl
@@ -682,7 +669,7 @@ mandel:
 
          lda remainder+1
          ;ldx remainder
-         jsr pr0000
+         jsr pr000
     ldy #0
     ldx #0
 .delay
@@ -763,13 +750,8 @@ getkey:
    beq .waitkey
    rts
 
-pr0000:   ;prints ac:xr < 10000
+pr000:   ;prints ac:xr < 10000
          sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr .pr0
          lda #100
          sta d
          lda #0
