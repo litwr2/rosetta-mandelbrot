@@ -34,8 +34,9 @@ r0 = $d0
 r1 = $d2
 r2 = $d4
 r3 = $d6
-r4 = $d8
-r5 = $da
+;r4 = $d8
+;r5 = $da
+t = $da
 tmp = $dc
 vy = $de
 vx = $df
@@ -173,7 +174,6 @@ finish:LDA #color3
 
 fillsqr:
     lda #0
-  sta tmp
     tay
     tax
 .loop:
@@ -184,24 +184,24 @@ fillsqr:
 
     lda #>sqrbase
     ;ldx #<sqrbase   ;=0
-    sta r4+1
-    sty r4
-    sta r5+1
-    sty r5
+    sta tmp+1
+    sty tmp
+    sta t+1
+    sty t
 sqrloop:
     lda r1     ;mov	r1, (r5)+	; to upper half tbl
-    sta (r5),y
+    sta (t),y
     lda r1+1
     iny
-    sta (r5),y
+    sta (t),y
     dey
     clc
-    lda r5
+    lda t
     adc #2
-    sta r5
+    sta t
     bcc .l1
 
-    inc r5+1
+    inc t+1
 .l1:inc r2	  ;inc	r2		; R2 = x + 2^-9
     bne .l2
 
@@ -236,18 +236,18 @@ sqrloop:
     adc r1+1
     sta r1+1
     php
-	lda r4    ;mov	r1, -(r4)	; to lower half tbl
+	lda tmp    ;mov	r1, -(r4)	; to lower half tbl
     sec
     sbc #2
-    sta r4
+    sta tmp
     bcs .l3
 
-    dec r4+1
+    dec tmp+1
 .l3:lda r1
-    sta (r4),y
+    sta (tmp),y
     lda r1+1
     iny
-    sta (r4),y
+    sta (tmp),y
     dey
     plp
 	pla      ;mov	(r6)+, r2
@@ -261,8 +261,9 @@ sqrloop:
 
     inc r2+1
 	bne	sqrloop
-
 mandel:
+         lda #0
+   sta tmp
     sei
     STA $FF3F
     LDX #$3B
@@ -290,36 +291,35 @@ mandel:
     sta .m4hi
     ldy #$f8
     sty alo
-
     lda dy
     lsr
-    sta r5+1
+    sta r5hi
     lda dy+1
     ror
-    sta r5    ;r5 = 200*dy
+    sta r5lo    ;r5 = 128*dy
 .mloop0:
 .x0lo = * + 1
     lda #<ix0
-    sta r4
+    sta r4lo
 .x0hi = * + 1
     lda #>ix0
-    sta r4+1  ;mov	#x0, r4
+    sta r4hi  ;mov	#x0, r4
 .mloop2:
     clc  
-    lda r4
+    lda r4lo
     adc dx
-    sta r4
+    sta r4lo
     sta r0
-    lda r4+1
+    lda r4hi
     adc dx+1
-    sta r4+1      ;add	@#dxa, r4
+    sta r4hi      ;add	@#dxa, r4
     tax           ;mov	r4, r0
 .niter = * + 1
     lda #initer   
     sta r2        ;mov	#niter, r2
-	lda r5
+	lda r5lo
     sta r1
-    lda r5+1
+    lda r5hi
     sta r1+1      ;mov	r5, r1
 .loc1:
     clc
@@ -342,17 +342,17 @@ mandel:
     sta r1+1      ;add	r0, r1
     clc
     txa
-    adc #>sqrbase   ;sets C=0
+    adc #>sqrbase
     sta tmp+1
     lda r0
-    and #$fe
+    ora #1
     tay
-    iny
     lda (tmp),y   ;y=1
     tax
     dey
     lda (tmp),y   ;mov	sqr(r0), r0
-    adc r3  ;C=0
+    clc
+    adc r3
     sta r0
     txa
     adc r3+1
@@ -361,20 +361,22 @@ mandel:
     bcs .loc2
 
     lda r1+1
-    adc #>sqrbase   ;C=0, sets C=0
+    adc #>sqrbase
     sta tmp+1
     lda r1
-    and #$fe
+    ora #1
     tay
-    iny
     lda (tmp),y
     tax
     dey
     lda (tmp),y     ;mov sqr(r1), r1
-    adc r5   ;C=0
+    clc
+r5lo = * + 1
+    adc #0   ;C=0
     tay
     txa
-    adc r5+1
+r5hi = * + 1
+    adc #0
     tax        ;add	r5, r1
     sec
     tya
@@ -399,11 +401,13 @@ mandel:
     tay        ;sub	r3, r0
 	clc
     txa
-    adc r4
+r4lo = * + 1
+    adc #0
     sta r0
     tya
-    adc r4+1
-    tax       ;add	r4, r0
+r4hi = * + 1
+    adc #0
+    tax      ;add	r4, r0
     dec r2
     ;bne .loc1
 	beq .loc2
@@ -535,15 +539,15 @@ mandel:
     jmp .mloop0
 .updr5:
     sec
-    lda r5
+    lda r5lo
     sbc dy
-    sta r5
-    lda r5+1
+    sta r5lo
+    lda r5hi
     sbc dy+1
-    sta r5+1    ;sub	@#dya, r5
+    sta r5hi    ;sub	@#dya, r5
 	bne .loop0t
 
-    lda r5
+    lda r5lo
     bne .loop0t  ;bgt	loop0
 
     clc
@@ -688,22 +692,6 @@ mx:     word imx
 pat1:   byte 0,2*64,0   ,1*64,3*64,1*64,2*64,3*64
 pat2:   byte 0,1*64,2*64,3*64,2*64,1*64,2*64,3*64
 ti:     byte 0,0,0
-
-iniirq:LDA #$F8
-       STA irqe3.cnt
-       LDA #$20
-       LDA irqe2.bma
-       LDA #$18
-       LDA irqe3.bma
-       LDA #>irqe1
-       STA $FFFF
-comm1: LDA #<irqe1
-       STA $FFFE
-       LDA #$1C     ;$11c = 284
-       STA $FF0B
-       LDA #$A3		;1 - hi byte, raster irq only
-       STA $FF0A
-       RTS
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
@@ -862,4 +850,20 @@ irqe3  STA .sa    ;@206
 .sa = * + 1
        LDA #0
        RTI
+
+iniirq:LDA #$F8
+       STA irqe3.cnt
+       LDA #$20
+       LDA irqe2.bma
+       LDA #$18
+       LDA irqe3.bma
+       LDA #>irqe1
+       STA $FFFF
+comm1: LDA #<irqe1
+       STA $FFFE
+       LDA #$1C     ;$11c = 284
+       STA $FF0B
+       LDA #$A3		;1 - hi byte, raster irq only
+       STA $FF0A
+       RTS
 
