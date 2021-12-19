@@ -171,7 +171,7 @@ mandel:
     lda r4hi
     adc dx+1
     sta r4hi      ;add	@#dxa, r4
-    tax           ;mov	r4, r0
+    sta r0+1           ;mov	r4, r0
 .niter = * + 1
     lda #initer   
     sta r2        ;mov	#niter, r2
@@ -182,7 +182,7 @@ mandel:
 .loc1:
     clc
     lda r1+1
-    adc #>sqrbase  ;sets C=0
+    adc #>sqrbase
     sta tmp+1
     lda r1
     and #$fe
@@ -192,15 +192,10 @@ mandel:
     iny
     lda (tmp),y
     sta r3+1         ;mov	sqr(r1), r3
-    lda r0
-    adc r1    ;C=0
-    sta r1
-    txa
-    adc r1+1
-    sta r1+1      ;add	r0, r1
+
+    lda r0+1
     clc
-    txa
-    adc #>sqrbase
+    adc #>sqrbase  ;C=0
     sta tmp+1
     lda r0
     ora #1
@@ -211,43 +206,50 @@ mandel:
     lda (tmp),y   ;mov	sqr(r0), r0
     clc
     adc r3
-    sta r0
+    sta t
     txa
     adc r3+1
-    sta r0+1      ;add	r3, r0
+    sta t+1      ;add	r3, r0
+
     cmp #8
     bcs .loc2
 
-    lda r1+1
-    adc #>sqrbase
-    sta tmp+1
-    lda r1
-    ora #1
-    tay
-    lda (tmp),y
-    tax
-    dey
-    lda (tmp),y     ;mov sqr(r1), r1
-    clc
-r5lo = * + 1
-    adc #0   ;C=0
-    tay
-    txa
-r5hi = * + 1
-    adc #0
-    tax        ;add	r5, r1
-    sec
-    tya
-    sbc r0
-    sta r1
-    txa
-    sbc r0+1
-    sta r1+1     ;sub	r0, r1
-	sec
     lda r0
-    sbc r3
+    adc r1    ;C=0
     tax
     lda r0+1
+    adc r1+1
+    ;sta r1+1      ;add	r0, r1
+    ;lda r1+1
+    clc
+    adc #>sqrbase
+    sta tmp+1
+    txa
+    and #$fe
+    tay
+    lda (tmp),y
+    clc
+r5lo = * + 1
+    adc #0   ;C=0   
+    tax 
+    iny
+    lda (tmp),y     ;mov sqr(r1), r1
+r5hi = * + 1
+    adc #0
+    tay        ;add	r5, r1
+
+    sec
+    txa
+    sbc t
+    sta r1
+    tya
+    sbc t+1
+    sta r1+1     ;sub	r0, r1
+    sec
+    lda t
+    sbc r3
+    tax
+    lda t+1
     sbc r3+1
     tay        ;sub	r3, r0
 	;sec   ;it seems, C=1 is always here
@@ -265,7 +267,7 @@ r4lo = * + 1
     tya
 r4hi = * + 1
     adc #0
-    tax      ;add	r4, r0
+    sta r0+1     ;add	r4, r0
     dec r2
     ;bne .loc1
 	beq .loc2
