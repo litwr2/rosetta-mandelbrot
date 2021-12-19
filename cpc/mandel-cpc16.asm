@@ -154,10 +154,12 @@ r4 equ $+1
     add hl,bc    ;r0 += r4
     or a   ;sets C=0
     sbc hl,de    ;r0 -= r3
-    or a   ;sets C=0
-    sbc hl,de    ;sub	r3, r0
-    ld b,h
-    ld c,l
+    ld a,l
+    sub e
+    ld c,a
+    ld a,h
+    sbc a,d    ;sub	r3, r0
+    ld b,a
     pop hl
     dec ixh     
     jr nz,loc1   ;sob r2,1$
