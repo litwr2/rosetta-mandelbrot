@@ -9,7 +9,7 @@
          use16
          org 100h
 
-sqr = pe + 1700h
+sqr = 800h + 1700h
 initer = 7
 idx	= -36       ;-.0703125
 idy	= 18        ;.03515625
@@ -60,6 +60,7 @@ fillsqr:
 	inc dx      ;inc	r2
 	jmp fillsqr ;br	fsqr
 mandel:
+    mov sp,0x804
          mov ah,2ch
          int 21h
          mov [time+2],cx
@@ -83,25 +84,26 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
 	mov di,dx    ;mov	r5, r1
 .l1:
     lea bx,[sqr+di]
-    and bl,0feh
+    and bl,ch
 	mov ax,[bx]     ;mov	sqr(r1), r3	; r3 = y^2
     add di,si       ;add	r0, r1		; r1 = x+y
     lea bx,[sqr+si]
-    and bl,0feh
+    and bl,ch
 	mov si,[bx]     ;mov	sqr(r0), r0	; r0 = x^2
 	add si,ax       ;add	r3, r0		; r0 = x^2+y^2
-	cmp si,0800h    ;cmp	r0, r6		; if r0 >= 4.0 then
+	cmp si,sp    ;cmp	r0, r6		; if r0 >= 4.0 then
 	jnc .l2         ;bge	2$		; overflow
 
     lea bx,[sqr+di]
-    and bl,0feh
+    and bl,ch
 	mov di,[bx]     ;mov	sqr(r1), r1	; r1 = (x+y)^2
 	sub di,si       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
     add di,dx	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
 	sub si,ax       ;sub	r3, r0		; r0 = x^2
 	sub si,ax       ;sub	r3, r0		; r0 = x^2-y^2
 	add si,bp       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-	loop .l1        ;sob	r2, 1$		; to next iteration
+    dec cl
+	jnz .l1        ;sob	r2, 1$		; to next iteration
 .l2:
     and cl,15
     ;mov bx,cx
@@ -191,7 +193,7 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
     add di,2
 	loop .l4            ;sob	r0, 4$
 
-	inc word [niter]     ;inc	@#nitera	; increase the iteration count
+	inc byte [niter]     ;inc	@#nitera	; increase the iteration count
 l0:	mov ah,2ch
     int 21h   ;get time
 
@@ -213,7 +215,8 @@ showtime:
     push cx
          mov dl,0dh
          call PR00.le
-         mov ax,[niter]
+         xor ax,ax
+         mov al,[niter]
          sub al,7
          call PR000
          mov dl,' '
@@ -328,7 +331,7 @@ vdx: dw	idx
 vdy: dw	idy
 vmx: dw	imx
 x0:  dw ix0
-niter: dw initer
+niter: dw initer+0xfe00
 r4:  dw 0
 r5:  dw 0
 tcolor1: dw 0
@@ -342,7 +345,7 @@ time dw 0,0
 pe:
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *          EGA 16 colors         *",13,10
+        db "  *        EGA 16 colors, v2       *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav Maslovski.",13,10
