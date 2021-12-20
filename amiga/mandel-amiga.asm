@@ -106,6 +106,8 @@ mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
 mandel:
     clr.l time(a3)
+    moveq #-2,d6   ;-2=$fe
+    move #$800,a2
     movea.w #16,a5	;screen top
     movea.w #4096,a6 ;screen bottom
     lea.l sqrbase(a3),a4
@@ -120,18 +122,18 @@ loop2:
 	move d5,d1		; r1 = y = b
 loc1:
     move d1,d7
-    and.b #$fe,d7   ;??
+    and.b d6,d7
 	move (a4,d7.w),d3 ;mov	sqr(r1), r3	; r3 = y^2
 	add d0,d1       ;add	r0, r1		; r1 = x+y
     move d0,d7
-    and.b #$fe,d7   ;??
+    and.b d6,d7
 	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
 	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmpi #$800,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
+	cmp a2,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
 	bcc	loc2		; overflow
 
     move d1,d7
-    and.b #$fe,d7    ;??
+    and.b d6,d7
 	move (a4,d7.w),d1 ;mov	sqr(r1), r1	; r1 = (x+y)^2
 	sub d0,d1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
 	add d5,d1       ;add	r5, r1		; r1 = 2*x*y+b, updated y
@@ -382,7 +384,7 @@ CONHANDLE   DC.L 0
 data = CONHANDLE
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *            16 colors           *",13,10
+        dc.b "  *          16 colors, v2         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
