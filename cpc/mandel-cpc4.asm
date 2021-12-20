@@ -131,36 +131,31 @@ loc1:
     ld l,a       ;mov	sqr(r0), r0
     add hl,de    ;add	r3, r0
     ld a,h
-    cp 8
-    jr nc,loc2
+    and $f8
+    jr nz,loc2
 
-    push hl   ;r0 += r3
-    ld h,b
-    ld l,c
+    push hl
+    push bc
+    sbc hl,de   ;x^2  ;set C=0
+    sbc hl,de   ;x^2-y^2
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;x^2-y^2+x0
+    ex de,hl
+    pop hl
     set 7,h
     res 0,l
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r1), r1
+    ld l,a       ;(x+y)^2
 r5 equ $+1
     ld bc,0
-    add hl,bc    ;add	r5, r1  ;sets C=0
+    add hl,bc    ;sets C=0
     pop bc   ;r0
-    sbc hl,bc    ;sub	r0, r1
-    push hl
-r4 equ $+1
-    ld hl,0
-    add hl,bc    ;r0 += r4
-    or a   ;sets C=0
-    sbc hl,de    ;r0 -= r3
-    ld a,l
-    sub e
-    ld c,a
-    ld a,h
-    sbc a,d    ;sub	r3, r0
-    ld b,a
-    pop hl
+    sbc hl,bc    ;2xy+y0
+    ld b,d
+    ld c,e
     dec ixh     
     jr nz,loc1   ;sob r2,1$
 loc2:
