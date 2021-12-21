@@ -101,48 +101,39 @@ loop2:
     ld de,(dx)
     add hl,de
     ld (r4),hl
-    ld b,h
-    ld c,l      ;mov	r4, r0
+    ld d,h
+    ld e,l      ;mov	r4, r0
 niter equ $+2
     ld ixh,initer
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
-    ld d,h
-    ld e,l
+    push hl
     res 0,l
     set 7,h
-    ld a,(hl)
+    ld c,(hl)
     inc l
-    ld h,(hl)
-    ld l,a      ;mov	sqr(r1), r3
-    ex de,hl  ;de = r3 = sqr[r1&0xfffe]
-    add hl,bc   ;add	r0, r1
-    ld a,b
-    ld b,h
-    ld h,a
-    ld a,c
-    ld c,l
-    ld l,a
+    ld b,(hl)   ;mov	sqr(r1), r3
+    pop hl
+    add hl,de   ;add	r0, r1
+    ex de,hl    ;de - r1, hl - r0, bc - r3
     res 0,l
     set 7,h
     ld a,(hl)
     inc l
     ld h,(hl)
     ld l,a       ;mov	sqr(r0), r0
-    add hl,de    ;add	r3, r0
+    add hl,bc    ;add	r3, r0
     ld a,h
     and $f8
     jr nz,loc2
 
     push hl
-    push bc
-    sbc hl,de   ;x^2  ;set C=0
-    sbc hl,de   ;x^2-y^2
+    sbc hl,bc   ;x^2  ;set C=0
+    sbc hl,bc   ;x^2-y^2
 r4 equ $+1
     ld bc,0
     add hl,bc   ;x^2-y^2+x0
-    ex de,hl
-    pop hl
+    ex de,hl    ;de - r0, hl - r1
     set 7,h
     res 0,l
     ld a,(hl)
@@ -154,8 +145,6 @@ r5 equ $+1
     add hl,bc    ;sets C=0
     pop bc   ;r0
     sbc hl,bc    ;2xy+y0
-    ld b,d
-    ld c,e
     dec ixh     
     jr nz,loc1   ;sob r2,1$
 loc2:
