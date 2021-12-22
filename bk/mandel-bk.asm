@@ -13,19 +13,8 @@ kbddtport  = ^O177662            ;kbd data, palette, timer, $ffb2
     mov #msg,r1
     clr r2
     emt ^O20
-    emt 6
-    mov #18.,r0    ;home cursor
-    emt ^O16
     clr @#timerport1
-;;	mov     #2*400+330, r0
-;;	mov	r0, @#177664			; set scroll reg - it usually does nothing
-;;	mtps	r0				; also mask interrupts - the same
-    CMPB @#^O177717,#^O200
-    BEQ 9$  ;BK0010
-
-    mov	#75.*256., @#kbddtport  ; set pallete
-    mov #488.,ticonst     ;4 MHz,4000000/64/128
-9$:
+    call @#init
 ;************************************************************
 ; Fixpoint squares up to approx. 8.0^2, 11 significant bits
 ; operand-index: 0000XXX.X XXXXXXX0
@@ -127,7 +116,7 @@ patt1	=	.+2
 	mov	#^b0011111111000000, r2
 	xor	r0, r2		; r2 = address in the top half
 	mov	r3, (r2)	; write to screen
-	bic	#177700, r2
+	bicb pc, r2
 	bne	loop1		; if not first word in line
 
 	mov	@#patt2,r1
@@ -197,6 +186,21 @@ ticonst = . + 2
     ;mov #155.,r0    ;32/64 screen
     ;emt ^O16
     jmp @#mdlbrt
+
+init:
+    emt 6
+    mov #18.,r0    ;home cursor
+    emt ^O16
+
+;;	mov     #2*400+330, r0
+;;	mov	r0, @#177664			; set scroll reg - it usually does nothing
+;;	mtps	r0				; also mask interrupts - the same
+    CMPB @#^O177717,#^O200
+    BEQ 9$  ;BK0010
+
+    mov	#75.*256., @#kbddtport  ; set pallete
+    mov #488.,ticonst     ;4 MHz,4000000/64/128
+9$: return
 
 div32x16s: ;R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
            ;compact form - 64 bytes
@@ -287,7 +291,7 @@ pat0:	.byte	0,1,2,3,16,5,12,17
 pat1:	.byte	0,4,10,14,4,5,12,17
 
 msg:.byte 12.,155.
-    .ascii "Superfast Mandelbrot generator"
+    .ascii "Superfast Mandelbrot generator, v2"
     .byte 10.
     .ascii "The original version"
     .byte 10.
