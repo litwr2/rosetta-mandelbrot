@@ -116,7 +116,7 @@ patt1	=	.+2
 	mov	#^b0011111111000000, r2
 	xor	r0, r2		; r2 = address in the top half
 	mov	r3, (r2)	; write to screen
-	bicb pc, r2
+	bicb pc, r2     ;low(PC) must be equal to 0xC0 here!!!
 	bne	loop1		; if not first word in line
 
 	mov	@#patt2,r1
