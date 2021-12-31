@@ -1,10 +1,6 @@
 Screen_Mode = 9   ;320x200 16 colors
 
 VD_ScreenStart = 148 
-;IKey_LeftClick = 0xf6
-;IKey_RightClick = 0xf4
-;IKey_Space = 0x9d
-ErrorV = 0x01
 
 OSByte_ReadKey = 129
 OSByte_ClearEscCond = 126
@@ -12,14 +8,13 @@ OSByte_CursorSt = 4
 
 OSWord_WritePal = 12
 
+OS_WriteC = 0
 OS_Byte = 6
 OS_Word = 7
-OS_WriteC = 0
-OS_Claim = 0x1f
-OS_Release = 0x20
+OS_Exit = 0x11
+OS_Mouse = 0x1c
 OS_ReadVduVariables = 0x31
 OS_ReadMonotonicTime = 0x42
-OS_Exit = 0x11
 
 ;OS_ConvertHex2 = 0xd1
 ;OS_ConvertHex4 = 0xd2
@@ -27,20 +22,16 @@ OS_ConvertHex8 = 0xd4
 OS_ConvertCardinal2 = 0xd6
 OS_WriteO = 2
 
-;processor cpu32_v1
-;processor cpu32_v2
-;processor CPU32_26BIT
+processor CPU32_26BIT
+processor +cpu32_v1
+processor +cpu32_v2
+
 
     org 0x8000
 
 Start:
-    add sp, pc, stack_base-$-8
-	B main
-
-    rb 1024
-stack_base:
-
-main:
+    mov sp,#stack_base and 0xfffffc00
+    add sp,#stack_base and 0x3ff
     bl init
     ;bl debug_write_32
 
@@ -111,26 +102,24 @@ loop2:
     ldr r3,[r8,r3,asr 16]
     movne r3,r3,lsr #16
     mov r3,r3,lsl #16       ;mov	sqr(r1), r3
-    add r1,r1,r0   ;??move  ;add	r0, r1
     tst r0,#0x20000
-    bic r0,r0,#0x30000
-    ldr r0,[r8,r0,asr 16]
-    movne r0,r0,lsr #16
-    mov r0,r0,lsl #16       ;mov	sqr(r0), r0
-    add r0,r3,r0            ;add	r3, r0
-    tst r0,#0xf8000000      ;cmp	r0, r6
+    bic lr,r0,#0x30000
+    ldr lr,[r8,lr,asr 16]
+    movne lr,lr,lsr #16
+    mov lr,lr,lsl #16       ;mov	sqr(r0), r0
+    add lr,r3,lr            ;add	r3, r0
+    tst lr,#0xf8000000      ;cmp	r0, r6
     bne .l2
 
+    add r1,r1,r0            ;add	r0, r1
     tst r1,#0x20000
     bic r1,r1,#0x30000
     ldr r1,[r8,r1,asr 16]
     movne r1,r1,lsr #16
     mov r1,r1,lsl #16       ;mov	sqr(r1), r1
-    sub r1,r1,r0            ;sub	r0, r1
+    sub r1,r1,lr            ;sub	r0, r1
     add r1,r1,r5            ;add	r5, r1
-    ;sub r0,r0,r3,lsl #1
-    sub r0,r0,r3            ;sub	r3, r0
-    sub r0,r0,r3  ;??       ;sub	r3, r0
+    sub r0,lr,r3,lsl #1     ;sub	r3, r0 // sub	r3, r0
     add r0,r0,r4            ;add	r4, r0
     subs r2,#1
     bne .l1
@@ -174,16 +163,11 @@ loop2:
 	mov r2, #12
 	swi OS_ConvertCardinal2
 	add r0, pc, text_string-$-8
-	swi OS_WriteO   ;??
+	swi OS_WriteO
 	mov r0, #32
 	swi OS_WriteC
 
     ldr r0,[timer]
-  ;mov r0,#0xfe
-  ;add r0,r0,#0x7700
-  ;mov r7,r0
-  ;bl debug_write_32
-  ;mov r0,r7
     mov r4,r0
     add r0,r0,r0,lsr #2
     add r0,r0,r0,lsr #5
@@ -199,7 +183,7 @@ loop2:
 	mov r2, #12
 	swi OS_ConvertCardinal2
     add r0, pc, text_string-$-8
-	swi OS_WriteO  ;??
+	swi OS_WriteO
 	mov r0, #"."
 	swi OS_WriteC
     cmp r4,#10
@@ -212,24 +196,24 @@ loop2:
 	mov r2, #12
 	swi OS_ConvertCardinal2
     add r0, pc, text_string-$-8
-	swi OS_WriteO  ;??
+	swi OS_WriteO
     bl getkey
 .l5:ldr r1,[mxa]
     ldr r2,[x0a]
     add r2,r1
-    str r2,[x0a]   ;add	@#mxa, @#x0a
+    str r2,[x0a]      ;add	@#mxa, @#x0a
 
     mov r5,#3
     add r1,pc,dxa-$-8
-.l4:ldr r2,[r1]   ; mov	(r1), r2
+.l4:ldr r2,[r1]       ;mov	(r1), r2
     add r3,r2,#sf4
     tst r3,#0x20000
-    bic r3,r3,#0x30000     ;??
+    bic r3,#0x30000
     ldr r3,[r8,r3,asr 16]
     movne r3,r3,lsr #16
     sub r4,r2,#sf4
     tst r4,#0x20000
-    bic r4,r4,#0x30000     ;??
+    bic r4,#0x30000
     ldr r4,[r8,r4,asr 16]
     movne r4,r4,lsr #16
     sub r3,r3,r4
@@ -239,16 +223,9 @@ loop2:
     bne .l4
 	b mandel
 	
-error_noscreenmem:
-	dw 0
-	db "Cannot allocate screen memory!"
-	align 4
-	dw 0
-
 get_screen_addr:
 	str lr, [sp, #-4]!
 	add r0, pc, screen_addr_input-$-8
-    ;adr r0, screen_addr_input
 	add r1, pc, screen_addr-$-8
 	swi OS_ReadVduVariables
 	ldr pc, [sp], #4
@@ -268,21 +245,7 @@ exit:
 	; wait for vsync (any pending buffers)
 	mov r0, #19
 	swi OS_Byte
-
-	; release our error handler
-	mov r0, #ErrorV
-	add r1, pc, error_handler-$-8
-
 	SWI OS_Exit
-
-error_handler:
-	STMDB sp!, {r0-r2, lr}
-	MOV r0, #ErrorV
-	add r1, pc, error_handler-$-8
-	MOV r2, #0
-	SWI OS_Release
-	LDMIA sp!, {r0-r2, lr}   ;??
-	MOVS pc, lr              ;??
 
 init:
     str lr, [sp, #-4]!
@@ -317,13 +280,7 @@ init:
 
     ;clear screen
 	mov r0, #12   ;VDU = Clear Screen
-	SWI OS_WriteC   ;??
-
-	; Claim the Error vector
-	MOV r0, #ErrorV
-    add r1, pc, error_handler-$-8
-	MOV r2, #0
-	SWI OS_Claim
+	SWI OS_WriteC
 
 	bl get_screen_addr
 	ldr pc, [sp], #4
@@ -354,8 +311,8 @@ colorse:
 
 getkey:
 .l3:MOV r0, #OSByte_ReadKey
-	MOV r1, #120
-	MOV r2, r1
+	MOV r1, #5
+	MOV r2, #0
 	SWI OS_Byte
     cmp r2,#0x1b
     bne .l2
@@ -365,9 +322,15 @@ getkey:
     b .l3
 
 .l2:cmp r2,#0xff
-    beq .l3
-    mov pc,lr
+    bne .l4
 
+    swi OS_Mouse
+    tst r2,#7
+    beq .l3
+
+.l4:mov pc,lr
+
+ if 0
 debug_write_32:
 	add r1, pc, text_string-$-8
 	mov r2, #12
@@ -377,12 +340,12 @@ debug_write_32:
 	mov r0, #32
 	swi OS_WriteC
 	mov pc, lr
+ end if
 
 text_string:
 	rb 12
 
-msg     db 12
-        db "  **********************************",13,10
+msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
         db "  *          16 colors, v1         *",13,10
         db "  **********************************",13,10
@@ -398,4 +361,5 @@ msg     db 12
 sqr0:
     rb 0x16b0-sqr0+msg
 sqr:rb 0x16b0
-
+    rb 16
+stack_base:
