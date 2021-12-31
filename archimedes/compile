@@ -1,0 +1,4 @@
+f=${1%%.asm}
+fasmarm -s $f.fas $1 $f,ff8 || exit
+fasm-listing $f.fas $f.lst
+
