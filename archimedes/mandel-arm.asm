@@ -1,3 +1,10 @@
+;for fasmarm assembler
+;
+;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
+;The next code was made by litwr in 2021
+;
+;128x256 Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 color mode
+
 Screen_Mode = 9   ;320x200 16 colors
 
 VD_ScreenStart = 148 
@@ -90,10 +97,10 @@ loop0:
     mov r9,#16
     ldr r4,[x0a]
 loop1:
-    mov r11,0x1
+    mov r11,#1
 loop2:
     add r4,r4,r10
-    ldr r2,[nitera]
+    ldr r2,[nitera]   ;??r6
     mov r0,r4
     mov r1,r5
 .l1:
@@ -289,25 +296,13 @@ set_palette:
 	str lr, [sp, #-4]!
 	mov r0, #OSWord_WritePal 
 	add r1, pc, colors-$-8
-	add r2, pc, colorse-$-8
+	add r2, pc, msg-$-8
 .l1:
 	swi OS_Word
 	add r1, r1, #5
 	cmp r1, r2
 	bne .l1
 	ldr pc, [sp], #4
-
-colors:
-	db 8, 16, 0, 0, 128
-	db 9, 16, 0, 128, 0
-	;db 10, 16, 128, 0, 0
-	db 11, 16, 128, 128, 0
-	db 12, 16, 128, 0, 128
-	db 13, 16, 0, 128, 128
-	db 14, 16, 128, 128, 128
-	db 15, 16, 128, 0, 0
-colorse:
-    align 4
 
 getkey:
 .l3:MOV r0, #OSByte_ReadKey
@@ -345,21 +340,31 @@ debug_write_32:
 text_string:
 	rb 12
 
+colors:
+	db 8, 16, 0, 0, 128
+	db 9, 16, 0, 128, 0
+	;db 10, 16, 128, 0, 0
+	db 11, 16, 128, 128, 0
+	db 12, 16, 128, 0, 128
+	db 13, 16, 0, 128, 128
+	db 14, 16, 128, 128, 128
+	db 15, 16, 128, 0, 0
+
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *          16 colors, v1         *",13,10
+        db "  *          16 colors, v2         *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Acorn Archimedes port was created",13,10
-        db "by Litwr, 2021.",13,10
+        db "by Litwr, 2022.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit.",0
 
     align 4
 sqr0:
-    rb 0x16b0-sqr0+msg
+    rb 0x16b0-sqr0+colors
 sqr:rb 0x16b0
     rb 16
 stack_base:
