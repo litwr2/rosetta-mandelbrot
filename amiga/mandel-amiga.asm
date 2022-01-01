@@ -1,4 +1,4 @@
-;for VASM assembler, OLDSTYLE syntax
+;for VASM assembler, Motorola syntax
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
