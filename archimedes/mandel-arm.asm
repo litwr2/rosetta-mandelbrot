@@ -7,7 +7,7 @@
 
 Screen_Mode = 9   ;320x200 16 colors
 
-VD_ScreenStart = 148 
+VD_ScreenStart = 148
 
 OSByte_ReadKey = 129
 OSByte_ClearEscCond = 126
@@ -32,7 +32,6 @@ OS_WriteO = 2
 processor CPU32_26BIT
 processor +cpu32_v1
 processor +cpu32_v2
-
 
     org 0x8000
 
@@ -70,7 +69,7 @@ sqrloop:
     mov r9,r1,lsr #16
     strb r9,[r4,#-1]!    ;mov	r1, -(r4)	; to lower half tbl
 	mov r2,r6            ;mov	(r6)+, r2
-	bcs mandel           ;bcs	mdlbrt		; exit on overflow
+	bcs mandel0          ;bcs	mdlbrt		; exit on overflow
 
 	add r2,#0x10000      ;inc	r2
 	b sqrloop            ;br	fsqr
@@ -81,6 +80,9 @@ idy	=	18        ;.03515625
 ix0	=	-62*idx
 imx	=	10*idx		; x move
 sf4	=	436/4*65536		; sf/4
+
+mandel0:
+    mov r6,#initer
 mandel:
     swi OS_ReadMonotonicTime
     str r0,[timer]
@@ -100,7 +102,7 @@ loop1:
     mov r11,#1
 loop2:
     add r4,r4,r10
-    ldr r2,[nitera]   ;??r6
+    mov r2,r6
     mov r0,r4
     mov r1,r5
 .l1:
@@ -147,9 +149,7 @@ loop2:
     subs r5,r5,r0
     bne loop0
 
-    ldr r0,[nitera]
-    add r0,#1
-    str r0,[nitera]    ;inc	@#nitera
+    add r6,#1   ;inc	@#nitera
     swi OS_ReadMonotonicTime
     ldr r1,[timer]
     sub r0,r0,r1
@@ -164,7 +164,7 @@ loop2:
 
 	mov r0, #30   ;VDU = Home Cursor
 	swi OS_WriteC
-    ldr r0,[nitera]
+    mov r0,r6
     sub r0,#7
 	add r1, pc, text_string-$-8
 	mov r2, #12
@@ -245,7 +245,6 @@ dxa:	dw	idx*65536
 dya:	dw	idy*65536
 mxa:	dw	imx*65536
 x0a:    dw  ix0*65536
-nitera: dw  initer
 timer:  dw 0
 
 exit:	
