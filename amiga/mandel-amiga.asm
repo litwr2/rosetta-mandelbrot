@@ -172,8 +172,8 @@ loc2:
     move.l d1,tcolor1(a3)
     bra loop2
 loc3:
-    suba.l #4,a6   ;?? .w
-    suba.l #4,a5
+    subq.l #4,a6   ;?? .w
+    subq.l #4,a5
     move.l BITPLANE1_PTR(a3),d0
     move.l d1,(a5,d0.l)
     move.l d1,(a6,d0.l)

@@ -1,0 +1,6 @@
+300 r=0:mode 8
+310 mandl:a$=inkey$(-1)
+320 if a$="q" or a$="Q" then goto 500
+330 if a$<>"t" and a$<>"T" then goto 310
+340 r=r+1:print r,timer/50:a$=inkey$(-1):goto 310
+500 mode 4
