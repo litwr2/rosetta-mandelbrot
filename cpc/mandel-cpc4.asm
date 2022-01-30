@@ -155,7 +155,6 @@ patx equ $+1
     add a,l
     ld l,a
     ld c,(hl)
-  ld a,l
   xor 8
   ld l,a
   ld b,(hl)
@@ -469,7 +468,7 @@ db &6,32,&7,35,&c,16,&d,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v2    *",13,10
+        db "*     4 colors + textures, v3    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10

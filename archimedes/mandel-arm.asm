@@ -74,7 +74,7 @@ sqrloop:
 	add r2,#0x10000      ;inc	r2
 	b sqrloop            ;br	fsqr
 
-initer	=	7
+initer	= 7
 idx	= -36       ;-.0703125
 idy	=	18        ;.03515625
 ix0	=	-62*idx
@@ -88,7 +88,7 @@ mandel:
     str r0,[timer]
     mov r7,#0x9f00
     add r7,#0xa0
-    ldr r12, [screen_addr]
+    ldr r12,[screen_addr]
     add r7,r7,r12
     add r12,r12,#64
 

@@ -4,10 +4,12 @@
 ;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the IBM PC (only the 8086 code), EGA (write mode 0), 16 color mode
+;128x256 Mandelbrot for the IBM PC (only the 8086 code), EGA (write mode 2), 16 color mode
 
          use16
          org 100h
+
+debug = 0
 
 sqr = 800h + 1700h
 initer = 7
@@ -24,12 +26,16 @@ start:
     xor ah,ah
     int 16h   ;wait a kbd event
 
-    ;mov ax,3  ;for debug
+  if debug = 1
+    mov ax,3  ;for debug
+  end if
     mov ax,10h
     int 10h    ;640x350 4 colors
     mov dx,3ceh
-    mov ax,5
-    out dx,ax   ;mode 0
+    mov ax,205h
+  if debug = 0
+    out dx,ax   ;mode 2
+  end if
     ;mov ax,800h
     ;out dx,ax   ;mask, all bits open
 
@@ -67,8 +73,8 @@ mandel:
          mov [time],dx
     mov ax,0a000h
     mov es,ax
-    mov di,80*255+16+160  ;80*255+16 - bottom for top left, 160 is a +2 shift down 
-    mov bx,16+160         ;16 - top left
+    mov di,80*255+16+160-1  ;80*255+16 - bottom for top left, 160 is a +2 shift down 
+    mov bx,16+160-1         ;16 - top left
 	mov dx,[vdy]   ;mov	@#dya, r5
 	xchg dl,dh  ;swab	r5
 	shr dx,1    ;asr	r5		; r5 = 200*dy
@@ -106,75 +112,33 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
 	jnz .l1        ;sob	r2, 1$		; to next iteration
 .l2:
     and cl,15
-    ;mov bx,cx
-    ;mov al,[pat+bx]
-    mov al,cl
-    mov si,[tcolor1]
-    shr al,1
-    rcr si,1
-    mov bx,[tcolor2]
-    shr al,1
-    rcr bx,1
-    mov di,[tcolor3]
-    shr al,1
-    rcr di,1
-    mov cx,[tcolor4]
-    shr al,1
-    rcr cx,1
-    jc .l3
-
-    mov [tcolor4],cx
-    mov [tcolor3],di
-    mov [tcolor2],bx
-    mov [tcolor1],si
-    jmp loop2
-.l3:
-    mov [r4],bp
-    mov [r5],dx
-    mov dx,bx
-    mov bp,di
+    mov ax,[colorm]
+    xchg dx,bx    ;faster than MOV on the 8088
+    mov dx,3ceh
+  if debug = 0
+    out dx,ax
+  end if
+    xchg dx,bx
     pop bx  ;top
-    sub bx,2
     pop di  ;bottom
-    sub di,2
-    push dx
-    mov dx,3c4h
-    mov ax,802h  ;#3
-    out dx,ax
-    xchg cl,ch
-    mov [es:bx],cx
-    mov [es:di],cx
-    mov ah,4    ;#2
-    out dx,ax
-    mov cx,bp
-    xchg cl,ch
-    mov [es:bx],cx
-    mov [es:di],cx
-    mov ah,2  ;#1
-    out dx,ax
-    pop cx
-    xchg cl,ch
-    mov [es:bx],cx
-    mov [es:di],cx
-    mov ah,1  ;#0
-    out dx,ax
-    mov cx,si
-    xchg cl,ch
-    mov [es:bx],cx
-    mov [es:di],cx
-    mov word [tcolor4],08000h
-    mov dx,[r5]
-    mov bp,[r4]
+    mov al,[es:bx]
+    mov [es:bx],cl
+    mov [es:di],cl
+    rol byte [colorm+1],1
+    jnc loop1
+
     test bl,15
-    je .skip1
-	jmp	loop1	; if not first word in line
-.skip1:
-    add bx,96
-    sub di,64
+    je .l8
+
+    dec bx
+    dec di
+    jmp loop1    ;if not first word in line
+
+.l8:add bx,95
+    sub di,65
 	sub dx,[vdy]    ;sub	@#dya, r5		; update b
-    je .skip2
-	jmp loop0       ;bgt	loop0		; continue while b > 0
-.skip2:
+    jne loop0       ;bgt	loop0		; continue while b > 0
+
 	mov ax,[vmx]
     add [x0],ax       ;add	@#mxa, @#x0a	; shift x0
 
@@ -208,11 +172,19 @@ l0:	mov ah,2ch
     int 20h
 noquit:
     cmp al,'T'
+    ;jne mandel
     je showtime
     jmp mandel
 showtime:
     push dx
     push cx
+    mov dx,3ceh
+    mov ax,5
+  if debug = 0
+    out dx,ax   ;mode 0
+    mov ax,0ff08h
+    out dx,ax   ;bit mask = 0
+  end if
          mov dl,0dh
          call PR00.le
          xor ax,ax
@@ -299,7 +271,12 @@ showtime:
          call PR00
          xor ah,ah
          int 16h   ;wait a kbd event
-.l11:    jmp mandel
+.l11:    mov ax,205h
+         mov dx,3ceh
+  if debug = 0
+    out dx,ax   ;mode 2
+  end if
+         jmp mandel
 
 PR0000:     ;prints ax
         mov si,1000
@@ -334,22 +311,19 @@ x0:  dw ix0
 niter: dw initer+0xfe00
 r4:  dw 0
 r5:  dw 0
-tcolor1: dw 0
-tcolor2: dw 0
-tcolor3: dw 0
-tcolor4: dw $8000
 ;pat:	db	0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 time dw 0,0
+colorm: dw 108h  ;8 - the mask register index
 
     align 2
 pe:
-msg     db "  **********************************",13,10
-        db "  * Superfast Mandelbrot generator *",13,10
-        db "  *        EGA 16 colors, v2       *",13,10
-        db "  **********************************",13,10
+msg     db " ************************************",13,10
+        db " *  Superfast Mandelbrot generator  *",13,10
+        db " * EGA 16 colors (write mode 2), v2 *",13,10
+        db " ************************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        db "This IBM PC EGA port was created by Litwr, 2021.",13,10
+        db "This IBM PC EGA port was created by Litwr, 2022.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
 

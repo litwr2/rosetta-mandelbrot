@@ -1,0 +1,535 @@
+;for pasmo assembler
+;
+;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
+;The next code was made by litwr in 2021
+;Thanks to reddie for some help with optimization
+;
+;256x256 Mandelbrot for the Corvette, 4 colors, simulates 8 colors using textures
+
+BDOS equ 5
+
+RGBASE2 EQU     0FA00H  ;ROMB1, ODOSA, NDOS, BASIC
+RGBASE3 EQU     0FF00H  ;DOSA, DOSG1
+
+SYSREG  EQU     7FH 
+DOSG1   EQU     3CH
+ODOSA   EQU     1CH
+
+NCREG   EQU     0BFH  ;color reg
+
+WSEL0   EQU     01111100B       ;write to plane 0
+WSEL1   EQU     01111010B       ;1
+WSEL2   EQU     01110110B       ;2
+
+WBIT    EQU     00000001B       ;typical mask
+
+KBBASE2 EQU     0F800H  ;ROMB1, ODOSA, NDOS, BASIC
+
+initer	equ	7
+idx	equ	-36       ;-.0703125
+idy	equ	18        ;.03515625
+ix0	equ	-62*idx
+imx	equ	10*idx		; x move
+sf4	equ	436/4		; sf/4
+
+org #100
+
+sqrtab macro
+    ld a,l
+    and $fe
+    ld l,a
+    ld a,h
+    add a,high(sqrbase)
+    ld h,a
+endm
+ 
+start
+    ld de,msg
+    ld c,9
+    call BDOS
+    call waitk
+    ld e,31
+    ld c,2
+    call BDOS   ;cls
+
+    ld hl,sqrbase
+    push hl
+    ld bc,0
+    ld de,0
+sqrloop:
+    pop hl
+    ld (hl),c
+    inc l
+    ld (hl),b
+    inc hl
+    push hl
+    inc e
+    push de
+    ld h,d
+    ld l,e
+    add hl,hl
+    ld d,l
+    ld e,h
+    ld a,e
+r0l:
+    ld hl,0
+    add hl,de
+    ld (r0l+1),hl
+    adc a,c
+    ld c,a
+    ld a,0
+    adc a,b
+    ld b,a
+r4l:
+    ld hl,sqrbase   ;the sqrbase lower/minus part
+    dec hl
+    ld (hl),b
+    dec l
+    ld (hl),c
+    ld (r4l+1),hl
+    pop de
+    jp c,mandel0
+
+    inc de
+    jp sqrloop
+
+mandel0: 
+    pop hl
+mandel:
+    ;call KL_TIME_PLEASE
+    ;ld (ti),hl
+    ;ld (ti+2),de
+    ld hl,$401f  ;scrtop
+    push hl
+    ld hl,(dy)
+    xor a   ;sets C=0
+    ld a,l
+    rra    ;C=0
+    ld l,a
+    ld a,h
+    rra
+    ld h,l
+    ld l,a       ;dy*128
+    ld (r5),hl
+loop0:
+x0 equ $+1
+    ld hl,ix0
+    ld (r4),hl
+loop2:
+    ld hl,(dx)
+    ex de,hl
+    ld hl,(r4)
+    add hl,de
+    ld (r4),hl
+    ld d,h
+    ld e,l      ;mov	r4, r0
+niter equ $+1
+    ld a,initer
+    ld (ixhmem),a
+    ld hl,(r5)  ;mov	r5, r1	
+loc1:
+    push hl
+    sqrtab
+    ld c,(hl)
+    inc l
+    ld b,(hl)   ;mov	sqr(r1), r3
+    pop hl
+    add hl,de   ;add	r0, r1
+    ex de,hl    ;de - r1, hl - r0, bc - r3
+    sqrtab
+    ld a,(hl)
+    inc l
+    ld h,(hl)
+    ld l,a       ;mov	sqr(r0), r0
+    add hl,bc    ;add	r3, r0
+    ld a,h
+    and $f8
+    jp nz,loc2
+
+    push hl
+    ld a,l
+    sub c
+    ld l,a
+    ld a,h
+    sbc a,b
+    ld h,a      ;x^2  ;set C=0
+    ld a,l
+    sub c
+    ld l,a
+    ld a,h
+    sbc a,b
+    ld h,a      ;x^2-y^2
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;x^2-y^2+x0
+    ex de,hl    ;de - r0, hl - r1
+    sqrtab
+    ld a,(hl)
+    inc l
+    ld h,(hl)
+    ld l,a       ;(x+y)^2
+r5 equ $+1
+    ld bc,0
+    add hl,bc
+    pop bc   ;r0
+    ld a,l
+    sub c
+    ld l,a
+    ld a,h
+    sbc a,b
+    ld h,a    ;2xy+y0
+ixhmem equ $+1
+    ld a,0
+    dec a
+    ld (ixhmem),a     
+    jp nz,loc1   ;sob r2,1$
+loc2:
+    ld a,(ixhmem)   ;color
+    and 7
+patx equ $+1
+    ld hl,pat0
+    add a,l
+    ld l,a
+    ld c,(hl)
+tcolor1 equ $+1
+    ld a,0
+    rrca
+    rrca
+    or c
+    ld (tcolor1),a
+    ld a,l
+    add a,8
+    ld l,a
+    ld c,(hl)
+tcolor2 equ $+1
+    ld a,0
+    rrca
+    rrca
+    or c
+    ld (tcolor2),a
+    ld a,l
+    add a,8
+    ld l,a
+    ld c,(hl)
+bcolor1 equ $+1
+    ld a,0
+    rrca
+    rrca
+    or c
+    ld (bcolor1),a
+    ld a,l
+    add a,8
+    ld l,a
+    ld c,(hl)
+bcolor2 equ $+1
+    ld a,0
+    rrca
+    rra
+    jp c,.l8
+
+    or c
+    ld (bcolor2),a
+    jp loop2
+
+.l8:
+    or c
+    ld (bcolor2),a
+         ld hl,RGBASE2+SYSREG
+         di
+         ld (hl),DOSG1
+    ld hl,RGBASE3+NCREG
+    pop de    ;!!before di
+    ld a,$3f  ;*
+    xor d     ;*
+    ld b,a    ;*
+    ld a,$c0  ;*
+    xor e     ;*
+    ld c,a    ;*
+    ld (hl),WSEL1
+    ld a,$ff
+    ld (de),a
+    ld (bc),a
+    ld a,(tcolor1)
+    ld (hl),WSEL1+WBIT
+    ld (de),a
+    ld a,(bcolor1)
+    ld (bc),a
+    ld (hl),WSEL2
+    ld a,$ff
+    ld (de),a
+    ld (bc),a
+    ld a,(tcolor2)
+    ld (hl),WSEL2+WBIT
+    ld (de),a
+    ld a,(bcolor2)
+    ld (bc),a
+         ld hl,RGBASE3+SYSREG
+         ld (hl),ODOSA
+         ei
+    ld a,$80
+    ld (bcolor2),a
+    xor a
+    ld (bcolor1),a
+    ld (tcolor2),a
+    ld (tcolor1),a
+    ld a,e
+    dec de
+    push de
+    and $1f
+    jp nz,loop2
+
+    ld de,96
+    pop hl  ;scrtop
+    add hl,de
+    push hl
+    ld c,low(pat0)
+    ld a,(patx)
+    cp c    ;sets C=0
+    jp nz,lx8
+
+    ld c,low(pat1)
+lx8:
+    ld a,c
+    ld (patx),a
+
+    ld hl,(dy)
+    ld a,(r5)
+    sub l
+    ld l,a
+    ld (r5),a
+    ld a,(r5+1)
+    sbc a,h
+    ld (r5+1),a
+    or l
+    jp nz,loop0
+
+    ld hl,(mx)
+    ex de,hl
+    ld hl,(x0)
+    add hl,de
+    ld (x0),hl   ;x0 += mx
+    ld hl,niter
+    inc (hl)     ;iter++
+    ld hl,dx
+    push hl
+lx5:
+    pop hl
+    ld a,l
+    cp low(mx)+2
+    jp z,lx2
+
+    ld (dx1p),a
+    ld (dx2p),a
+    add a,2
+    ld l,a
+    push hl
+    ld de,-sf4
+dx1p equ $+1
+    ld hl,(dx)
+    push hl
+    add hl,de
+    sqrtab
+    ld c,(hl)
+    inc l
+    ld b,(hl)
+    ld de,sf4
+    pop hl
+    add hl,de
+    sqrtab
+    ld a,(hl)
+    inc l
+    ld h,(hl)
+    ld l,a
+    ld a,l
+    sub c
+    ld l,a
+    ld a,h
+    sbc a,b
+    ld h,a
+dx2p equ $+1
+    ld (dx),hl
+    jp lx5
+
+lx2:pop hl
+
+    ;call KL_TIME_PLEASE
+    ;xor a
+    ;ld bc,(ti)
+    ;sbc hl,bc
+    ;ld (ti),hl
+    ;ex de,hl
+    ;ld bc,(ti+2)
+    ;sbc hl,bc
+    ;ld (ti+2),hl
+    call waitk
+    and 0dfh
+    cp 'Q'
+    jp nz,noq
+    rst 0
+
+noq:cp 'T'
+    jp nz,mandel
+
+    ld e,31  ;cls
+    ld c,2
+    call BDOS
+
+    ld a,(niter)
+    sub 7
+    ld l,a
+    ld h,0
+    call PR000
+    ld e," "
+    ld c,2
+    call BDOS
+    ld hl,(ti+2)
+    ld de,(ti)
+    ld bc,300
+    call div32x16r
+	PUSH HL
+	EX DE,HL
+	call PR000
+	LD e,'.'
+    ld c,2
+    call BDOS
+	POP hl
+        push hl     ;*100/3
+        add hl,hl
+        add hl,hl
+        pop de
+        add hl,de
+        push hl
+        add hl,hl
+        add hl,hl
+        pop de
+        add hl,de
+        add hl,hl
+        add hl,hl
+        ex de,hl
+        ld hl,0
+        ld bc,3
+        call div32x16r
+        ld a,l
+        cp 2
+        jp c,$+4
+        inc de
+        ex de,hl
+	call PR0000
+    call waitk
+    jp mandel
+
+ti:     dw 0,0
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+
+div0 macro
+     local t1,t2
+     ex de,hl
+     add hl,hl
+     ex de,hl
+     ld a,l
+     adc a,l
+     ld l,a
+     ld a,h
+     adc a,h
+     ld h,a
+     jp c,t1
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     jp nc,t2
+t1
+     ADD   HL,BC
+     inc e
+t2
+endm
+
+div32x16r proc
+     local t,t0,t1,t2,t3
+     call t
+     ld bc,0
+     ret
+t
+     DEC   BC
+     LD    A, B
+     CPL
+     LD    B, A
+     LD    A, C
+     CPL
+     LD    C, A
+     call t0
+t0
+     call t1
+t1
+     call t2
+t2
+     call t3
+t3
+     div0
+     RET
+     endp
+
+PR0000  ld de,-1000
+	CALL PR0
+PR000
+	ld de,-100
+	CALL PR0
+	ld de,-10
+	CALL PR0
+	ld A,L
+PRD	add a,$30
+    ld e,a
+    ld c,2
+    call BDOS
+
+PR0	ld A,$FF
+	ld B,H
+	ld C,L
+	inc A
+	add HL,DE
+	jp C,$-4
+
+	ld H,B
+	ld L,C
+	jp PRD
+
+waitk:
+    ld c,6  ;direct console i/o
+    ld e,$ff
+    call BDOS
+    or a
+    jp z,waitk
+    ret
+
+        ;org ($ + 15)&$fff0
+pat0:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
+        db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
+; 0 - black, 1 - blue-black, 2 - green-black, 3 - red-black, 14 - green-red, 5 - blue, 10 - green, 15 - red
+pat1:	db 0, 0x40, 0x00, 0x40, 0x40, 0xC0, 0x00, 0xC0
+        db 0, 0x00, 0x40, 0x40, 0x00, 0x00, 0xC0, 0xC0
+; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
+pat0c:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
+        db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
+pat0x:
+ if (pat0 and $ff00) != ((pat0+48) and $ff00)
+ERROR ERROR
+ endif
+
+        org ($ + 256) and $ff00
+msg     db "**********************************",13,10
+        db "* Superfast Mandelbrot generator *",13,10
+        db "*     4 colors + textures, v1    *",13,10
+        db "**********************************",13,10
+        db "The original version was published for",13,10
+        db "the BK0011 in 2021 by Stanislav",13,10
+        db "Maslovski.",13,10
+        db "This Corvette port was created by",13,10
+        db "Litwr, 2022.",13,10
+        db "The T-key gives us timings.",13,10
+        db "Use the Q-key to quit$"
+sqrbase equ msg + $1700   ;$16b0
+   end start
+
