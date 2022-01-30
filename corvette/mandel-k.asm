@@ -48,9 +48,10 @@ start
     ld c,9
     call BDOS
     call waitk
-    ld e,31
-    ld c,2
-    call BDOS   ;cls
+    call clscursor
+
+    ld hl,(0xf7f1)
+    ld (KL+1),hl    ;prepare the timer handler
 
     ld hl,sqrbase
     push hl
@@ -96,9 +97,11 @@ r4l:
 mandel0: 
     pop hl
 mandel:
-    ;call KL_TIME_PLEASE
-    ;ld (ti),hl
-    ;ld (ti+2),de
+    ld hl,0
+    ld (ti),hl
+    ld (ti+2),hl
+    ld hl,KINTR
+    ld (0xf7f1),hl   ;start timer
     ld hl,$401f  ;scrtop
     push hl
     ld hl,(dy)
@@ -234,17 +237,17 @@ bcolor2 equ $+1
 .l8:
     or c
     ld (bcolor2),a
+    pop de
+    ld a,$3f
+    xor d
+    ld b,a
+    ld a,$c0
+    xor e
+    ld c,a    ;save BC instead??
          ld hl,RGBASE2+SYSREG
          di
          ld (hl),DOSG1
     ld hl,RGBASE3+NCREG
-    pop de    ;!!before di
-    ld a,$3f  ;*
-    xor d     ;*
-    ld b,a    ;*
-    ld a,$c0  ;*
-    xor e     ;*
-    ld c,a    ;*
     ld (hl),WSEL1
     ld a,$ff
     ld (de),a
@@ -351,16 +354,8 @@ dx2p equ $+1
     jp lx5
 
 lx2:pop hl
-
-    ;call KL_TIME_PLEASE
-    ;xor a
-    ;ld bc,(ti)
-    ;sbc hl,bc
-    ;ld (ti),hl
-    ;ex de,hl
-    ;ld bc,(ti+2)
-    ;sbc hl,bc
-    ;ld (ti+2),hl
+    ld hl,(KL+1)
+    ld (0xf7f1),hl   ;stop timer
     call waitk
     and 0dfh
     cp 'Q'
@@ -370,10 +365,6 @@ lx2:pop hl
 noq:cp 'T'
     jp nz,mandel
 
-    ld e,31  ;cls
-    ld c,2
-    call BDOS
-
     ld a,(niter)
     sub 7
     ld l,a
@@ -382,9 +373,10 @@ noq:cp 'T'
     ld e," "
     ld c,2
     call BDOS
+    ld hl,(ti)
+    ex de,hl
     ld hl,(ti+2)
-    ld de,(ti)
-    ld bc,300
+    ld bc,50
     call div32x16r
 	PUSH HL
 	EX DE,HL
@@ -393,7 +385,7 @@ noq:cp 'T'
     ld c,2
     call BDOS
 	POP hl
-        push hl     ;*100/3
+        push hl     ;*200
         add hl,hl
         add hl,hl
         pop de
@@ -405,17 +397,10 @@ noq:cp 'T'
         add hl,de
         add hl,hl
         add hl,hl
-        ex de,hl
-        ld hl,0
-        ld bc,3
-        call div32x16r
-        ld a,l
-        cp 2
-        jp c,$+4
-        inc de
-        ex de,hl
+        add hl,hl
 	call PR0000
     call waitk
+    call clscursor
     jp mandel
 
 ti:     dw 0,0
@@ -481,9 +466,12 @@ PR000
 	CALL PR0
 	ld A,L
 PRD	add a,$30
+    push hl
     ld e,a
     ld c,2
     call BDOS
+    pop hl
+    ret
 
 PR0	ld A,$FF
 	ld B,H
@@ -496,13 +484,22 @@ PR0	ld A,$FF
 	ld L,C
 	jp PRD
 
-waitk:
-    ld c,6  ;direct console i/o
-    ld e,$ff
-    call BDOS
-    or a
-    jp z,waitk
-    ret
+KINTR
+     push af
+     push hl
+     ld hl,(ti)
+     inc hl
+     ld (ti),hl
+     ld a,l
+     or h
+     jp nz,kq
+
+     ld hl,(ti+2)
+     inc hl
+     ld (ti+2),hl
+kq   pop hl
+     pop af
+KL   jp 0
 
         ;org ($ + 15)&$fff0
 pat0:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
@@ -514,11 +511,32 @@ pat1:	db 0, 0x40, 0x00, 0x40, 0x40, 0xC0, 0x00, 0xC0
 pat0c:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
         db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
 pat0x:
- if (pat0 and $ff00) != ((pat0+48) and $ff00)
+ if (pat0 and $ff00) != ((pat0+47) and $ff00)
 ERROR ERROR
  endif
 
-        org ($ + 256) and $ff00
+waitk:
+    ld c,6  ;direct console i/o
+    ld e,$ff
+    call BDOS
+    or a
+    jp z,waitk
+    ret
+
+clscursor:
+    ld e,31  ;cls
+    ld c,2
+    call BDOS
+    ld bc,0x2002
+lback
+    ld e," "
+    push bc
+    call BDOS
+    pop bc
+    dec b
+    jp nz,lback
+    ret
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*     4 colors + textures, v1    *",13,10
@@ -530,6 +548,6 @@ msg     db "**********************************",13,10
         db "Litwr, 2022.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
-sqrbase equ msg + $1700   ;$16b0
+sqrbase equ (msg + $16b0 + $ff) and $ff00
    end start
 
