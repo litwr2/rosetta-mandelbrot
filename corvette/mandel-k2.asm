@@ -4,7 +4,7 @@
 ;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
-;256x256 Mandelbrot for the Corvette, 4 colors (planar write mode), simulates 8 colors using textures
+;256x256 Mandelbrot for the Corvette, 8 colors (color write mode), simulates 16 colors using textures
 
 BDOS equ 5
 
@@ -16,12 +16,6 @@ DOSG1   EQU     3CH
 ODOSA   EQU     1CH
 
 NCREG   EQU     0BFH  ;color reg
-
-WSEL0   EQU     01111100B       ;write to plane 0
-WSEL1   EQU     01111010B       ;1
-WSEL2   EQU     01110110B       ;2
-
-WBIT    EQU     00000001B       ;typical mask
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -186,59 +180,30 @@ ixhmem equ $+1
     jp nz,loc1   ;sob r2,1$
 loc2:
     ld a,(ixhmem)   ;color
-    and 7
+    and 15
 patx equ $+1
     ld hl,pat0
     add a,l
     ld l,a
-    ld c,(hl)
-tcolor1 equ $+1
-    ld a,0
-    rrca
-    rrca
-    or c
+    ld a,(hl)
     ld (tcolor1),a
     ld a,l
-    add a,8
+    add a,16
     ld l,a
-    ld c,(hl)
-tcolor2 equ $+1
-    ld a,0
-    rrca
-    rrca
-    or c
-    ld (tcolor2),a
+    ld b,(hl)
+    ;ld (tcolor2),a
     ld a,l
-    add a,8
+    add a,16
     ld l,a
-    ld c,(hl)
-bcolor1 equ $+1
-    ld a,0
-    rrca
-    rrca
-    or c
+    ld a,(hl)
     ld (bcolor1),a
     ld a,l
-    add a,8
+    add a,16
     ld l,a
-    ld c,(hl)
-bcolor2 equ $+1
-    ld a,0
-    rrca
-    rra
-    jp c,.l8
-
-    or c
+    ld a,(hl)
     ld (bcolor2),a
-    jp loop2
 
-.l8:
-    or c
-    ld (bcolor2),a
     pop de
-    ld a,$3f
-    xor d
-    ld b,a
     ld a,$c0
     xor e
     ld c,a    ;save BC gives an invisible speed gain, and needs more bytes
@@ -246,33 +211,32 @@ bcolor2 equ $+1
          di
          ld (hl),DOSG1
     ld hl,RGBASE3+NCREG
-    ld (hl),WSEL1
-    ld a,$ff
+    ld (hl),b
+    ld a,$3f
+    xor d
+    ld b,a
+rcolor equ $+1
+    ld a,1
     ld (de),a
+bcolor2 equ $+1
+    ld (hl),0
     ld (bc),a
-    ld a,(tcolor1)
-    ld (hl),WSEL1+WBIT
+tcolor1 equ $+1
+    ld (hl),0
+    rlca
     ld (de),a
-    ld a,(bcolor1)
-    ld (bc),a
-    ld (hl),WSEL2
-    ld a,$ff
-    ld (de),a
-    ld (bc),a
-    ld a,(tcolor2)
-    ld (hl),WSEL2+WBIT
-    ld (de),a
-    ld a,(bcolor2)
+bcolor1 equ $+1
+    ld (hl),0
     ld (bc),a
          ld hl,RGBASE3+SYSREG
          ld (hl),ODOSA
          ei
-    ld a,$80
-    ld (bcolor2),a
-    xor a
-    ld (bcolor1),a
-    ld (tcolor2),a
-    ld (tcolor1),a
+    rlca
+    ld (rcolor),a
+    push de
+    jp nc,loop2
+
+    pop de
     ld a,e
     dec de
     push de
@@ -500,16 +464,17 @@ kq   pop hl
 KL   jp 0
 
         ;org ($ + 15)&$fff0
-pat0:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
-; 0 - black, 1 - blue-black, 2 - green-black, 3 - red-black, 14 - green-red, 5 - blue, 10 - green, 15 - red
-pat1:	db 0, 0x40, 0x00, 0x40, 0x40, 0xC0, 0x00, 0xC0
-        db 0, 0x00, 0x40, 0x40, 0x00, 0x00, 0xC0, 0xC0
-; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
-pat0c:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
+             ;0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15
+pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8c,0x8e,0x8c,0x82,0x86,0x8a,0x86,0x8c,0x8e
+        db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x80,0x80,0x84,0x82,0x86,0x8a,0x80,0x8c,0x8e
+             ;B,  bB,   r,  gB,   g,  rB,  mB,  yB,  wB,  yg,   b,   c,   m,  cB,   y,   w   
+pat1:	db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x80,0x80,0x86,0x82,0x86,0x8a,0x80,0x8c,0x8e
+        db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8c,0x8e,0x8a,0x82,0x86,0x8a,0x86,0x8c,0x8e
+                                                              ;cm
+pat0c:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8c,0x8e,0x8c,0x82,0x86,0x8a,0x86,0x8c,0x8e
+        db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x80,0x80,0x84,0x82,0x86,0x8a,0x80,0x8c,0x8e
 
- if (pat0 and $ff00) != ((pat0+47) and $ff00)
+ if (pat0 and $ff00) != ((pat0+95) and $ff00)
 ERROR ERROR
  endif
 
@@ -537,7 +502,7 @@ lback
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v1    *",13,10
+        db "*     8 colors + textures, v1    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
