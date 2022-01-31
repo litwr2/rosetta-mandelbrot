@@ -11,7 +11,7 @@ BDOS equ 5
 RGBASE2 EQU     0FA00H  ;ROMB1, ODOSA, NDOS, BASIC
 RGBASE3 EQU     0FF00H  ;DOSA, DOSG1
 
-SYSREG  EQU     7FH 
+SYSREG  EQU     7FH
 DOSG1   EQU     3CH
 ODOSA   EQU     1CH
 
@@ -21,7 +21,7 @@ WSEL0   EQU     01111100B       ;write to plane 0
 WSEL1   EQU     01111010B       ;1
 WSEL2   EQU     01110110B       ;2
 
-WBIT    EQU     00000001B       ;typical mask
+WBIT    EQU     00000001B       ;write 1
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -250,17 +250,16 @@ bcolor2 equ $+1
     ld a,$ff
     ld (de),a
     ld (bc),a
-    ld a,(tcolor1)
+    ld (hl),WSEL2
+    ld (de),a
+    ld (bc),a
     ld (hl),WSEL1+WBIT
+    ld a,(tcolor1)
     ld (de),a
     ld a,(bcolor1)
     ld (bc),a
-    ld (hl),WSEL2
-    ld a,$ff
-    ld (de),a
-    ld (bc),a
-    ld a,(tcolor2)
     ld (hl),WSEL2+WBIT
+    ld a,(tcolor2)
     ld (de),a
     ld a,(bcolor2)
     ld (bc),a
@@ -499,15 +498,15 @@ kq   pop hl
      pop af
 KL   jp 0
 
-        ;org ($ + 15)&$fff0
-pat0:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
-; 0 - black, 1 - blue-black, 2 - green-black, 3 - red-black, 14 - green-red, 5 - blue, 10 - green, 15 - red
-pat1:	db 0, 0x40, 0x00, 0x40, 0x40, 0xC0, 0x00, 0xC0
+          ;0,    1,    2,    3,    4,    5,    6,    7
+pat0:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
+        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
+          ;B    gB,   rB,   yB,    g,   ry,    r,    y
+pat1:	db 0, 0x40, 0x00, 0x40, 0xC0, 0x40, 0x00, 0xC0
         db 0, 0x00, 0x40, 0x40, 0x00, 0x00, 0xC0, 0xC0
-; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
-pat0c:	db 0, 0x80, 0x00, 0x80, 0x40, 0xC0, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0xC0, 0x00, 0xC0, 0xC0
+          ;B    Bg,   Br,   By,    g,   Bg,    r,    y
+pat0c:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
+        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
 
  if (pat0 and $ff00) != ((pat0+47) and $ff00)
 ERROR ERROR
@@ -540,7 +539,7 @@ msg     db "**********************************",13,10
         db "*     4 colors + textures, v1    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
-        db "the BK0011 in 2021 by Stanislav",13,10
+        db "the ",226,"K0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Corvette port was created by",13,10
         db "Litwr, 2022.",13,10
