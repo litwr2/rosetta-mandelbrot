@@ -46,6 +46,9 @@ start
     ld c,9
     call BDOS
     call waitk
+    ld de,curoff
+    ld c,9
+    call BDOS
     call clscursor
 
     ld hl,(0xf7f1)
@@ -523,16 +526,10 @@ waitk:
 clscursor:
     ld e,31  ;cls
     ld c,2
-    call BDOS
-    ld bc,0x2002
-lback
-    ld e," "
-    push bc
-    call BDOS
-    pop bc
-    dec b
-    jp nz,lback
-    ret
+    jp BDOS
+
+curoff db 27,";$"
+;curon  db 27,":$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
