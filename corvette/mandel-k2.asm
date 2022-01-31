@@ -179,7 +179,7 @@ r5 equ $+1
 ixhmem equ $+1
     ld a,0
     dec a
-    ld (ixhmem),a     
+    ld (ixhmem),a
     jp nz,loc1   ;sob r2,1$
 loc2:
     ld a,(ixhmem)   ;color
@@ -276,8 +276,8 @@ lx5:
 
     ld (dx1p),a
     ld (dx2p),a
-    add a,2
-    ld l,a
+    inc l
+    inc l
     push hl
     ld de,-sf4
 dx1p equ $+1
@@ -338,28 +338,11 @@ noq:cp 'T'
     ld c,2
     call BDOS
 	POP hl
-        push hl     ;*200
-        add hl,hl
-        add hl,hl
-        pop de
-        add hl,de
-        push hl
-        add hl,hl
-        add hl,hl
-        pop de
-        add hl,de
-        add hl,hl
-        add hl,hl
-        add hl,hl
-	call PR0000
+        add hl,hl  ;*2
+	call PR00
     call waitk
     call clscursor
     jp mandel
-
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
 
 div0 macro
      local t1,t2
@@ -412,10 +395,9 @@ t3
 
 PR0000  ld de,-1000
 	CALL PR0
-PR000
-	ld de,-100
+PR000	ld de,-100
 	CALL PR0
-	ld de,-10
+PR00	ld de,-10
 	CALL PR0
 	ld A,L
 PRD	add a,$30
@@ -454,7 +436,14 @@ kq   pop hl
      pop af
 KL   jp 0
 
-        ;org ($ + 15)&$fff0
+ti:     dw 0,0
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+  if (dx and $ff00) != ((mx+2) and $ff00)
+ERROR ERROR2
+  endif
+
              ;0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15
 pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
         db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
@@ -462,9 +451,9 @@ pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0
 pat1:	db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
         db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
                                                               
- if (pat0 and $ff00) != ((pat0+64) and $ff00)
+  if (pat0 and $ff00) != ((pat0+64) and $ff00)
 ERROR ERROR
- endif
+  endif
 
 waitk:
     ld c,6  ;direct console i/o

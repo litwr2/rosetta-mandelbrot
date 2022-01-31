@@ -4,29 +4,24 @@
 ;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
-;256x256 Mandelbrot for the Corvette, 4 colors (planar write mode), simulates 8 colors using textures
+;512x256 (fullscreen) Mandelbrot for the Corvette,
+;8 colors (color write mode), simulates 16 colors using textures
 
 BDOS equ 5
 
 RGBASE2 EQU     0FA00H  ;ROMB1, ODOSA, NDOS, BASIC
 RGBASE3 EQU     0FF00H  ;DOSA, DOSG1
 
-SYSREG  EQU     7FH
+SYSREG  EQU     7FH 
 DOSG1   EQU     3CH
 ODOSA   EQU     1CH
 
 NCREG   EQU     0BFH  ;color reg
 
-WSEL0   EQU     01111100B       ;write to plane 0
-WSEL1   EQU     01111010B       ;1
-WSEL2   EQU     01110110B       ;2
-
-WBIT    EQU     00000001B       ;write 1
-
 initer	equ	7
-idx	equ	-36       ;-.0703125
+idx	equ	-18       ;-36 = -.0703125
 idy	equ	18        ;.03515625
-ix0	equ	-62*idx
+ix0	equ	62*36
 imx	equ	10*idx		; x move
 sf4	equ	436/4		; sf/4
 
@@ -103,7 +98,7 @@ mandel:
     ld (ti+2),hl
     ld hl,KINTR
     ld (0xf7f1),hl   ;start timer
-    ld hl,$401f  ;scrtop
+    ld hl,$403f  ;scrtop
     push hl
     ld hl,(dy)
     xor a   ;sets C=0
@@ -185,63 +180,24 @@ r5 equ $+1
 ixhmem equ $+1
     ld a,0
     dec a
-    ld (ixhmem),a     
+    ld (ixhmem),a
     jp nz,loc1   ;sob r2,1$
 loc2:
     ld a,(ixhmem)   ;color
-    and 7
+    and 15
 patx equ $+1
     ld hl,pat0
     add a,l
     ld l,a
-    ld c,(hl)
-tcolor1 equ $+1
-    ld a,0
-    rrca
-    rrca
-    or c
+    ld a,(hl)
     ld (tcolor1),a
     ld a,l
-    add a,8
+    add a,16
     ld l,a
-    ld c,(hl)
-tcolor2 equ $+1
-    ld a,0
-    rrca
-    rrca
-    or c
-    ld (tcolor2),a
-    ld a,l
-    add a,8
-    ld l,a
-    ld c,(hl)
-bcolor1 equ $+1
-    ld a,0
-    rrca
-    rrca
-    or c
-    ld (bcolor1),a
-    ld a,l
-    add a,8
-    ld l,a
-    ld c,(hl)
-bcolor2 equ $+1
-    ld a,0
-    rrca
-    rra
-    jp c,.l8
+    ld b,(hl)
+    ;ld (tcolor2),a
 
-    or c
-    ld (bcolor2),a
-    jp loop2
-
-.l8:
-    or c
-    ld (bcolor2),a
     pop de
-    ld a,$3f
-    xor d
-    ld b,a
     ld a,$c0
     xor e
     ld c,a    ;save BC gives an invisible speed gain, and needs more bytes
@@ -249,39 +205,37 @@ bcolor2 equ $+1
          di
          ld (hl),DOSG1
     ld hl,RGBASE3+NCREG
-    ld (hl),WSEL1
-    ld a,$ff
+    ld (hl),b
+    ld a,$3f
+    xor d
+    ld b,a
+rcolor equ $+1
+    ld a,1
     ld (de),a
+    rlca
     ld (bc),a
-    ld (hl),WSEL2
+tcolor1 equ $+1
+    ld (hl),0
+    rrca
+    ld (bc),a
+    rlca
     ld (de),a
-    ld (bc),a
-    ld (hl),WSEL1+WBIT
-    ld a,(tcolor1)
-    ld (de),a
-    ld a,(bcolor1)
-    ld (bc),a
-    ld (hl),WSEL2+WBIT
-    ld a,(tcolor2)
-    ld (de),a
-    ld a,(bcolor2)
-    ld (bc),a
          ld hl,RGBASE3+SYSREG
          ld (hl),ODOSA
          ei
-    ld a,$80
-    ld (bcolor2),a
-    xor a
-    ld (bcolor1),a
-    ld (tcolor2),a
-    ld (tcolor1),a
+    rlca
+    ld (rcolor),a
+    push de
+    jp nc,loop2
+
+    pop de
     ld a,e
     dec de
     push de
-    and $1f
+    and $3f
     jp nz,loop2
 
-    ld de,96
+    ld de,128
     pop hl  ;scrtop
     add hl,de
     push hl
@@ -391,14 +345,6 @@ noq:cp 'T'
     call clscursor
     jp mandel
 
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
-  endif
-
 div0 macro
      local t1,t2
      ex de,hl
@@ -491,18 +437,22 @@ kq   pop hl
      pop af
 KL   jp 0
 
-          ;0,    1,    2,    3,    4,    5,    6,    7
-pat0:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
-          ;B    gB,   rB,   yB,    g,   ry,    r,    y
-pat1:	db 0, 0x40, 0x00, 0x40, 0xC0, 0x40, 0x00, 0xC0
-        db 0, 0x00, 0x40, 0x40, 0x00, 0x00, 0xC0, 0xC0
-          ;B    Bg,   Br,   By,    g,   Bg,    r,    y
-pat0c:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
-
-  if (pat0 and $ff00) != ((pat0+47) and $ff00)
-ERROR ERROR
+ti:     dw 0,0
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+  if (dx and $ff00) != ((mx+2) and $ff00)
+ERROR ERROR2
+  endif
+             ;0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15
+pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
+        db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
+             ;B,  bB,   r,  gB,   g,  rB,  mB,   w,  yB,  yg,   b,   c,  wB,   m,  cB,   y   
+pat1:	db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
+        db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
+                                                              
+  if (pat0 and $ff00) != ((pat0+64) and $ff00)
+ERROR ERROR1
   endif
 
 waitk:
@@ -516,14 +466,20 @@ waitk:
 clscursor:
     ld e,31  ;cls
     ld c,2
+    call BDOS
+    ld de,curpos
+    ld c,9
     jp BDOS
 
 curoff db 27,";$"
 ;curon  db 27,":$"
+;curpos db 27,"Y",33,65,"$"
+curpos db 1,38,57,"$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v1    *",13,10
+        db "*       8 colors + textures      *",13,10
+        db "*   fullscreen (512x256) , v1    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
