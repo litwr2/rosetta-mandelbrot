@@ -18,13 +18,6 @@ ODOSA   EQU     1CH
 
 NCREG   EQU     0BFH  ;color reg
 
-initer	equ	7
-idx	equ	-18       ;-36 = -.0703125
-idy	equ	18        ;.03515625
-ix0	equ	62*36
-imx	equ	10*idx		; x move
-sf4	equ	436/4		; sf/4
-
 org #100
 
 sqrtab macro
@@ -93,9 +86,44 @@ r4l:
 mandel0: 
     pop hl
 mandel:
+    ld hl,(dataindex)
+    ld a,(hl)
+    ld (dx),a
+    inc hl
+    ld a,(hl)
+    ld (dx+1),a
+    inc hl
+    ld a,(hl)
+    ld (dy),a
+    inc hl
+    ld a,(hl)
+    ld (dy+1),a
+    inc hl
+    ld a,(hl)
+    ld (x0),a
+    inc hl
+    ld a,(hl)
+    ld (x0+1),a
+    inc hl
+    ld a,(hl)
+    ld (niter),a
+    inc a
+    inc a
+    ld (hl),a
+    inc hl
+    ld a,low(data+7*12)
+    cp l
+    jp nz,le1
+
+    ld a,high(data+7*12)
+    cp h
+    jp nz,le1
+
+    ld hl,data
+le1 ld (dataindex),hl
     ld hl,0
-    ld (ti),hl
-    ld (ti+2),hl
+    ld (tilo),hl
+    ld (tihi),hl
     ld hl,KINTR
     ld (0xf7f1),hl   ;start timer
     ld hl,$403f  ;scrtop
@@ -112,10 +140,11 @@ mandel:
     ld (r5),hl
 loop0:
 x0 equ $+1
-    ld hl,ix0
+    ld hl,0
     ld (r4),hl
 loop2:
-    ld hl,(dx)
+dx equ $+1
+    ld hl,0
     ex de,hl
     ld hl,(r4)
     add hl,de
@@ -123,7 +152,7 @@ loop2:
     ld d,h
     ld e,l      ;mov	r4, r0
 niter equ $+1
-    ld a,initer
+    ld a,0
     ld (ixhmem),a
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
@@ -249,7 +278,8 @@ lx8:
     ld a,c
     ld (patx),a
 
-    ld hl,(dy)
+dy equ $+1
+    ld hl,0
     ld a,(r5)
     sub l
     ld l,a
@@ -260,56 +290,10 @@ lx8:
     or l
     jp nz,loop0
 
-    ld hl,(mx)
-    ex de,hl
-    ld hl,(x0)
-    add hl,de
-    ld (x0),hl   ;x0 += mx
-    ld hl,niter
-    inc (hl)     ;iter++
-    ld hl,dx
-    push hl
-lx5:
-    pop hl
-    ld a,l
-    cp low(mx)+2
-    jp z,lx2
-
-    ld (dx1p),a
-    ld (dx2p),a
-    inc l
-    inc l
-    push hl
-    ld de,-sf4
-dx1p equ $+1
-    ld hl,(dx)
-    push hl
-    add hl,de
-    sqrtab
-    ld c,(hl)
-    inc l
-    ld b,(hl)
-    ld de,sf4
-    pop hl
-    add hl,de
-    sqrtab
-    ld a,(hl)
-    inc l
-    ld h,(hl)
-    ld l,a
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a
-dx2p equ $+1
-    ld (dx),hl
-    jp lx5
-
-lx2:pop hl
-    ld hl,(KL+1)
+lx2:ld hl,(KL+1)
     ld (0xf7f1),hl   ;stop timer
+    ld hl,iter
+    inc (hl)
     call waitk
     and 0dfh
     cp 'Q'
@@ -319,17 +303,16 @@ lx2:pop hl
 noq:cp 'T'
     jp nz,mandel
 
-    ld a,(niter)
-    sub 7
+    ld a,(iter)
     ld l,a
     ld h,0
     call PR000
     ld e," "
     ld c,2
     call BDOS
-    ld hl,(ti)
+    ld hl,(tilo)
     ex de,hl
-    ld hl,(ti+2)
+    ld hl,(tihi)
     ld bc,50
     call div32x16r
 	PUSH HL
@@ -423,27 +406,22 @@ PR0	ld A,$FF
 KINTR
      push af
      push hl
-     ld hl,(ti)
+tilo equ $+1
+     ld hl,0
      inc hl
-     ld (ti),hl
+     ld (tilo),hl
      ld a,l
      or h
      jp nz,kq
 
-     ld hl,(ti+2)
+tihi equ $+1
+     ld hl,0
      inc hl
-     ld (ti+2),hl
+     ld (tihi),hl
 kq   pop hl
      pop af
 KL   jp 0
 
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
-  endif
              ;0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15
 pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
         db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
@@ -476,16 +454,42 @@ curoff db 27,";$"
 ;curpos db 27,"Y",33,65,"$"
 curpos db 1,38,57,"$"
 
+iter db 0
+data dw -18, 18, 2232
+     db 7   ;1
+     dw -15, 15, 1841
+     db 8   ;2
+     dw -13, 13, 1714
+     db 9   ;3
+     dw -11, 11, 1430
+     db 10  ;4
+     dw  -9, 10, 1200
+     db 11  ;5
+     dw  -9,  8, 1120
+     db 12  ;6
+     dw  -8,  6, 1000
+     db 13  ;7
+     dw  -7,  5,  700
+     db 14  ;8
+     dw  -6,  5,  500
+     db 15  ;9
+     dw  -5,  5,  320
+     db 16  ;10
+     dw  -5,  5,  300
+     db 25  ;11
+     dw  -5,  5,  270
+     db 37  ;12
+dataindex dw data
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*       8 colors + textures      *",13,10
         db "*   fullscreen (512x256) , v1    *",13,10
         db "**********************************",13,10
-        db "The original version was published for",13,10
+        db "This Corvette code was created by Litwr, 2022.",13,10
+        db "It is based on code published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
-        db "This Corvette port was created by",13,10
-        db "Litwr, 2022.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
 sqrbase equ (msg + $16b0 + $ff) and $ff00

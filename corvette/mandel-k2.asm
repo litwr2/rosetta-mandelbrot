@@ -93,8 +93,8 @@ mandel0:
     pop hl
 mandel:
     ld hl,0
-    ld (ti),hl
-    ld (ti+2),hl
+    ld (tilo),hl
+    ld (tihi),hl
     ld hl,KINTR
     ld (0xf7f1),hl   ;start timer
     ld hl,$401f  ;scrtop
@@ -326,9 +326,9 @@ noq:cp 'T'
     ld e," "
     ld c,2
     call BDOS
-    ld hl,(ti)
+    ld hl,(tilo)
     ex de,hl
-    ld hl,(ti+2)
+    ld hl,(tihi)
     ld bc,50
     call div32x16r
 	PUSH HL
@@ -422,21 +422,22 @@ PR0	ld A,$FF
 KINTR
      push af
      push hl
-     ld hl,(ti)
+tilo equ $+1
+     ld hl,0
      inc hl
-     ld (ti),hl
+     ld (tilo),hl
      ld a,l
      or h
      jp nz,kq
 
-     ld hl,(ti+2)
+tihi equ $+1
+     ld hl,0
      inc hl
-     ld (ti+2),hl
+     ld (tihi),hl
 kq   pop hl
      pop af
 KL   jp 0
 
-ti:     dw 0,0
 dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
