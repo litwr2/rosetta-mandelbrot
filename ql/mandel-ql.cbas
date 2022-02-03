@@ -1,15 +1,18 @@
 110 print" **********************************"
 120 print" * Superfast Mandelbrot generator *"
-130 print" *          16 colors, v1         *"
+130 print" *           8 colors, v1         *"
+135 print" *            fullscreen          *"
 140 print" **********************************"
+145 print"This QL code was created by Litwr, 2022."
 150 print"The original version was published for"
+155 print"It is based on code published for"
 160 print"the BK0011 in 2021 by Stanislav Maslovski."
 170 print"This QL port was created by Litwr, 2022."
 180 print"The T-key gives us timings."
 190 print"Use the Q-key to quit."
 200 s=respr(12288)
-210 restore:f=0
-230 read a$:r=len(a$):d=1:print"*";
+210 restore:f=0:l=12
+230 read a$:r=len(a$):d=1:print " ";l;:l=l-1
 240 if d>=r then goto 260
 250 poke(d+f)/2+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 240
 260 f=f+r:if r<>80 then goto 300

@@ -3,15 +3,8 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
 ;
-;128x256 Mandelbrot for the Sinclair Ql (the 68000 code)
+;256x256 (fullscreen) Mandelbrot for the Sinclair Ql (the 68000 code)
 ;pseudo 16 colors = 4 bits per pixel but flashing is almost unusable on the QL :(
-
-initer	= 7
-idx	=	-36       ;-.0703125
-idy	=	18        ;.03515625, 1 = 1/512
-ix0	=	-62*idx
-imx	=	10*idx		; x move
-sf4	=	436/4		; sf/4
 
     basereg SOD,a3
 
@@ -21,10 +14,8 @@ start:
     jsr (a2)
 
     lea.l SOD(pc),a3
-    movea.l a3,a4
-    move.l #idx*65536+idy,(a4)+
-    move.l #imx*65536+ix0,(a4)+
-    move #initer,(a4)
+    lea.l data(a3),a0
+    move.l a0,dataindex(a3)
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
 	clr	d2		;clr r2; operand-index
@@ -55,6 +46,20 @@ mandel0:
 mandel:
     lea.l SOD(pc),a3
 
+    move.l dataindex(a3),a0
+    move (a0)+,dx(a3)
+    move (a0)+,dy(a3)
+    move (a0)+,x0(a3)
+    move (a0),niter(a3)
+    addq #2,(a0)+
+    lea data+2*4*12(a3),a1
+    cmpa.l a1,a0
+    bne .le1
+
+    lea.l data(a3),a0
+.le1:
+    move.l a0,dataindex(a3)
+
     lea.l serve_flag(a3),a0
     moveq.l #$1c,d0   ;MT.LPOLL
     move.w d0,(a0)+
@@ -69,8 +74,8 @@ mandel:
     move #$800,a6
 
     moveq #-2,d6   ;-2=$fe
-    movea.l #$20000+64,a5	;screen top
-    movea.l #$20000+32768-64,a2 ;screen bottom
+    movea.l #$20000+128,a5	;screen top
+    movea.l #$20000+32768-128,a2 ;screen bottom
     lea.l sqr0+$16b0(a3),a4
 	move dy(a3),d5
 	asl #7,d5		; r5 = 128*dy
@@ -121,37 +126,15 @@ loc3:
     move d1,-(a2)
     move #$80,tcolor(a3)
     move a5,d0
-    and.b #$3f,d0
+    and.b #$7f,d0
 	bne	loop2		; if not first word in line
 
-    lea.l 192(a5),a5
-    lea.l -64(a2),a2
+    lea.l 256(a5),a5
 	sub dy(a3),d5          ;sub	@#dya, r5
 	bne loop0
 
-	move mx(a3),d0
-    add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
-
-	; scale the params
-	move #2,d0         ;mov	#3, r0
-	lea.l dx(a3),a1     ;mov	#dxa, r1
-loc4:
-	move (a1),d2        ;mov	(r1), r2		; x
-    move d2,d3
-    add #sf4,d2
-    and.b #$fe,d2
-	move (a4,d2.w),(a1) ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
-    sub #sf4,d3
-    and.b #$fe,d3
-    move (a4,d3.w),d1
-	sub d1,(a1)+          ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
-	dbra d0,loc4          ;sob	r0, 4$
-
-	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
-
     move.l a6_save(a3),a6
     move sr_save(a3),sr
-
     lea.l serve_flag(a3),a0
     moveq.l #$1d,d0   ;MT.RPOLL
     clr.w (a0)+
@@ -203,13 +186,24 @@ updtimer
        rts
 
 SOD:
-dx	dc.w	idx
-dy	dc.w	idy
-mx	dc.w	imx
-x0     dc.w   ix0
-niter  dc.w    initer
+tcolor dc.w $80
 icolor dc.w 0,$1<<6,$2<<6,$3<<6,$00<<6,$01<<6,$02<<6,$03<<6,$200<<6,$201<<6
        dc.w $202<<6,$203<<6,$200<<6,$201<<6,$202<<6,$203<<6
+     ;     dx, dy,   x0, niter
+data
+     dc.w -18, 18, 2232, 7   ;1
+     dc.w -15, 15, 1841, 8   ;2
+     dc.w -13, 13, 1714, 9   ;3
+     dc.w -11, 11, 1430, 10  ;4
+     dc.w  -9, 10, 1200, 11  ;5
+     dc.w  -9,  8, 1120, 12  ;6
+     dc.w  -8,  6, 1000, 13  ;7
+     dc.w  -7,  5,  700, 14  ;8
+     dc.w  -6,  5,  500, 15  ;9
+     dc.w  -5,  5,  320, 16  ;10
+     dc.w  -5,  5,  300, 25  ;11
+     dc.w  -5,  5,  270, 37  ;12
+
 define     dc.w     1               ;One procedure
            dc.w     mandel-*
            dc.b     5,'MANDL'
@@ -217,14 +211,18 @@ define     dc.w     1               ;One procedure
            dc.w     basini-*
            dc.b     5,'TIMER'
            dc.w     0
-tcolor dc.w $80
 serve_flag dc.w     0	    ;Set if server is on
 serve_link dc.l     0       ;Points to server list
 serve_ptr  dc.l     0       ;Points to server code
-timer dc.l 0                ;must be after serve_ptr
+timer dc.l 0   ;@timer@   ;must be after serve_ptr
 sr_save dc.l 0
 a6_save dc.l 0
+dx dc.w 0
+dy dc.w 0
+x0 dc.w 0
+niter dc.w 0
+dataindex dc.l 0
+
 sqr0:
 ;         DCB.B	$16b0,0
 ;sqrbase: DCB.B	$16b0,0
-

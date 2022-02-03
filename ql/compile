@@ -1,8 +1,17 @@
-vasmm68k_mot -m68000 -Fbin -L mandel-ql.lst mandel-ql.asm -o mandel-ql.bin || exit
-gawk '/@timer@/{getline;print "s/@tioff@/"strtonum("0x"substr($1,5,8))"/"}' mandel-ql.lst >z.sed
-sed -f z.sed mandel-ql.cbas >boot
-sed -f z.sed mandel-ql2.cbas >mandel
+#F=mandel-ql-s
+F=mandel-ql
+vasmm68k_mot -m68000 -Fbin -L $F.lst $F.asm -o $F.bin || exit
+if [ $F = mandel-ql ]; then
+   S=22
+   P='/^135/d;/^145/d;/^155/d'
+   sed '/^335/d'  mandel-ql2.cbas > mandel
+else
+   S=34
+   P='/^150/d;/^170/d'
+   cp mandel-ql2.cbas mandel
+fi
+sed $P  mandel-ql.cbas > boot
 gcc bin2basic.c -o bin2basic
-dd if=mandel-ql.bin of=mandel-ql.bin1 bs=1 count=$(ls -l mandel-ql.bin | awk '{print $5-14}')
-bin2basic <mandel-ql.bin1 >>boot
-rm bin2basic z.sed mandel-ql.bin1
+dd if=$F.bin of=$F.bin1 bs=1 count=$(ls -l $F.bin | awk '{print $5-'$S})
+bin2basic <$F.bin1 >>boot
+rm bin2basic $F.bin1
