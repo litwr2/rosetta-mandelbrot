@@ -91,13 +91,7 @@ mandel:
     ld (dx),a
     inc hl
     ld a,(hl)
-    ld (dx+1),a
-    inc hl
-    ld a,(hl)
     ld (dy),a
-    inc hl
-    ld a,(hl)
-    ld (dy+1),a
     inc hl
     ld a,(hl)
     ld (x0),a
@@ -111,11 +105,11 @@ mandel:
     inc a
     ld (hl),a
     inc hl
-    ld a,low(data+7*12)
+    ld a,low(data+5*12)
     cp l
     jp nz,le1
 
-    ld a,high(data+7*12)
+    ld a,high(data+5*12)
     cp h
     jp nz,le1
 
@@ -128,14 +122,12 @@ le1 ld (dataindex),hl
     ld (0xf7f1),hl   ;start timer
     ld hl,$403f  ;scrtop
     push hl
-    ld hl,(dy)
     xor a   ;sets C=0
-    ld a,l
+    ld a,(dy)
     rra    ;C=0
-    ld l,a
-    ld a,h
+    ld h,a
+    ld a,0
     rra
-    ld h,l
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
@@ -144,7 +136,7 @@ x0 equ $+1
     ld (r4),hl
 loop2:
 dx equ $+1
-    ld hl,0
+    ld hl,0ff00h
     ex de,hl
     ld hl,(r4)
     add hl,de
@@ -303,6 +295,33 @@ lx2:ld hl,(KL+1)
 noq:cp 'T'
     jp nz,mandel
 
+    ld de,$4000
+    ld b,16
+    ld hl,RGBASE2+SYSREG
+    di
+    ld (hl),DOSG1
+    ld hl,RGBASE3+NCREG
+    ld (hl),$80
+lt2:ld a,$ff
+    ld c,10
+lt1:ld (de),a
+    inc e
+    dec c
+    jp nz,lt1
+
+    ld a,e
+    add a,54
+    ld e,a
+    ld a,d
+    adc a,c
+    ld d,a
+    dec b
+    jp nz,lt2
+
+    ld hl,RGBASE3+SYSREG
+    ld (hl),ODOSA
+    ei
+
     ld a,(iter)
     ld l,a
     ld h,0
@@ -444,40 +463,48 @@ waitk:
 clscursor:
     ld e,31  ;cls
     ld c,2
-    call BDOS
-    ld de,curpos
-    ld c,9
     jp BDOS
 
 curoff db 27,";$"
 ;curon  db 27,":$"
-;curpos db 27,"Y",33,65,"$"
-curpos db 1,38,57,"$"
+;curpos db 1,33,65,"$"
 
 iter db 0
-data dw -18, 18, 2232   ;dx, dy, x0, niter - dx, dy might be bytes
+data db -18, 18
+     dw 2232   ;dx, dy, x0, niter
      db 7   ;1
-     dw -15, 15, 1841
+     db -15, 15
+     dw 1841
      db 8   ;2
-     dw -13, 13, 1714
+     db -13, 13
+     dw 1714
      db 9   ;3
-     dw -11, 11, 1430
+     db -11, 11
+     dw 1430
      db 10  ;4
-     dw  -9, 10, 1200
+     db -9, 10
+     dw 1200
      db 11  ;5
-     dw  -9,  8, 1120
+     db -9,  8
+     dw 1120
      db 12  ;6
-     dw  -8,  6, 1000
+     db -8,  6
+     dw 1000
      db 13  ;7
-     dw  -7,  5,  700
+     db -7,  5
+     dw 700
      db 14  ;8
-     dw  -6,  5,  500
+     db -6,  5
+     dw 500
      db 15  ;9
-     dw  -5,  5,  320
+     db -5,  5
+     dw 320
      db 16  ;10
-     dw  -5,  5,  300
+     db -5,  5
+     dw 300
      db 25  ;11
-     dw  -5,  5,  270
+     db -5,  5
+     dw 270
      db 37  ;12
 dataindex dw data
 
