@@ -1,7 +1,7 @@
 ;for VASM assembler, Motorola syntax
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
+;The next code was made by litwr in 2022
 ;
 ;256x256 (fullscreen) Mandelbrot for the Sinclair Ql (the 68000 code)
 ;pseudo 16 colors = 4 bits per pixel but flashing is almost unusable on the QL :(

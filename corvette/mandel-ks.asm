@@ -455,7 +455,7 @@ curoff db 27,";$"
 curpos db 1,38,57,"$"
 
 iter db 0
-data dw -18, 18, 2232
+data dw -18, 18, 2232   ;dx, dy, x0, niter - dx, dy might be bytes
      db 7   ;1
      dw -15, 15, 1841
      db 8   ;2
