@@ -1,0 +1,2 @@
+F=${1%%.asm}
+pasmo6 --listing $F.lst $1 $F.com
