@@ -68,7 +68,6 @@ mandel:
     clr.l 8(a0)     ;clear timer
     trap #1
 
-    move sr,sr_save(a3)
     trap #0
     move.l a6,a6_save(a3)
     move #$800,a6
@@ -134,7 +133,8 @@ loc3:
 	bne loop0
 
     move.l a6_save(a3),a6
-    move sr_save(a3),sr
+    andi #$07ff,sr
+
     lea.l serve_flag(a3),a0
     moveq.l #$1d,d0   ;MT.RPOLL
     clr.w (a0)+
@@ -215,7 +215,6 @@ serve_flag dc.w     0	    ;Set if server is on
 serve_link dc.l     0       ;Points to server list
 serve_ptr  dc.l     0       ;Points to server code
 timer dc.l 0   ;@timer@   ;must be after serve_ptr
-sr_save dc.l 0
 a6_save dc.l 0
 dx dc.w 0
 dy dc.w 0

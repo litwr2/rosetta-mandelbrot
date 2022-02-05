@@ -63,7 +63,6 @@ mandel:
     clr.l 8(a0)     ;clear timer
     trap #1
 
-    move sr,sr_save(a3)
     trap #0
     move.l a6,a6_save(a3)
     move #$800,a6
@@ -150,7 +149,7 @@ loc4:
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
 
     move.l a6_save(a3),a6
-    move sr_save(a3),sr
+    andi #$07ff,sr
 
     lea.l serve_flag(a3),a0
     moveq.l #$1d,d0   ;MT.RPOLL
@@ -222,7 +221,6 @@ serve_flag dc.w     0	    ;Set if server is on
 serve_link dc.l     0       ;Points to server list
 serve_ptr  dc.l     0       ;Points to server code
 timer dc.l 0                ;must be after serve_ptr
-sr_save dc.l 0
 a6_save dc.l 0
 sqr0:
 ;         DCB.B	$16b0,0
