@@ -1,6 +1,6 @@
 110 print" **********************************"
 120 print" * Superfast Mandelbrot generator *"
-130 print" *           8 colors, v1         *"
+130 print" *           8 colors, v2         *"
 135 print" *            fullscreen          *"
 140 print" **********************************"
 145 print"This QL code was created by Litwr, 2022."
@@ -14,7 +14,7 @@
 210 restore:f=0:l=12
 230 read a$:r=len(a$):d=1:print " ";l;:l=l-1
 240 if d>=r then goto 260
-250 poke(d+f)/2+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 240
+250 poke int((d+f)/2)+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 240
 260 f=f+r:if r<>80 then goto 300
 270 goto 230
 300 print:call s
