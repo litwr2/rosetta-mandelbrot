@@ -1,23 +1,22 @@
 ;for vasm assembler, oldstyle syntax
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
+;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
+;version 3
 ;
 ;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using "interlacing"
 
 ; text data for 32 lines:
-;    $a000 - $a3e7,  $a400 - a7e7  1000 chars
+;    $a000 - a3e7, $a400 - a7e7  1000 chars
 ;    $1be8 - 1bff, $1fe8 - 1fff    24 chars
 ;    $1800 - 18ff, $1c00 - 1cff   256 chars
 ; graph mc data for 32 lines: A1=$2000, B1=$4000
 ;    A+$0000 - 1f3f  8000 bytes
-;    B+$1f40 - 1fff   192 bytes
-;    B+$0000 - 07ff  2048 bytes
+;    B+$0140 - 11ff  2240 bytes
 ;colors = $800
-;bm1 = $2000/$6000
-;bm2 = $4000/$8000
-;rows: $2020-$21DF ... $3E20-$3F1F  $5F60-$5FFF, $4000-$405F  $40A0-$419F ...
+;bm1 = A/B = $2000/$6000
+;bm2 = A/B = $4000/$8000
 
 BSOUT = $FFD2
 JPRIMM = $FF4F
@@ -56,19 +55,90 @@ color3 = $32  ;red
    ;$ee - border
 
    org $1001
-   byte $b,$10,$a,0,$9e,"4112",0,0,0
+   byte $b,$10,$a,0,$9e
+   byte start/1000+48,start%1000/100+48,start%100/10+48,start%10+48
+   byte 0,0,0
 
-   org $1010
-       JSR JPRIMM
+irqe1  STA .sa      ;@284
+       LDA #$36
+       STA $FF1D    ;310
+       LDA #$CA		;202
+       STA $FF0B
+       LDA #$A2		;0 - hi byte
+       STA $FF0A
+       LDA #<irqe2
+       STA $FFFE
+.sa = * + 1
+       LDA #0
+irqe0  INC $FF09
+       RTI
+
+irqe2  STA .sa      ;@202
+       LDA #$92
+       STA $FF1D
+       LDA #$CE		;206
+       STA $FF0B
+       LDA #<irqe3
+       STA $FFFE
+       LDA #$18     ;$1800
+       STA $FF14
+       INC $FF09
+.bma = * + 1
+       LDA #$10     ;$4000
+       EOR #$30     ;$4000/$8000 toggle
+       STA .bma
+    pha  ;a delay
+    pla
+    pha
+    pla
+    pha
+    pla
+       STA $FF12
+       ;LDA #0
+       STA $FF1A
+       LDA #40
+       STA $FF1B
+.sa = * + 1
+       LDA #0
+       RTI
+
+irqe3  STA .sa    ;@206
+       LDA #$EC
+       STA $FF1D  ;236
+       JSR comm1  
+       INC $FF09
+       LDA #$A0    ;$800
+       STA $FF14
+.bma = * + 1
+       LDA #$8    ;$2000
+       STA $FF12
+       EOR #$10   ;$2000/$6000 toggle
+       STA .bma
+;       LDA $FF15
+;       EOR #$30
+;       STA $FF15
+       inc $a5
+       bne .l2
+
+       inc $a4
+       bne .l2
+
+       inc $a3
+.l2:
+.sa = * + 1
+       LDA #0
+       RTI
+
+start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V2I *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V3I *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
        byte "mASLOVSKI.",13
        byte "tHIS cOMMODORE+4 PORT WAS CREATED BY",13,0
        JSR JPRIMM
-       byte "LITWR, 2021.",13
+       byte "LITWR, 2021-22.",13
        byte "tHE t-KEY GIVES US TIMINGS",0
        JSR getkey
 
@@ -285,9 +355,9 @@ mandel:
     sta .m1hi
     lda #$60
     sta .m2hi
-    lda #$46
+    lda #$48
     sta .m3hi
-    lda #$86
+    lda #$88
     sta .m4hi
     ldy #$f8
     sty alo
@@ -436,6 +506,7 @@ r4hi = * + 1
     lsr
     ora pat2,y
     sta .tcolor2
+.loc9:
     jmp .mloop2
 
 .loc8:
@@ -451,24 +522,36 @@ r4hi = * + 1
     lsr
     ora pat1,y
     ldx alo
+    cpx #$f8
+    bne .loc7
+
+    ldy .m3hi
+    cpy #$40
+    bne .loc7
+
+    ldy #$3e
+    sty .m3hi
+    ldy #$7e
+    sty .m4hi
+.loc7:
 .m1hi = * + 2
 .m1lo = * + 1
     sta $2020,x
 .m3hi = * + 2
 .m3lo = * + 1
-    sta $46e7,x
+    sta $48e7,x
     pla
 .m2hi = * + 2
 .m2lo = * + 1
     sta $6020,x
 .m4hi = * + 2
 .m4lo = * + 1
-    sta $86e7,x
+    sta $88e7,x
     txa
     sec
     sbc #8
     sta alo
-    bcs .loc7
+    bcs .loc9
 
     inc .m1lo
     lda .m1lo
@@ -478,14 +561,6 @@ r4hi = * + 1
     inc .m2lo
     dec .m3lo
     dec .m4lo
-    lda .m3hi
-    cmp #$5f
-    bne .updr5
-
-    lda #$3f
-    sta .m3hi
-    lda #$7f
-    sta .m4hi 
     bne .updr5  ;=jmp
 .loc5:
     lda .m1lo
@@ -507,38 +582,12 @@ r4hi = * + 1
     lda .m3hi
     sbc #1
     sta .m3hi
-    tay
     lda .m4lo
     sbc #$39  ;C=1
     sta .m4lo
     lda .m4hi
     sbc #1
     sta .m4hi
-    cpy #$5e
-    bne .updr5
-
-    lda #$3e
-    sta .m3hi
-    lda #$7e
-    sta .m4hi
-    bne .updr5  ;=jmp
-.loc7:
-    lda .m3hi
-    cmp #$3f
-    bne .loop2t
-
-    lda alo
-    cmp #$98
-    bne .loop2t
-
-    lda #$5f
-    sta .m3hi
-    lda #$9f
-    sta .m4hi
-.loop2t:
-    jmp .mloop2
-.loop0t:
-    jmp .mloop0
 .updr5:
     sec
     lda r5lo
@@ -547,8 +596,10 @@ r4hi = * + 1
     lda r5hi
     sbc dy+1
     sta r5hi    ;sub	@#dya, r5
-	bne .loop0t
-
+	beq .loc10
+.loop0t:
+    jmp .mloop0
+.loc10:
     lda r5lo
     bne .loop0t  ;bgt	loop0
 
@@ -773,75 +824,6 @@ pr000:   ;prints ac:xr < 10000
          sbc d+1
          sta d+2
          bcs .prn
-
-    align 8
-irqe1  STA .sa      ;@284
-       LDA #$36
-       STA $FF1D    ;310
-       LDA #$CA		;202
-       STA $FF0B
-       LDA #$A2		;0 - hi byte
-       STA $FF0A
-       LDA #<irqe2
-       STA $FFFE
-.sa = * + 1
-       LDA #0
-irqe0  INC $FF09
-       RTI
-
-irqe2  STA .sa      ;@202
-       LDA #$92
-       STA $FF1D
-       LDA #$CE		;206
-       STA $FF0B
-       LDA #<irqe3
-       STA $FFFE
-       LDA #$18     ;$1800
-       STA $FF14
-       INC $FF09
-.bma = * + 1
-       LDA #$10     ;$4000
-       EOR #$30     ;$4000/$8000 toggle
-       STA .bma
-    pha  ;a delay
-    pla
-    pha
-    pla
-    pha
-    pla
-    pha
-    pla
-       STA $FF12
-.sa = * + 1
-       LDA #0
-       RTI
-
-irqe3  STA .sa    ;@206
-       LDA #$EC
-       STA $FF1D  ;236
-       JSR comm1  
-       INC $FF09
-       LDA #$A0    ;$800
-       STA $FF14
-.bma = * + 1
-       LDA #$8    ;$2000
-       STA $FF12
-       EOR #$10   ;$2000/$6000 toggle
-       STA .bma
-;       LDA $FF15
-;       EOR #$30
-;       STA $FF15
-       inc $a5
-       bne .l2
-
-       inc $a4
-       bne .l2
-
-       inc $a3
-.l2:
-.sa = * + 1
-       LDA #0
-       RTI
 
 iniirq:LDA #$10
        LDA irqe2.bma
