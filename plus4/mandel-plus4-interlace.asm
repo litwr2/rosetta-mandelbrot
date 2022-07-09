@@ -564,8 +564,8 @@ r4hi = * + 1
     bne .updr5  ;=jmp
 .loc5:
     lda .m1lo
-    clc
-    adc #$38
+    ;clc
+    adc #$38   ;C=0
     sta .m1lo
     lda .m1hi
     adc #1

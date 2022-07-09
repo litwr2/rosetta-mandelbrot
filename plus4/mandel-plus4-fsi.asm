@@ -530,9 +530,8 @@ r4hi = * + 1
     sec
     sbc #8
     sta alo
-    lda .ahi   ;bcs//dec
-    sbc #0
-    sta .ahi
+    bcs *+5
+    dec .ahi
     jmp .mloop2
 .loc7:
     sta (.m1lo),y
@@ -550,7 +549,6 @@ r4hi = * + 1
     sta .ahi
     lda #$38
     sta alo
-.loc12:
     inc .m1lo
     lda .m1lo
     and #7
@@ -562,8 +560,8 @@ r4hi = * + 1
     bne .updr5
 .loc5:
     lda .m1lo
-    clc
-    adc #$38
+    ;clc
+    adc #$38   ;C=0
     sta .m1lo
     lda .m1hi
     adc #1
@@ -600,7 +598,6 @@ r4hi = * + 1
 .loc10:
     lda r5lo
     bne .loop0t  ;bgt	loop0
-
 
     inc	.niter
     sei
