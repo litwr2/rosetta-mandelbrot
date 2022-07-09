@@ -4,7 +4,7 @@
 ;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
-;512x256 (fullscreen) Mandelbrot for the Corvette,
+;256x256 (fullscreen) Mandelbrot for the Corvette,
 ;8 colors (color write mode), simulates 16 colors using textures
 
 BDOS equ 5

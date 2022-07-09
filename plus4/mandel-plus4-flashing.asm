@@ -13,7 +13,7 @@
 ;    $1800 - 18ff, $1c00 - 1cff   256 chars
 ; graph mc data for 32 lines: A1=$2000, B1=$4000
 ;    A+$0000 - 1f3f  8000 bytes
-;    B+$0140 - 11ff  2240 bytes
+;    B+$0140 - 09ff  2240 bytes
 ;colors = $800
 ;bm1 = A/B = $2000/$6000
 ;bm2 = A/B = $4000/$8000
@@ -378,7 +378,7 @@ mandel:
     lda dy
     lsr
     sta r5hi
-    lda dy+1
+    lda #0
     ror
     sta r5lo    ;r5 = 128*dy
 .mloop0:
@@ -608,7 +608,7 @@ r4hi = * + 1
     sbc dy
     sta r5lo
     lda r5hi
-    sbc dy+1
+    sbc #0
     sta r5hi    ;sub	@#dya, r5
 	beq .loc10
 .loop0t:
@@ -753,12 +753,12 @@ r4hi = * + 1
 .mandel
 	jmp	mandel
 
-dx:  	word idx
-dy:	    word idy
-mx:     word imx
-pat1:   byte 0,2*64,0   ,1*64,3*64,1*64,2*64,3*64
-pat2:   byte 0,1*64,2*64,3*64,2*64,1*64,2*64,3*64
-ti:     byte 0,0,0
+dx     word idx
+dy     word idy
+mx     word imx
+pat1   byte 0,2*64,0   ,1*64,3*64,1*64,2*64,3*64
+pat2   byte 0,1*64,2*64,3*64,2*64,1*64,2*64,3*64
+ti     byte 0,0,0
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
