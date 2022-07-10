@@ -3,9 +3,9 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
-;version 4
 ;
 ;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using "interlacing"
+;version 4
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -41,6 +41,10 @@ vy = $de
 vx = $df
 alo = $d5
 a1 = $e0
+
+dx = $e2
+dy = $e4
+mx = $e6
 
 d = $d0    ;..$d3
 divisor = $d4     ;..$d7
@@ -241,11 +245,23 @@ loop2d:LDX #25
 
 finish:LDA #color3
        STA $FF16
+    ldx #0
+    stx dy+1
+    lda #idx
+    sta dx
+    lda #idy
+    sta dy
+    dex
+    stx dx+1
+    lda #<imx
+    sta mx
+    lda #>imx
+    sta mx+1
 
 fillsqr:
-    lda #0
+    inx
+    txa
     tay
-    tax
 .loop:
     sta r0,x
     inx
@@ -332,8 +348,9 @@ sqrloop:
     inc r2+1
 	bne	sqrloop
 mandel:
-         lda #0
-   sta tmp
+    ldx #0
+    stx tmp
+ 
     sei
     STA $FF3F
     LDX #$3B
@@ -739,9 +756,6 @@ r4hi = * + 1
 .mandel
 	jmp	mandel
 
-dx     word idx
-dy     word idy
-mx     word imx
 pat1   byte 0,0,   0,   0,   2*64,1*64,2*64,3*64
 pat2   byte 0,1*64,2*64,3*64,1*64,1*64,2*64,3*64
 ti     byte 0,0,0

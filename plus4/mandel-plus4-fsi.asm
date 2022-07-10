@@ -31,6 +31,9 @@ t = $da
 tmp = $dc
 alo = $d5
 
+dx = $d8
+dy = $d9
+
 d = $d0    ;..$d3
 divisor = $d4     ;..$d7
 dividend = $de	  ;..$e1
@@ -294,8 +297,9 @@ mandel:
 .le1:
     sty dataindex
 
-         lda #0
-   sta tmp
+    lda #0
+    sta tmp
+
     sei
     STA $FF3F
     LDX #$3B
@@ -686,8 +690,6 @@ r4hi = * + 1
 .mandel
 	jmp	mandel
 
-dx     word -1
-dy     byte 0
 pat1   byte 0,0,   0,   0,   2*64,1*64,2*64,3*64
 pat2   byte 0,1*64,2*64,3*64,1*64,1*64,2*64,3*64
 ti     byte 0,0,0
