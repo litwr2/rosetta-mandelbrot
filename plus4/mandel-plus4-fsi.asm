@@ -21,10 +21,6 @@ BSOUT = $FFD2
 JPRIMM = $FF4F
 
 sqrbase = $BF00 ;must be $xx00
-initer	= 7
-idx	=	-36       ;-.0703125
-idy	=	18        ;.03515625, 1 = 1/512
-ix0	=	-62*idx
 
 r0 = $d0
 r1 = $d2
@@ -344,10 +340,10 @@ mandel:
     sta r5lo    ;r5 = 128*dy
 .mloop0:
 .x0lo = * + 1
-    lda #<ix0
+    lda #0
     sta r4lo
 .x0hi = * + 1
-    lda #>ix0
+    lda #0
     sta r4hi  ;mov	#x0, r4
 .mloop2:
     clc  
@@ -360,7 +356,7 @@ mandel:
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
 .niter = * + 1
-    lda #initer   
+    lda #0
     sta r2        ;mov	#niter, r2
 	lda r5lo
     sta r1
@@ -560,7 +556,7 @@ r4hi = * + 1
 .loc5:
     lda .m1lo
     ;clc
-    adc #$38   ;C=0
+    adc #$38  ;C=0
     sta .m1lo
     lda .m1hi
     adc #1
@@ -689,11 +685,11 @@ r4hi = * + 1
 .mandel
 	jmp	mandel
 
-dx:  	word idx
-dy:	    byte idy
+dx     word -1
+dy     byte 0
 pat1   byte 0,0,   0,   0,   2*64,1*64,2*64,3*64
 pat2   byte 0,1*64,2*64,3*64,1*64,1*64,2*64,3*64
-ti:     byte 0,0,0
+ti     byte 0,0,0
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
@@ -790,7 +786,8 @@ comm1: LDA #<irqe1
 
 dataentries = 12
 counter byte 0
-data  ;     dx, dy,   x0, niter
+data  ;     dx, dy, x0, niter
+      ; to convert to real values divide by 512
      byte -18, 18
      word 1400  ;2232
      byte 7   ;1
