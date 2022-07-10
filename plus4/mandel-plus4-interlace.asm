@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
-;version 3
+;version 4
 ;
 ;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using "interlacing"
 
@@ -131,7 +131,7 @@ irqe3  STA .sa    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V3I *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V4I *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
@@ -381,7 +381,7 @@ mandel:
     sta r4lo
     sta r0
     lda r4hi
-    adc dx+1
+    adc #$ff   ;dx+1
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
 .niter = * + 1

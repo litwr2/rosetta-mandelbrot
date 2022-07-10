@@ -5,6 +5,7 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using quasi-interlacing
+;version 2
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -118,7 +119,7 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*   gENERATOR V1 160x256 iNTERLACED  *",13
+       byte "*   gENERATOR V2 160x256 iNTERLACED  *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
        byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
@@ -352,7 +353,7 @@ mandel:
     sta r4lo
     sta r0
     lda r4hi
-    adc dx+1
+    adc #$ff    ;dx+1
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
 .niter = * + 1
@@ -585,7 +586,7 @@ r4hi = * + 1
     sbc dy
     sta r5lo
     lda r5hi
-    sbc dy+1
+    sbc #0     ;dy+1
     sta r5hi    ;sub	@#dya, r5
 	beq .loc10
 .loop0t:

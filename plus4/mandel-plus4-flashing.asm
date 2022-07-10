@@ -5,7 +5,7 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using flashing
-;version 3
+;version 4
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -145,7 +145,7 @@ irqe3  STA .sa    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V3F *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V4F *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
@@ -395,7 +395,7 @@ mandel:
     sta r4lo
     sta r0
     lda r4hi
-    adc dx+1
+    adc #$ff   ;dx+1
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
 .niter = * + 1
