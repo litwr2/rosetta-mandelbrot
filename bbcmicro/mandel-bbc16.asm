@@ -29,6 +29,10 @@ r3 = $76
 t = $7a
 tmp = $7c
 
+dx = $7e
+dy = $80
+mx = $82
+
 d = $74    ;..$77
 divisor = $74     ;..$77
 dividend = $78	  ;..$7b
@@ -42,10 +46,24 @@ quotient = dividend ;save memory by reusing divident to store the quotient
 
    org $e00
    jsr init
+
+    ldx #0
+    stx dy+1
+    lda #idx
+    sta dx
+    lda #idy
+    sta dy
+    dex
+    stx dx+1
+    lda #<imx
+    sta mx
+    lda #>imx
+    sta mx+1
+
 fillsqr:
-   lda #0
+    inx
+    txa
     tay
-    tax
 .loop:
     sta r0,x
     inx
@@ -133,7 +151,7 @@ sqrloop:
 	bne	sqrloop
 mandel:
          lda #0
-   sta tmp
+         sta tmp
          sta ti
          sta ti+1
          sta ti+2
@@ -150,7 +168,7 @@ mandel:
     lda dy
     lsr
     sta r5hi
-    lda dy+1
+    lda #0
     ror
     sta r5lo    ;r5 = 128*dy
 .mloop0:
@@ -167,7 +185,7 @@ mandel:
     sta r4lo
     sta r0
     lda r4hi
-    adc dx+1
+    adc #$ff
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
 .niter = * + 1
@@ -333,7 +351,7 @@ r4hi = * + 1
     sbc dy
     sta r5lo
     lda r5hi
-    sbc dy+1
+    sbc #0
     sta r5hi    ;sub	@#dya, r5
 	beq .loc7
 .loop0t:
@@ -465,11 +483,7 @@ r4hi = * + 1
     jsr OSRDCH
     jmp mandel
 
-dx:  	word idx
-dy:	    word idy
-mx:     word imx
-
-pat:    byte   0, $8a, $88, $82, $aa, $20, 8, 2 
+pat     byte   0, $8a, $88, $82, $aa, $20, 8, 2 
         byte $a0, $a,  $22, $28, $a2, $a8, $2a, $80
 
 ti byte 0,0,0,0,0
@@ -546,13 +560,13 @@ div32x16w        ;dividend+2 < divisor, divisor < $8000
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*         16 colors, v2          *",13
+        byte "*         16 colors, v3          *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13
         byte "Maslovski.",13
         byte "This BBC Micro port was created by",13
-        byte "Litwr, 2021.",13
+        byte "Litwr, 2021-22.",13
         byte "The T-key gives us timings.",13
         byte "Use the Q-key to quit",0
 
