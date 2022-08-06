@@ -4,8 +4,7 @@
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using "interlacing"
-;version 4
+;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using "interlacing"
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -21,6 +20,7 @@
 BSOUT = $FFD2
 JPRIMM = $FF4F
 
+colors = 8   ;2/4/8/16
 sqrbase = $BF00 ;must be $xx00
 initer	= 7
 idx	=	-36       ;-.0703125
@@ -135,7 +135,7 @@ irqe3  STA .sa    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V4I *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V5I *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
@@ -503,7 +503,7 @@ r4hi = * + 1
     jmp .loc1       ;sob	r2, 1$
 .loc2:
     lda r2
-    and #7   ;color index
+    and #colors-1   ;color index
     tay
 .xtoggle = * + 1
     ldx #4
@@ -756,8 +756,22 @@ r4hi = * + 1
 .mandel
 	jmp	mandel
 
-pat1   byte 0,0,   0,   0,   2*64,1*64,2*64,3*64
-pat2   byte 0,1*64,2*64,3*64,1*64,1*64,2*64,3*64
+   if colors == 2
+pat1   byte 0,1*64
+pat2   byte 0,1*64
+   endif
+   if colors == 4
+pat1   byte 0,1*64,2*64,3*64
+pat2   byte 0,1*64,2*64,3*64
+   endif
+   if colors == 8
+pat1   byte 0,1*64,2*64,3*64,1*64,2*64,0*64,3*64
+pat2   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
+   endif
+   if colors == 16
+pat1   byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
+pat2   byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
+   endif
 ti     byte 0,0,0
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
@@ -841,7 +855,7 @@ pr000:   ;prints ac:xr < 10000
 
 iniirq:LDA #$10
        LDA irqe2.bma
-       LDA #8
+       LDA #$18
        LDA irqe3.bma
        LDA #>irqe1
        STA $FFFF

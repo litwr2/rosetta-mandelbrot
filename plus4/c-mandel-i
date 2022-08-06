@@ -1,0 +1,22 @@
+#for interactive versions
+A=${1%%.asm}
+C=${A/ifsi/ifsf}
+B=mandel-i.inc
+echo ' byte 0' >$B
+compile $A.asm
+gawk '/@start@/{print "s/@start@/"strtonum("0x"substr($6,9,4))"/"}
+/@x0lo@/{print "s/@x0lo@/"strtonum("0x"substr($5,9,4))+1"/"}
+/@x0hi@/{print "s/@x0hi@/"strtonum("0x"substr($5,9,4))+1"/"}
+/@color@/{print "s/@colidx@/"strtonum("0x"substr($6,9,4))+1"/"}
+/@coltab@/{print "s/@coltab@/"strtonum("0x"substr($6,9,4))-4"/"}
+/@n@/{print "s/@n@/"strtonum("0x"substr($5,9,4))+1"/"}' $A.lst >z.sed
+if [ $A != $C ]; then
+   echo 's! {pur}.*{blk}  !{pur}2/4/8/16 Colors 160X256 Interlaced{blk}!' >>z.sed
+fi
+sed -f z.sed $C.cbas >$A.bas
+petcat -w3 $A.bas >$A.prg
+dd if=$A.prg of=$A.bin bs=1 skip=2
+od -v -A n -t u1 $A.bin |awk '{sub(" +","");gsub(" +",",");print " byte",$0}' >$B
+compile $A.asm
+rm z.sed $A.bin $A.bas $B
+

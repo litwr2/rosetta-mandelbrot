@@ -4,7 +4,8 @@
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
 ;
-;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using quasi-interlacing
+;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing
+;interactive version
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -13,15 +14,16 @@
 ; graph mc data for 32 lines: A1=$2000, B1=$4000
 ;    A+$0000 - 1f3f  8000 bytes
 ;    B+$0140 - 9ff  2240 bytes
-;colors = $800
+;colors = $a000/$a800
 ;bm1 = A/B = $2000/$6000
 ;bm2 = A/B = $4000/$8000
 
 BSOUT = $FFD2
 JPRIMM = $FF4F
 
-colors = 8   ;2/4/8/16
-sqrbase = $BF00 ;must be $xx00
+sqrbase = $C800 ;must be $xx00
+colorpat1 = $1f60
+colorpat2 = $1f70
 
 r0 = $d0
 r1 = $d2
@@ -46,92 +48,18 @@ color2 = $35  ;green
 color3 = $32  ;red
    ;$ee - border
 
-   org $1001
-   byte $b,$10,$a,0,$9e
-   byte start/1000+48,start%1000/100+48,start%100/10+48,start%10+48
-   byte 0,0,0
+       org $1001
+       include mandel-i.inc
 
-irqe1  STA .sa      ;@284
-       LDA #$36
-       STA $FF1D    ;310
-       LDA #$CA		;202
-       STA $FF0B
-       LDA #$A2		;0 - hi byte
-       STA $FF0A
-       LDA #<irqe2
-       STA $FFFE
-.sa = * + 1
-       LDA #0
-irqe0  INC $FF09
-       RTI
-
-irqe2  STA .sa      ;@202
-       LDA #$92
-       STA $FF1D
-       LDA #$CE		;206
-       STA $FF0B
-       LDA #<irqe3
-       STA $FFFE
-       LDA #$18     ;$1800
-       STA $FF14
-       INC $FF09
-.bma = * + 1
-       LDA #$10     ;$4000
-       EOR #$30     ;$4000/$8000 toggle
-       STA .bma
-    pha  ;a delay
-    pla
-    pha
-    pla
-    pha
-    pla
-       STA $FF12
-       ;LDA #0
-       STA $FF1A
-       LDA #40
-       STA $FF1B
-.sa = * + 1
-       LDA #0
-       RTI
-
-irqe3  STA .sa    ;@206
-       LDA #$EC
-       STA $FF1D  ;236
-       JSR comm1  
-       INC $FF09
-       LDA #$A0    ;$800
-       STA $FF14
-.bma = * + 1
-       LDA #8    ;$2000
-       STA $FF12
-       EOR #$10   ;$2000/$6000 toggle
-       STA .bma
-       inc $a5
-       bne .l2
-
-       inc $a4
-       bne .l2
-
-       inc $a3
-.l2:
-.sa = * + 1
-       LDA #0
-       RTI
-
-start: JSR JPRIMM
-       byte 9,14
-       byte "**************************************",13
-       byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*   gENERATOR V3 160x256 iNTERLACED  *",13
-       byte "**************************************",13
-       byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
-       byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
-       JSR JPRIMM
-       byte "THE bk0011 IN 2021 BY sTANISLAV",13
-       byte "mASLOVSKI.",13
-       byte "tHE t-KEY GIVES US TIMINGS",0
-       JSR getkey
-
+       org $13f5
+start: lda #$a0    ;@start@
+       sta loopi2+2
+       lda #$a8
+       sta loopi2.t+2
+       lda #$a4
+       sta loopi3+2
+       lda #$ac
+       sta loopi3.t+2
        LDA #$55
        LDY #0
        LDX #$20
@@ -141,13 +69,13 @@ loopi: STA $2000,Y
        BNE loopi
 
        INX
-       CPX #$C0
+       CPX #$a0
        BNE loopk
 
        LDA #(color2&$f0)|(color1&$f0)>>4    ;lum
        LDX #4
 loopi2:STA $a000,Y
-.t:    STA $1800,Y
+.t:    STA $a800,Y
        INY
        BNE loopi2
 
@@ -159,7 +87,7 @@ loopi2:STA $a000,Y
        LDA #(color2&$f)|(color1&$f)<<4 ;color
        LDX #4
 loopi3:STA $a400,Y
-.t:    STA $1C00,Y
+.t:    STA $ac00,Y
        INY
        BNE loopi3
 
@@ -271,32 +199,6 @@ mandel:
 .m4hi = $e1
 .m4lo = $e0
 
-    ldy dataindex
-    lda data,y
-    sta dx
-    iny
-    lda data,y
-    sta dy
-    iny
-    lda data,y
-    sta .x0lo
-    iny
-    lda data,y
-    sta .x0hi
-    iny
-    lda data,y
-    sta .niter
-    clc
-    adc #2
-    sta data,y
-    iny
-    cpy #5*dataentries
-    bne .le1
-
-    ldy #0
-.le1:
-    sty dataindex
-
     lda #0
     sta tmp
 
@@ -345,10 +247,10 @@ mandel:
     sta r5lo    ;r5 = 128*dy
 .mloop0:
 .x0lo = * + 1
-    lda #0
+    lda #0      ;@x0lo@
     sta r4lo
 .x0hi = * + 1
-    lda #0
+    lda #0      ;@x0hi@
     sta r4hi  ;mov	#x0, r4
 .mloop2:
     clc  
@@ -361,7 +263,7 @@ mandel:
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
 .niter = * + 1
-    lda #0
+    lda #0        ;@n@
     sta r2        ;mov	#niter, r2
 	lda r5lo
     sta r1
@@ -462,7 +364,7 @@ r4hi = * + 1
     jmp .loc1       ;sob	r2, 1$
 .loc2:
     lda r2
-    and #colors-1   ;color index
+    and #0   ;@color@ index
     tay
 .xtoggle = * + 1
     ldx #4
@@ -474,13 +376,13 @@ r4hi = * + 1
     lda #0
     lsr
     lsr
-    ora pat1,y
+    ora colorpat1,y
     sta .tcolor1
 .tcolor2 = * + 1
     lda #0
     lsr
     lsr
-    ora pat2,y
+    ora colorpat2,y
     sta .tcolor2
 .loc9:
     jmp .mloop2
@@ -490,12 +392,12 @@ r4hi = * + 1
     lda .tcolor2
     lsr
     lsr
-    ora pat2,y
+    ora colorpat2,y
     pha
     lda .tcolor1
     lsr
     lsr
-    ora pat1,y
+    ora colorpat1,y
     ldy alo
 .ahi = * + 1
     ldx #0
@@ -600,8 +502,8 @@ r4hi = * + 1
     bne .loop0t  ;bgt	loop0
 
     inc	.niter
-    sei
     sec
+    sei
     lda $a5
     sbc ti
     sta ti
@@ -612,14 +514,11 @@ r4hi = * + 1
     sbc ti+2
     sta ti+2
     cli
-    inc counter
     jsr getkey
-    cpx #$c0  ;T-key?
-    beq *+5
-    jmp .mandel
-
-    sei
+    ;sei
     sta $ff3e
+    lda #$a2
+    sta $ff0a
     lda #8
     sta $ff14
     STA $FF07
@@ -629,14 +528,9 @@ r4hi = * + 1
     STA $FF06
     LDA #$C4
     STA $FF12
-    cli
-    lda #147    ;clear screen
-    jsr BSOUT
-    ldx counter
-    lda #0
-    jsr pr000
-         lda #" "
-         jsr BSOUT
+    ;cli
+    jsr JPRIMM
+    byte "tIME = ",0
     lda ti
          sta dividend
          lda ti+1
@@ -678,34 +572,29 @@ r4hi = * + 1
          lda remainder+1
          ;ldx remainder
          jsr pr000
+    jsr JPRIMM
+    byte "S",13,13,0
+
     ldy #0
     ldx #0
 .delay
     inx
     bne .delay
+
     iny
     bne .delay
 
-    jsr getkey
-.mandel
-	jmp	mandel
+    sty $ef   ;clear kbd buffer
+    rts
 
-   if colors == 2
-pat1   byte 0,1*64
-pat2   byte 0,1*64
-   endif
-   if colors == 4
-pat1   byte 0,1*64,2*64,3*64
-pat2   byte 0,1*64,2*64,3*64
-   endif
-   if colors == 8
-pat1   byte 0,1*64,2*64,3*64,1*64,2*64,0*64,3*64
-pat2   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
-   endif
-   if colors == 16
-pat1   byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
-pat2   byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
-   endif
+pat1_2   byte 0,2*64   ;@coltab@
+pat2_2   byte 0,2*64
+pat1_4   byte 0,1*64,2*64,3*64
+pat2_4   byte 0,1*64,2*64,3*64
+pat1_8   byte 0,1*64,2*64,3*64,1*64,2*64,0*64,3*64
+pat2_8   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
+pat1_16  byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
+pat2_16  byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
 ti     byte 0,0,0
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
@@ -787,7 +676,9 @@ pr000:   ;prints ac:xr < 10000
          sta d+2
          bcs .prn
 
-iniirq:LDA #$10
+iniirq:LDA #$F8
+       STA irqe3.cnt
+       LDA #$20
        LDA irqe2.bma
        LDA #$18
        LDA irqe3.bma
@@ -801,44 +692,89 @@ comm1: LDA #<irqe1
        STA $FF0A
        RTS
 
-dataentries = 12
-counter byte 0
-data  ;     dx, dy, x0, niter
-      ; to convert to real values divide by 512
-     byte -18, 18
-     word 1400  ;2232
-     byte 7   ;1
-     byte -15, 15
-     word 1100  ;1841
-     byte 8   ;2
-     byte -13, 13
-     word 1040  ;1714
-     byte 9   ;3
-     byte -11, 11
-     word 680
-     byte 10  ;4
-     byte -9, 10
-     word 400
-     byte 11  ;5
-     byte  -9,  8
-     word 400
-     byte 12  ;6
-     byte -8,  6
-     word 270
-     byte 13  ;7
-     byte -7,  5
-     word 220
-     byte 14  ;8
-     byte  -6,  5
-     word 0
-     byte 15  ;9
-     byte  -5,  5
-     word 0
-     byte 16  ;10
-     byte  -5,  5
-     word 0
-     byte 25  ;11
-     byte -8,  5
-     word 260
-     byte 37  ;12
-dataindex byte 0
+irqe1  STA .sa      ;@284
+       LDA #$36
+       STA $FF1D    ;310
+       LDA #$CA		;202
+       STA $FF0B
+       LDA #$A2		;0 - hi byte
+       STA $FF0A
+       LDA #<irqe2
+       STA $FFFE
+.sa = * + 1
+       LDA #0
+irqe0  INC $FF09
+       RTI
+
+irqe2  STA .sa      ;@202
+       LDA #$92
+       STA $FF1D
+       LDA #$CE		;206
+       STA $FF0B
+       LDA #<irqe3
+       STA $FFFE
+       LDA #$A8     ;$A800
+       STA $FF14
+       INC $FF09
+
+    pha  ;a delay
+    pla
+    pha
+    pla
+    pha
+    pla
+    nop
+    nop
+
+.bma = * + 1
+       LDA #$20     ;$4000
+       STA $FF12
+       ;LDA #0
+       STA $FF1A
+       LDA #40
+       STA $FF1B
+.sa = * + 1
+       LDA #0
+       RTI
+
+irqe3  STA .sa    ;@206
+       LDA #$EC
+       STA $FF1D  ;236
+       JSR comm1  
+       INC $FF09
+       LDA #$A0    ;$A000
+       STA $FF14
+.cnt = * + 1
+    LDA #$f8
+    CLC
+    ADC #$8
+    STA .cnt
+    BNE .l1
+
+       LDA irqe2.bma
+       EOR #$30     ;$4000/$8000 toggle
+       STA irqe2.bma
+       LDA .bma
+       EOR #$10   ;$2000/$6000 toggle
+       STA .bma
+       ;LDA $FF15
+       ;EOR #$30
+       ;STA $FF15
+.l1:
+.bma = * + 1
+       LDA #$18    ;$2000
+       STA $FF12
+       inc $a5
+       bne .l2
+
+       inc $a4
+       bne .l2
+
+       inc $a3
+.l2:
+.sa = * + 1
+       LDA #0
+       RTI
+
+  assert *&0xff00==irqe1&0xff00, alignment error
+

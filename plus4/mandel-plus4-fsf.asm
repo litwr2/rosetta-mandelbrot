@@ -4,8 +4,7 @@
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
 ;
-;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8 colors using flashing
-;version 2
+;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -21,6 +20,7 @@
 BSOUT = $FFD2
 JPRIMM = $FF4F
 
+colors = 8   ;2/4/8/16
 sqrbase = $BF00 ;must be $xx00
 
 r0 = $d0
@@ -139,7 +139,7 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*    gENERATOR V2 160x256 fLASHED    *",13
+       byte "*    gENERATOR V3 160x256 fLASHED    *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
        byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
@@ -479,7 +479,7 @@ r4hi = * + 1
     jmp .loc1       ;sob	r2, 1$
 .loc2:
     lda r2
-    and #7   ;color index
+    and #colors-1   ;color index
     tay
 .xtoggle = * + 1
     ldx #4
@@ -707,8 +707,22 @@ r4hi = * + 1
 .mandel
 	jmp	mandel
 
-pat1   byte 0,2*64,0   ,1*64,3*64,1*64,2*64,3*64
-pat2   byte 0,1*64,2*64,3*64,2*64,1*64,2*64,3*64
+   if colors == 2
+pat1   byte 0,1*64
+pat2   byte 0,1*64
+   endif
+   if colors == 4
+pat1   byte 0,1*64,2*64,3*64
+pat2   byte 0,1*64,2*64,3*64
+   endif
+   if colors == 8
+pat1   byte 0,1*64,2*64,3*64,1*64,2*64,0*64,3*64
+pat2   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
+   endif
+   if colors == 16
+pat1   byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
+pat2   byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
+   endif
 ti     byte 0,0,0
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
