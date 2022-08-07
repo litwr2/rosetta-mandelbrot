@@ -8,16 +8,18 @@
 50 print"the BK0011 in 2021 by Stanislav Maslovski. The visible Mandelbrot set is in area ";
 60 print"{grn}X{blk} in {grn}[-2, 0.47]{blk} and {grn}Y{blk} in {grn}[-1.12, 1.12]{blk}"
 70 xi=-2:xa=.5:y=1.3:n=16:c=16
-100 print"Enter min x ("xi")";:inputxi:ifabs(xi)>9thengosub200:goto100
-110 print"Enter max x ("xa")";:inputxa:ifxi>=xaorxa>9thengosub200:goto110
-120 print"Enter max y ("y")";:inputy:ify<.25ory>9thengosub200:goto120
-130 i=xa*512:ifi<0theni=65536+i
-140 print"Enter number of iterations ("n")";:inputn:ifn<=0orn>255thengosub200:goto140
-150 poke217,4*y:poke216,256-(xa-xi)*16/5:poke@x0lo@,iand255:poke@x0hi@,int(i/256):poke@n@,n
-160 print"Number of colors ("c")";:inputc:ifc<>2andc<>4andc<>8andc<>16thengosub200:goto160
-165 print"0-interlacing, 1-flashing ("f")";:inputf:iff<>0andf<>1thengosub200:goto165
+80 print"min x ("xi")";:inputxi:ifabs(xi)>9thengosub200:goto80
+90 print"max x ("xa")";:inputxa:ifxi>=xaorxa>9thengosub200:goto90
+100 dx=(xi-xa)*16/5:i=xa*512:ifi<0theni=65536+i
+110 xa=int(i)/512:xi=xa+int(dx)*160/512:print"{grn}min x ="xi"{left}, max x ="xa
+120 print"{blk}max y ("y")";:inputy:ify<.25ory>9thengosub200:goto120
+130 y=int(4*y)/4:print"{grn}max y ="y
+140 print"{blk}number of iterations ("n")";:inputn:ifn<=0orn>255thengosub200:goto140
+150 poke217,4*y:poke216,256+dx:poke@x0lo@,iand255:poke@x0hi@,int(i/256):poke@n@,n
+160 print"number of colors ("c")";:inputc:ifc<>2andc<>4andc<>8andc<>16thengosub200:goto160
+165 ifc>5thenprint"0-interlacing, 1-flashing ("f")";:inputf:iff<>0andf<>1thengosub200:goto165
 170 poke@colidx@,c-1:a=@coltab@+2*c:poke@flash@,f
 180 fori=0toc-1:poke8032+i,peek(a+i):poke8048+i,peek(a+i+c):next
-190 sys@start@:goto100
+190 u=u+1:printu" time=";:sys@start@:goto80
 200 printchr$(145)chr$(27)"d";:return
 

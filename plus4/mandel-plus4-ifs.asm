@@ -51,7 +51,7 @@ color3 = $32  ;red
        org $1001
        include mandel-i.inc
 
-       org $143d
+       org $149d
 start: lda #$a0    ;@start@
        sta loopi2+2
        lda #$a8
@@ -529,8 +529,6 @@ r4hi = * + 1
     LDA #$C4
     STA $FF12
     ;cli
-    jsr JPRIMM
-    byte "tIME = ",0
     lda ti
          sta dividend
          lda ti+1
@@ -597,51 +595,6 @@ pat1_16  byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64
 pat2_16  byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
 ti     byte 0,0,0
 flash_st byte 1   ;@flash@
-
-div32x16w:        ;dividend+2 < divisor, divisor < $8000
-        ;;lda dividend+3
-        ldy #16
-.l3     asl dividend
-        rol dividend+1
-        rol dividend+2
-	    rol
-        ;bcs .l2   ;for divisor>$7fff
-
-        cmp divisor+1
-        bcc .l1
-        bne .l2
-
-        ldx dividend+2
-        cpx divisor
-        bcc .l1
-
-.l2:    tax
-        lda dividend+2
-        sbc divisor
-        sta dividend+2
-        txa
-        sbc divisor+1
-	    inc quotient
-.l1:    dey
-        bne .l3
-
-        sta remainder+1
-        lda dividend+2
-        sta remainder
-        ;lda #0
-        ;sta dividend+2
-	;sta dividend+3
-	rts
-
-getkey:
-   ldx #$7f
-.waitkey:
-   stx $fd30
-   stx $ff08
-   ldx $ff08
-   inx
-   beq .waitkey
-   rts
 
 irqe1  pha      ;@284
        LDA #$36
@@ -736,6 +689,51 @@ irqe3  PHA    ;@206
        RTI
 
   assert *&0xff00==irqe1&0xff00, alignment error
+
+div32x16w:        ;dividend+2 < divisor, divisor < $8000
+        ;;lda dividend+3
+        ldy #16
+.l3     asl dividend
+        rol dividend+1
+        rol dividend+2
+	    rol
+        ;bcs .l2   ;for divisor>$7fff
+
+        cmp divisor+1
+        bcc .l1
+        bne .l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc .l1
+
+.l2:    tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+	    inc quotient
+.l1:    dey
+        bne .l3
+
+        sta remainder+1
+        lda dividend+2
+        sta remainder
+        ;lda #0
+        ;sta dividend+2
+	;sta dividend+3
+	rts
+
+getkey:
+   ldx #$7f
+.waitkey:
+   stx $fd30
+   stx $ff08
+   ldx $ff08
+   inx
+   beq .waitkey
+   rts
 
 pr000:   ;prints ac:xr < 10000
          sta d+2
