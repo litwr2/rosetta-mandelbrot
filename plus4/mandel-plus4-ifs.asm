@@ -51,7 +51,7 @@ color3 = $32  ;red
        org $1001
        include mandel-i.inc
 
-       org $13f5
+       org $143d
 start: lda #$a0    ;@start@
        sta loopi2+2
        lda #$a8
@@ -596,6 +596,7 @@ pat2_8   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
 pat1_16  byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
 pat2_16  byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
 ti     byte 0,0,0
+flash_st byte 1   ;@flash@
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
@@ -642,6 +643,100 @@ getkey:
    beq .waitkey
    rts
 
+irqe1  pha      ;@284
+       LDA #$36
+       STA $FF1D    ;310
+       LDA #$CA		;202
+       STA $FF0B
+       LDA #$A2		;0 - hi byte
+       STA $FF0A
+       LDA #<irqe2
+       STA $FFFE
+       pla
+irqe0  INC $FF09
+       RTI
+
+irqe2  pha          ;@202
+       LDA #$92
+       STA $FF1D
+       LDA #$CE		;206
+       STA $FF0B
+       LDA #<irqe3
+       STA $FFFE
+       LDA #$A8     ;$A800
+       STA $FF14
+       INC $FF09
+
+       stx .sx+1
+.bma = * + 1
+       LDA #$20
+       ldx flash_st
+       beq .l1
+
+       nop
+       bne .sx
+.l1:
+       EOR #$30     ;$4000/$8000 toggle
+       STA .bma
+.sx:   ldx #0    
+       pha  ;a delay
+       pla
+       nop
+       nop
+
+       STA $FF12
+       ;LDA #0
+       STA $FF1A
+       LDA #40
+       STA $FF1B
+       PLA
+       RTI
+
+irqe3  PHA    ;@206
+       LDA #$EC
+       STA $FF1D  ;236
+       JSR comm1  
+       INC $FF09
+       LDA #$A0    ;$A000
+       STA $FF14
+       lda flash_st
+       php
+       beq .l1
+.cnt = * + 1
+    LDA #$f8
+    CLC
+    ADC #$8
+    STA .cnt
+    BNE .l1
+
+       LDA irqe2.bma
+       EOR #$30     ;$4000/$8000 toggle
+       STA irqe2.bma
+       LDA .bma
+       EOR #$10   ;$2000/$6000 toggle
+       STA .bma
+.l1:
+.bma = * + 1
+       LDA #$18    ;$2000
+       STA $FF12
+       plp
+       bne .l3
+
+       EOR #$10   ;$2000/$6000 toggle
+       STA .bma
+.l3:
+       inc $a5
+       bne .l2
+
+       inc $a4
+       bne .l2
+
+       inc $a3
+.l2:   PLA
+       RTI
+
+  assert *&0xff00==irqe1&0xff00, alignment error
+
 pr000:   ;prints ac:xr < 10000
          sta d+2
          lda #100
@@ -676,12 +771,19 @@ pr000:   ;prints ac:xr < 10000
          sta d+2
          bcs .prn
 
-iniirq:LDA #$F8
+iniirq:lda flash_st
+       beq .l1
+
+       LDA #$F8
        STA irqe3.cnt
+       LDX #$18
        LDA #$20
-       LDA irqe2.bma
-       LDA #$18
-       LDA irqe3.bma
+       bne .l2
+.l1:
+       LDA #$10
+       LDX #$8
+.l2:   STA irqe2.bma
+       STX irqe3.bma
        LDA #>irqe1
        STA $FFFF
 comm1: LDA #<irqe1
@@ -691,90 +793,4 @@ comm1: LDA #<irqe1
        LDA #$A3		;1 - hi byte, raster irq only
        STA $FF0A
        RTS
-
-irqe1  STA .sa      ;@284
-       LDA #$36
-       STA $FF1D    ;310
-       LDA #$CA		;202
-       STA $FF0B
-       LDA #$A2		;0 - hi byte
-       STA $FF0A
-       LDA #<irqe2
-       STA $FFFE
-.sa = * + 1
-       LDA #0
-irqe0  INC $FF09
-       RTI
-
-irqe2  STA .sa      ;@202
-       LDA #$92
-       STA $FF1D
-       LDA #$CE		;206
-       STA $FF0B
-       LDA #<irqe3
-       STA $FFFE
-       LDA #$A8     ;$A800
-       STA $FF14
-       INC $FF09
-
-    pha  ;a delay
-    pla
-    pha
-    pla
-    pha
-    pla
-    nop
-    nop
-
-.bma = * + 1
-       LDA #$20     ;$4000
-       STA $FF12
-       ;LDA #0
-       STA $FF1A
-       LDA #40
-       STA $FF1B
-.sa = * + 1
-       LDA #0
-       RTI
-
-irqe3  STA .sa    ;@206
-       LDA #$EC
-       STA $FF1D  ;236
-       JSR comm1  
-       INC $FF09
-       LDA #$A0    ;$A000
-       STA $FF14
-.cnt = * + 1
-    LDA #$f8
-    CLC
-    ADC #$8
-    STA .cnt
-    BNE .l1
-
-       LDA irqe2.bma
-       EOR #$30     ;$4000/$8000 toggle
-       STA irqe2.bma
-       LDA .bma
-       EOR #$10   ;$2000/$6000 toggle
-       STA .bma
-       ;LDA $FF15
-       ;EOR #$30
-       ;STA $FF15
-.l1:
-.bma = * + 1
-       LDA #$18    ;$2000
-       STA $FF12
-       inc $a5
-       bne .l2
-
-       inc $a4
-       bne .l2
-
-       inc $a3
-.l2:
-.sa = * + 1
-       LDA #0
-       RTI
-
-  assert *&0xff00==irqe1&0xff00, alignment error
 

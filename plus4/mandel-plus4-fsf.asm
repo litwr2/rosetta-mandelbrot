@@ -51,7 +51,7 @@ color3 = $32  ;red
    byte start/1000+48,start%1000/100+48,start%100/10+48,start%10+48
    byte 0,0,0
 
-irqe1  STA .sa      ;@284
+irqe1  pha      ;@284
        LDA #$36
        STA $FF1D    ;310
        LDA #$CA		;202
@@ -60,12 +60,11 @@ irqe1  STA .sa      ;@284
        STA $FF0A
        LDA #<irqe2
        STA $FFFE
-.sa = * + 1
-       LDA #0
+       pla
 irqe0  INC $FF09
        RTI
 
-irqe2  STA .sa      ;@202
+irqe2  pha      ;@202
        LDA #$92
        STA $FF1D
        LDA #$CE		;206
@@ -92,11 +91,10 @@ irqe2  STA .sa      ;@202
        STA $FF1A
        LDA #40
        STA $FF1B
-.sa = * + 1
-       LDA #0
+       pla
        RTI
 
-irqe3  STA .sa    ;@206
+irqe3  pha    ;@206
        LDA #$EC
        STA $FF1D  ;236
        JSR comm1  
@@ -116,9 +114,6 @@ irqe3  STA .sa    ;@206
        LDA .bma
        EOR #$10   ;$2000/$6000 toggle
        STA .bma
-       ;LDA $FF15
-       ;EOR #$30
-       ;STA $FF15
 .l1:
 .bma = * + 1
        LDA #$18    ;$2000
@@ -130,9 +125,7 @@ irqe3  STA .sa    ;@206
        bne .l2
 
        inc $a3
-.l2:
-.sa = * + 1
-       LDA #0
+.l2:   pla
        RTI
 
 start: JSR JPRIMM
@@ -807,9 +800,9 @@ pr000:   ;prints ac:xr < 10000
 iniirq:LDA #$F8
        STA irqe3.cnt
        LDA #$20
-       LDA irqe2.bma
+       STA irqe2.bma
        LDA #$18
-       LDA irqe3.bma
+       STA irqe3.bma
        LDA #>irqe1
        STA $FFFF
 comm1: LDA #<irqe1
