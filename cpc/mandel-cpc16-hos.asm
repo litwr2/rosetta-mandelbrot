@@ -1,10 +1,11 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
+;The next code was made by litwr in 2022
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the Amstrad CPC, 16 color mode
+;Horizontal Overscan Version
+;HMAXx256 Mandelbrot for the Amstrad CPC, 16 color mode, HMAX = 144, 160, 176 and even more for a non-standard monitor
 
 SCR_SET_MODE            EQU #BC0E
 SCR_SET_INK             EQU #BC32
@@ -12,13 +13,9 @@ TXT_OUTPUT              EQU #BB5A
 KM_WAIT_CHAR		EQU #BB06
 KL_TIME_PLEASE          EQU #BD0D
 
+HMAX equ 176
+
 sqrbase equ $8000 ;must be fixed here!
-initer	equ	7
-idx	equ	-36       ;-.0703125
-idy	equ	18        ;.03515625
-ix0	equ	-62*idx
-imx	equ	10*idx		; x move
-sf4	equ	436/4		; sf/4
 
 org #9700
 
@@ -79,13 +76,44 @@ r4l:
 mandel0: 
     pop hl
 mandel:
+    ld a,(dataindex)
+    ld l,a
+    ld h,0
+    push hl
+    add hl,hl
+    add hl,hl
+    pop de
+    add hl,de
+    ld de,data
+    add hl,de
+    ld a,(hl)
+    ld (dx),a
+    inc hl
+    ld a,(hl)
+    ld (dy),a
+    inc hl
+    ld a,(hl)
+    ld (x0),a
+    inc hl
+    ld a,(hl)
+    ld (x0+1),a
+    inc hl
+    ld a,(hl)
+    ld (niter),a
+    add a,2
+    ld (hl),a
+
     call KL_TIME_PLEASE
     ld (ti),hl
     ld (ti+2),de
     ld ixl,0
-    ld hl,$4040  ;scrtop
+    ld iyh,128
+    ld hl,HMAX/2+$40  ;scrtop
     push hl
-    ld hl,(dy)
+    ld hl,HMAX/2*$20+$3840
+    push hl    ;scrbot
+dy equ $+1
+    ld hl,0
     ld a,h
     ld h,l
     srl h
@@ -94,17 +122,19 @@ mandel:
     ld (r5),hl
 loop0:
 x0 equ $+1
-    ld hl,ix0
+    ld hl,0
     ld (r4),hl
-loop2:
+    ld iyl,HMAX/2
+loop2
     ld hl,(r4)
-    ld de,(dx)
+dx equ $+1
+    ld de,$ff00
     add hl,de
     ld (r4),hl
     ld d,h
     ld e,l      ;mov	r4, r0
 niter equ $+2
-    ld ixh,initer
+    ld ixh,0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -162,85 +192,72 @@ loc2:
 tcolor equ $+1
     ld a,0
     or c
+    pop de  ;scrbot
     pop hl  ;scrtop
     dec hl
     ld (hl),a
-    push hl
     ld c,a
-    ld a,$3f
-    xor h
+    push hl
+    ex de,hl
+    dec hl
+    push hl
+    ld a,iyh
+    cp ($7C0*2/HMAX)*8-127
+    jr c,lv1
+
+    cp ($7C0*2/HMAX)*8-119
+    jr nc,lv2
+
+    bit 2,h
+    jr nz,lv1
+
+lv2 ld a,$38
+    add a,h
     ld h,a
-    ld a,$c0
-    xor l
-    ld l,a
-    ld (hl),c
-    ld a,l
-    and $3f
+lv1 ld (hl),c
+    dec iyl
     jp nz,loop2
 
-    ld de,$840
+    dec iyh
+    pop de  ;scrbot
     pop hl  ;scrtop
-    add hl,de
-    ld a,h
-    rlca
-    jr nc,lx10
-
-    ld de,$c040
-    add hl,de
-lx10:
+    ld bc,$800+HMAX/2
+    add hl,bc
     push hl
-    ld de,(dy)
+    ex de,hl
+    ld bc,HMAX/2-$800
+    add hl,bc
+    push hl
+    ld a,iyh
+    and 7      ;sets C=0
+    jr nz,lv3
+
+    pop de  ;scrbot
+    pop hl  ;scrtop
+    ld bc,$4000-HMAX/2
+    sbc hl,bc
+    push hl
+    ex de,hl
+    add hl,bc
+    push hl
+lv3 ld de,(dy)
     ld hl,(r5)
     or a   ;sets C=0
     sbc hl,de
     ld (r5),hl
     jp nz,loop0
 
-    ld hl,(x0)
-    ld de,(mx)
-    add hl,de
-    ld (x0),hl   ;x0 += mx
-    ld hl,niter
-    inc (hl)     ;iter++
-    ld hl,dx
-    push hl
-lx5:
-    pop hl
-    ld a,l
-    cp low(mx)+2
-    jp z,lx2
+    pop hl  ;??
+    pop hl  ;??
+    ld hl,counter
+    inc (hl)
+    ld a,(dataindex)
+    inc a
+    cp dataentries
+    jr nz,lx2
 
-    ld (dx1p),a
-    ld (dx2p),a
-    add a,2
-    ld l,a
-    push hl
-    ld de,-sf4
-dx1p equ $+1
-    ld hl,(dx)
-    push hl
-    add hl,de
-    res 0,l
-    set 7,h
-    ld c,(hl)
-    inc l
-    ld b,(hl)
-    ld de,sf4
-    pop hl
-    add hl,de
-    res 0,l
-    set 7,h
-    or a ;sets C=0
-    ld a,(hl)
-    inc l
-    ld h,(hl)
-    ld l,a
-    sbc hl,bc  ;C=0
-dx2p equ $+1
-    ld (dx),hl
-    jr lx5
-
-lx2:pop hl
+    xor a
+lx2 ld (dataindex),a
     call KL_TIME_PLEASE
     xor a
     ld bc,(ti)
@@ -255,13 +272,13 @@ lx2:pop hl
     cp 'Q'
     jr nz,noq
     rst 0
+
 noq:cp 'T'
     jp nz,mandel
 
     ld a,30  ;home cursor
     call TXT_OUTPUT
-    ld a,(niter)
-    sub 7
+    ld a,(counter)
     ld l,a
     ld h,0
     call PR000
@@ -307,12 +324,7 @@ lx1:ld a,c
     ld (tcolor),a
     jp loop2
 
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-c8t:    db 0, 8, $22, $88, $2a, $28, 2, $8a
-        db $80, $20, $a0, $a8, $82, $a2, $aa, $a
+ti     dw 0,0
 
 div0 macro
      local t1,t2
@@ -357,6 +369,9 @@ t3
      RET
      endp
 
+c8t:    db 0, 8, $22, $88, $2a, $28, 2, $8a
+        db $80, $20, $a0, $a8, $82, $a2, $aa, $a
+
 PR0000  ld de,-1000
 	CALL PR0
 PR000
@@ -386,7 +401,8 @@ setvmode
     ld c,11
     ld b,c
     call SCR_SET_INK
-    ld a,$40
+    ;ld a,$41  ;$29;$21;$1c;$19;$11;9;1;$39;$41;$42 if HMAX=160
+    ld a,$43  ;1;2;3;$b;$3a;$41;$42;$43 if HMAX=176
     ld ($b7c6),a    ;screen base for system text output
 
 ; Wait for THE BEGINNING of a VSYNC signal
@@ -409,7 +425,7 @@ halt
 
 ; Write "horizontal" CRTC registers
 ld hl,inithvideocfg
-ld c,2
+ld c,4
 call write_CRTC
 
 ; Wait for the third interrupt
@@ -418,7 +434,7 @@ halt
 
 ; Write vertical CRTC registers for a smooth transition
 ld hl,initvvideocfg
-ld c,4
+ld c,2
 jp write_CRTC
 
 ; Write register/value pairs to CRTC
@@ -437,19 +453,65 @@ jr nz,writeCRTCloop
 ret
 
 inithvideocfg
-db &1,32,&2,42
+db &1,HMAX/4,&2,HMAX/4+(64-14-HMAX/4)/2
+db 12,&c,13,&20
 initvvideocfg
-db &6,32,&7,35,&c,16,&d,0
+db &6,32,&7,35
+
+dataentries equ 12
+counter db 0
+dataindex db 0
+data  ;     dx, dy, x0, niter
+      ; to convert to real values divide by 512
+     db -18, 18
+     dw 1500  ;2232
+     db 7   ;1
+     db -15, 15
+     dw 1200  ;1841
+     db 8   ;2
+     db -13, 13
+     dw 1140  ;1714
+     db 9   ;3
+     db -11, 11
+     dw 830
+     db 10  ;4
+     db -9, 10
+     dw 530
+     db 11  ;5
+     db  -9,  8
+     dw 540
+     db 12  ;6
+     db -8,  6
+     dw 370
+     db 13  ;7
+     db -7,  5
+     dw 290
+     db 14  ;8
+     db  -6,  5
+     dw 100
+     db 15  ;9
+     db  -5,  5
+     dw 100
+     db 16  ;10
+     db  -5,  5
+     dw 100
+     db 25  ;11
+     db -8,  5
+     dw 370
+     db 37  ;12
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         16 colors, v2          *",13,10
+        db "*     "
+        db HMAX/100+48
+        db (HMAX-(HMAX/100)*100)/10+48
+        db HMAX % 10+48
+        db "x256, 16 colors, v1     *",13,10
         db "**********************************",13,10
-        db "The original version was published for",13,10
-        db "the BK0011 in 2021 by Stanislav",13,10
-        db "Maslovski.",13,10
-        db "This Amstrad CPC port was created by",13,10
-        db "Litwr, 2021.",13,10
+        db "This Amstrad CPC code was created by",13,10
+        db "Litwr in 2022. It is based on code",13,10
+        db "published for the BK0011 in 2021 by",13,10
+        db "Stanislav Maslovski.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",0
    end start

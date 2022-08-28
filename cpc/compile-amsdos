@@ -1,7 +1,8 @@
 D=cpc-mandel.dsk
+if [ $# != 2 ]; then exit; fi
 f=${1%%.asm}
+n=${2%%.bin}.bin   #m4, m16, or m16os
 pasmo6 --amsdos $f.asm $f.amsdos.bin
-if [ ${f/16/} = $f ]; then n=m4.bin; else n=m16.bin; fi
 mv $f.amsdos.bin $n
 iDSK $D -r $n
 iDSK $D -i $n -t 1
