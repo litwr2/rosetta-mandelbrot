@@ -5,7 +5,7 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;Horizontal Overscan Version
-;HMAXx256 Mandelbrot for the Amstrad CPC, 16 color mode, HMAX = 144, 160, 176 and even more for a non-standard monitor
+;HMAXx256 Mandelbrot for the Amstrad CPC, 16 color mode, HMAX = 160, 176, 192
 
 SCR_SET_MODE            EQU #BC0E
 SCR_SET_INK             EQU #BC32
@@ -401,8 +401,15 @@ setvmode
     ld c,11
     ld b,c
     call SCR_SET_INK
-    ;ld a,$41  ;$29;$21;$1c;$19;$11;9;1;$39;$41;$42 if HMAX=160
-    ld a,$43  ;1;2;3;$b;$3a;$41;$42;$43 if HMAX=176
+if HMAX=160
+    ld a,$41  ;$29;$21;$1c;$19;$11;9;1;$39;$41;$42
+endif
+if HMAX=176
+    ld a,$43  ;1;2;3;$b;$3a;$41;$42;$43
+endif
+if HMAX=192
+    ld a,$42  ;$42;$44
+endif
     ld ($b7c6),a    ;screen base for system text output
 
 ; Wait for THE BEGINNING of a VSYNC signal
@@ -425,7 +432,7 @@ halt
 
 ; Write "horizontal" CRTC registers
 ld hl,inithvideocfg
-ld c,4
+ld c,6
 call write_CRTC
 
 ; Wait for the third interrupt
@@ -453,7 +460,13 @@ jr nz,writeCRTCloop
 ret
 
 inithvideocfg
-db &1,HMAX/4,&2,HMAX/4+(64-14-HMAX/4)/2
+db &1,HMAX/4,&2
+if HMAX=160 or HMAX=176
+db HMAX/4+(64-14-HMAX/4)/2+1,&3,&8e
+endif
+if HMAX=192
+db HMAX/4+2,&3,&8a
+endif
 db 12,&c,13,&20
 initvvideocfg
 db &6,32,&7,35
@@ -463,6 +476,45 @@ counter db 0
 dataindex db 0
 data  ;     dx, dy, x0, niter
       ; to convert to real values divide by 512
+if HMAX=160
+     db -18, 18
+     dw 1400  ;2232
+     db 7   ;1
+     db -15, 15
+     dw 1100  ;1841
+     db 8   ;2
+     db -13, 13
+     dw 1040  ;1714
+     db 9   ;3
+     db -11, 11
+     dw 680
+     db 10  ;4
+     db -9, 10
+     dw 400
+     db 11  ;5
+     db  -9,  8
+     dw 400
+     db 12  ;6
+     db -8,  6
+     dw 270
+     db 13  ;7
+     db -7,  5
+     dw 220
+     db 14  ;8
+     db  -6,  5
+     dw 0
+     db 15  ;9
+     db  -5,  5
+     dw 0
+     db 16  ;10
+     db  -5,  5
+     dw 0
+     db 25  ;11
+     db -8,  5
+     dw 260
+     db 37  ;12
+endif
+if HMAX=176
      db -18, 18
      dw 1500  ;2232
      db 7   ;1
@@ -497,9 +549,47 @@ data  ;     dx, dy, x0, niter
      dw 100
      db 25  ;11
      db -8,  5
-     dw 370
+     dw 350
      db 37  ;12
-
+endif
+if HMAX=192
+     db -18, 18
+     dw 1500  ;2232
+     db 7   ;1
+     db -15, 15
+     dw 1200  ;1841
+     db 8   ;2
+     db -13, 13
+     dw 1140  ;1714
+     db 9   ;3
+     db -11, 11
+     dw 930
+     db 10  ;4
+     db -9, 10
+     dw 620
+     db 11  ;5
+     db  -9,  8
+     dw 600
+     db 12  ;6
+     db -8,  6
+     dw 450
+     db 13  ;7
+     db -7,  5
+     dw 290
+     db 14  ;8
+     db  -6,  5
+     dw 140
+     db 15  ;9
+     db  -5,  5
+     dw 100
+     db 16  ;10
+     db  -5,  5
+     dw 100
+     db 25  ;11
+     db -7,  5
+     dw 300
+     db 37  ;12
+endif
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*     "
