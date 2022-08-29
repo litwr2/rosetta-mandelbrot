@@ -1,5 +1,9 @@
-D=cpc-mandel.dsk
-if [ $# != 2 ]; then exit; fi
+#D=cpc-mandel.dsk
+D=cpc-os.dsk
+if [ $# != 2 ]; then
+  echo Wrong parameters
+  exit;
+fi
 f=${1%%.asm}
 n=${2%%.bin}.bin   #m4, m16, or m16os
 pasmo6 --amsdos $f.asm $f.amsdos.bin

@@ -13,7 +13,7 @@ TXT_OUTPUT              EQU #BB5A
 KM_WAIT_CHAR		EQU #BB06
 KL_TIME_PLEASE          EQU #BD0D
 
-HMAX equ 176
+HMAX equ 192
 
 sqrbase equ $8000 ;must be fixed here!
 
@@ -476,28 +476,28 @@ counter db 0
 dataindex db 0
 data  ;     dx, dy, x0, niter
       ; to convert to real values divide by 512
-if HMAX=160
      db -18, 18
-     dw 1400  ;2232
+     dw 1400+(HMAX-160)/4*25
      db 7   ;1
      db -15, 15
-     dw 1100  ;1841
+     dw 1100+(HMAX-160)/4*25
      db 8   ;2
      db -13, 13
-     dw 1040  ;1714
+     dw 1040+(HMAX-160)/4*25
      db 9   ;3
      db -11, 11
-     dw 680
+     dw 680+(HMAX-160)/2*15
      db 10  ;4
      db -9, 10
-     dw 400
+     dw 400+(HMAX-160)/2*15
      db 11  ;5
      db  -9,  8
-     dw 400
+     dw 400+(HMAX-160)/4*35
      db 12  ;6
      db -8,  6
-     dw 270
+     dw 270+(HMAX-160)/4*25
      db 13  ;7
+if HMAX=160
      db -7,  5
      dw 220
      db 14  ;8
@@ -515,27 +515,6 @@ if HMAX=160
      db 37  ;12
 endif
 if HMAX=176
-     db -18, 18
-     dw 1500  ;2232
-     db 7   ;1
-     db -15, 15
-     dw 1200  ;1841
-     db 8   ;2
-     db -13, 13
-     dw 1140  ;1714
-     db 9   ;3
-     db -11, 11
-     dw 830
-     db 10  ;4
-     db -9, 10
-     dw 530
-     db 11  ;5
-     db  -9,  8
-     dw 540
-     db 12  ;6
-     db -8,  6
-     dw 370
-     db 13  ;7
      db -7,  5
      dw 290
      db 14  ;8
@@ -553,27 +532,6 @@ if HMAX=176
      db 37  ;12
 endif
 if HMAX=192
-     db -18, 18
-     dw 1500  ;2232
-     db 7   ;1
-     db -15, 15
-     dw 1200  ;1841
-     db 8   ;2
-     db -13, 13
-     dw 1140  ;1714
-     db 9   ;3
-     db -11, 11
-     dw 930
-     db 10  ;4
-     db -9, 10
-     dw 620
-     db 11  ;5
-     db  -9,  8
-     dw 600
-     db 12  ;6
-     db -8,  6
-     dw 450
-     db 13  ;7
      db -7,  5
      dw 290
      db 14  ;8
