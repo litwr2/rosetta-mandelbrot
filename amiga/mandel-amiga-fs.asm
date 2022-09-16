@@ -3,9 +3,9 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
 ;
-;128x256 Mandelbrot for the Amiga (only the 68000 code), 16 colors
+;320x256 (Fullscreen) Mandelbrot for the Amiga (only the 68000 code), 16/32 colors
 
-QCOLORS=16
+QCOLORS = 32 ;16
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -73,14 +73,7 @@ endm
 mouseleft_char = 1  ;?? remove!
 mouseright_char = 2
 ScreenHeight = 256
-ScreenWidth = 128
-
-initer	= 7
-idx	=	-36       ;-.0703125
-idy	=	18        ;.03515625, 1 = 1/512
-ix0	=	-62*idx
-imx	=	10*idx		; x move
-sf4	=	436/4		; sf/4
+ScreenWidth = 320
 
 	section Code
     basereg SOD,a3
@@ -114,11 +107,18 @@ fillsqr:
 mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
 mandel:
+    move dataindex(pc),d0
+    lea.l data(pc),a0
+    move.b (a0,d0.w),dx+1(a3)
+    move.b 1(a0,d0.w),dy+1(a3)
+    move.w 2(a0,d0.w),x0(a3)
+    move.b 4(a0,d0.w),niter+1(a3)
+    addq.b #2,4(a0,d0.w)
     clr.l time(a3)
     moveq #-2,d6   ;-2=$fe
-    move #$800,a2
-    movea.w #16,a5	;screen top
-    movea.w #4096,a6 ;screen bottom
+    movea.l #ScreenWidth/8,a2
+    movea.l a2,a5	;screen top
+    movea.l #ScreenWidth/8*ScreenHeight,a6 ;screen bottom
     lea.l sqrbase(a3),a4
 	move dy(a3),d5
 	asl #7,d5		; r5 = 128*dy
@@ -138,7 +138,7 @@ loc1:
     and.b d6,d7
 	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
 	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmp a2,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
+	cmp #$800,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
 	bcc	loc2		; overflow
 
     move d1,d7
@@ -152,9 +152,15 @@ loc1:
     subi #1,d2
 	bne loc1        ;sob	r2, 1$		; to next iteration  ??dbra
 loc2:
-	and #15,d2      ;bic	#177770, r2	; get bits of color
+	and #QCOLORS-1,d2      ; get bits of color
     lea.l tcolor1(a3),a0
+  if QCOLORS=16
     movem.l (a0)+,d0/d1/d3/d7
+  else
+    movem.l (a0)+,d0/d1/d3/d6/d7
+    lsr d2
+    roxr.l d6
+  endif
     lsr d2
     roxr.l d1
     lsr d2
@@ -165,7 +171,12 @@ loc2:
     roxr.l d7
     bcs.s loc3
 
+  if QCOLORS=32
+    movem.l d0/d1/d3/d6/d7,-(a0)
+    moveq #-2,d6
+  else
     movem.l d0/d1/d3/d7,-(a0)
+  endif
     bra loop2
 loc3:
     subq.l #4,a6   ;?? .w
@@ -180,37 +191,36 @@ loc3:
     move.l (a0)+,d2
     move.l d3,(a5,d2.l)
     move.l d3,(a6,d2.l)
-    move.l (a0),d2
+    move.l (a0)+,d2
     move.l d7,(a5,d2.l)
     move.l d7,(a6,d2.l)
+  if QCOLORS=32
+    move.l (a0),d2
+    move.l d6,(a5,d2.l)
+    move.l d6,(a6,d2.l)
+    moveq #-2,d6
+    move.l #$80000000,tcolor5(a3)
+  else
     move.l #$80000000,tcolor4(a3)
-    move a5,d0
-    and.b #$f,d0
+  endif
+    subq.l #4,a2
+    move.l a2,d0  ;what is it?! a fs-uae bug?!
 	bne	loop2		; if not first word in line
 
-    adda #32,a5
+    movea.l #ScreenWidth/8,a2
+    adda.l #ScreenWidth/4,a5
 	sub dy(a3),d5          ;sub	@#dya, r5
 	bne loop0
 
-	move mx(a3),d0
-    add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
-
-	; scale the params
-	move #2,d0         ;mov	#3, r0
-	lea.l dx(a3),a1     ;mov	#dxa, r1
-loc4:
-	move (a1),d2        ;mov	(r1), r2		; x
-    move d2,d3
-    add #sf4,d2
-    and.b #$fe,d2
-	move (a4,d2.w),(a1) ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
-    sub #sf4,d3
-    and.b #$fe,d3
-    move (a4,d3.w),d1
-	sub d1,(a1)+          ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
-	dbra d0,loc4          ;sob	r0, 4$
-
-	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
+	addq #1,iter(a3)      ;increase the iteration count
+    move dataindex(pc),d0
+    add #6,d0
+    cmpi #12*6,d0
+    bne loc7
+    
+    moveq #0,d0
+loc7:
+    move d0,dataindex(a3)
     move.l time(a3),d5
     bsr getkey
     andi.b #$df,d0
@@ -222,11 +232,10 @@ noquit:
     bne mandel
 
     lsl.l d5
-    move niter(a3),d0
-    subq #7,d0
-    move d0,data(a3)
-    move d5,data+2(a3)
-    lea.l data(a3),a1
+    move iter(a3),d0
+    move d0,datae(a3)
+    move d5,datae+2(a3)
+    lea.l datae(a3),a1
     lea.l fmt(a3),a0
     lea.l stuffChar(pc),a2
     move.l #-1,charCount(a3)
@@ -278,27 +287,74 @@ VBlankServer:
       dc.l  time,rasteri          ;is_Data,is_Code
 
 SOD:
-dx	dc.w	idx
-dy	dc.w	idy
-mx	dc.w	imx
-x0     dc.w   ix0
-niter  dc.w    initer
+dx	dc.w	-1
+dy	dc.w	0
+x0     dc.w   0
+niter  dc.w    0
 tcolor1 dc.l 0
 tcolor2 dc.l 0
 tcolor3 dc.l 0
+  if QCOLORS=16
 tcolor4 dc.l $80000000
+  else
+tcolor4 dc.l 0
+tcolor5 dc.l $80000000
+  endif
 
 doslib        dc.l 0
 charCount     dc.l 0
 mouseleft dc.b 0     ;?? remove
 mouseright dc.b 0
 
+dataindex dc.w 0
+iter dc.w 0
+data dc.b -9, 18
+     dc.w 1432   ;dx, dy, x0, niter
+     dc.b 17,0 ;1
+     dc.b -7, 15
+     dc.w 1141
+     dc.b 18,0 ;2
+     dc.b -6, 13
+     dc.w 880
+     dc.b 19,0 ;3
+     dc.b -5, 11
+     dc.w 480
+     dc.b 20,0;4
+     dc.b -4, 10
+     dc.w 280
+     dc.b 21,0  ;5
+     dc.b -4,  8
+     dc.w 260
+     dc.b 22,0  ;6
+     dc.b -4,  6
+     dc.w 280
+     dc.b 23,0  ;7
+     dc.b -3,  5
+     dc.w 140
+     dc.b 24,0  ;8
+     dc.b -3,  5
+     dc.w 210
+     dc.b 25,0  ;9
+     dc.b -3,  5
+     dc.w 140
+     dc.b 26,0  ;10
+     dc.b -3,  5
+     dc.w 180
+     dc.b 27,0  ;11
+     dc.b -4,  5
+     dc.w 264
+     dc.b 37,0  ;12
+
     align 1
 SCREEN_DEFS:
 	DC.W	0,0		; X-Y position
 	DC.W	ScreenWidth
 	DC.W	ScreenHeight
+  if QCOLORS=16
 	DC.W	4		; Depth
+  else
+	DC.W	5		; Depth
+  endif
 	DC.B	0,1		; Pen colors
 	DC.W	0		; V_HIRES
 	DC.W	SCREENQUIET	;CUSTOMSCREEN
@@ -337,10 +393,20 @@ FONT_ATTR:
 	DC.W	8		; Size
 
 COLORS:
-	DC.W	$000,$ee0,$0e0,$FFF  ;black, green, yellow, white
-	DC.W	$E00,$e0e,$0EE,$00e  ;red, magenta, cyan, blue
+;	DC.W	$000,$ee0,$0e0,$FFF  ;black, green, yellow, white
+;	DC.W	$E00,$e0e,$0EE,$00e  ;red, magenta, cyan, blue
+;	DC.W	$800,$808,$088,$008  ;red, magenta, cyan, blue
+;	DC.W	$080,$880,$777,$AAA  ;darkgreen, yellow, darkgray, gray
+;  if QCOLORS == 32
+;    DC.W	$fb7,$7bf,$bf7,$7fb
+;  endif
+	DC.W	$000,$ff0,$0f0,$FFF  ;black, green, yellow, white
 	DC.W	$800,$808,$088,$008  ;red, magenta, cyan, blue
-	DC.W	$080,$880,$777,$AAA  ;darkgreen, yellow, darkgray, gray
+	DC.W	$080,$880,$888,$400  ;darkgreen, yellow, darkgray, darkred
+	DC.W	$f00,$f0f,$0ff,$00f  ;red, magenta, cyan, blue
+  if QCOLORS == 32
+    DC.W	$404,$044,$004,$440
+  endif
 
 
 FONT_NAME		DC.B	'topaz.font',0
@@ -359,6 +425,9 @@ BITPLANE1_PTR:      DC.L	0
 BITPLANE2_PTR:      DC.L	0
 BITPLANE3_PTR:      DC.L	0
 BITPLANE4_PTR:      DC.L	0
+  if QCOLORS=32
+BITPLANE5_PTR:      DC.L	0
+  endif
 TASK_PTR:           DC.L	0
 ERROR_STACK:        DC.L	0
 
@@ -384,25 +453,35 @@ IEADDR:		DC.L	0	; IAddress
 WINDOW_HANDLE:	DC.L	0
 time dc.l 0
 fmt     dc.b "%d %d",0   ;even number of bytes!
+
+   align 1
 CONHANDLE   DC.L 0
-data = CONHANDLE
-msg     dc.b "  **********************************",13,10
-        dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v3         *",13,10
-        dc.b "  **********************************",13,10
-        dc.b "The original version was published for",13,10
-        dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        dc.b "This Amiga port was created by Litwr, 2021.",13,10
-        dc.b "The T-key gives us timings.",13,10
-        dc.b "Use the Q-key to quit.",13,10
+datae = CONHANDLE
+msg     dc.b "  **********************************",10
+        dc.b "  * Superfast Mandelbrot generator *",10
+        dc.b "  *     320x256, "
+  if QCOLORS=32
+        dc.b "32"
+  else
+        dc.b "16"
+  endif
+        dc.b" colors, v1     *",10
+        dc.b "  **********************************",10
+        dc.b "This code for the Amiga was created by",10
+        dc.b "Litwr in 2022. It is based on code",10
+        dc.b "published for the BK0011 in 2021 by",10
+        dc.b "Stanislav Maslovski.",10
+        dc.b "The T-key gives us timings.",10
+        dc.b "Use the Q-key to quit.",10
         dc.b "Press Enter now"
 endmsg
-         ;align 1
-CONWINDOW	DC.B	'CON:10/10/400/100/Superfast Mandelbrot',0
+
+         align 1
+CONWINDOW	DC.B	'CON:10/10/400/110/Superfast Fullscreen Mandelbrot',0
 
          align 1
 t1:
-sz = $1530
+sz = $1520
   if t1-CONHANDLE+sz<$16b0
      fail ERROR
   endif

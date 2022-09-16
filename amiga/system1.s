@@ -45,7 +45,7 @@ STARTUP:
 	     MOVE.L	D0,CONHANDLE(a3)
          MOVE.L D0,D1
          MOVE.L #msg,D2
-         MOVE.L #CONWINDOW-msg,D3
+         MOVE.L #endmsg-msg,D3
          jsr Write(a6)
          move.l CONHANDLE(a3),d1
          MOVE.L #msg,D2
@@ -132,7 +132,7 @@ COLORS_SET:
     movea.l VIEW_PORT(a3),a0
 	movea.l GRAPHICS_BASE(a3),a6
 	lea.l	COLORS(a3),a1		; Pointer to the color list
-	MOVEQ	#16,D0			;16 colors to set
+	MOVEQ	#QCOLORS,D0			;16 colors to set
 	JMP	LoadRGB4(A6)		;Set the colors
 
 KEYB_EXIT:
@@ -183,7 +183,10 @@ SCREEN_OPEN:
 	MOVE.L (A2)+,(A1)+		; Bitplane 1
 	MOVE.L (A2)+,(A1)+		; Bitplane 2
 	MOVE.L (A2)+,(A1)+		; Bitplane 3
-      MOVE.L (A2),(A1)		; Bitplane 4
+  if QCOLORS=32
+	MOVE.L (A2)+,(A1)+		; Bitplane 5
+  endif
+    MOVE.L (A2),(A1)		; Bitplane 4
 	moveq #0,d0
 	jmp ShowTitle(a6)
 
