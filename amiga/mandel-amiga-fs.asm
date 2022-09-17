@@ -204,7 +204,7 @@ loc3:
     move.l #$80000000,tcolor4(a3)
   endif
     subq.l #4,a2
-    move.l a2,d0  ;what is it?! a fs-uae bug?!
+    move.l a2,d0
 	bne	loop2		; if not first word in line
 
     movea.l #ScreenWidth/8,a2
