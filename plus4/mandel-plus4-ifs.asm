@@ -4,7 +4,8 @@
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
 ;
-;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing
+;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing/interlacing
+;16 colors actually are 10 for interlacing
 ;interactive version
 
 ; text data for 32 lines:

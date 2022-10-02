@@ -5,6 +5,7 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using quasi-interlacing
+;16 colors actually are 10
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
