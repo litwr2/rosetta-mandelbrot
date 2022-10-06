@@ -2,7 +2,7 @@ D=bkmandel.ssd
 F=${1%%.asm}
 if [ ${F/16/} = $F ]; then N=m4; else N=m16; fi
 vasm6502_oldstyle $1 -Fbin -o $N -L $F.lstx
-awk -f vasm-normlst.awk $F.lst >$F.lst
+awk -f vasm-normlst.awk $F.lstx >$F.lst
 rm $F.lstx
 beeb delete $D -y $N
 beeb putfile $D $N
