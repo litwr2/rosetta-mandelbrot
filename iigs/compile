@@ -1,0 +1,5 @@
+F=${1%%.asm}
+vasm6502_oldstyle -816 $1 -Fbin -o $F -L $F.lstx
+awk -f vasm-normlst.awk $F.lstx >$F.lst
+rm $F.lstx
+mv $F tg

@@ -20,8 +20,8 @@
 BSOUT = $FFD2
 JPRIMM = $FF4F
 
-colors = 8   ;2/4/8/16
-sqrbase = $BF00 ;must be $xx00
+colors = 16   ;2/4/8/16
+sqrbase = $BF00 ;must be $xx00, $A850-D4B0
 initer	= 7
 idx	=	-36       ;-.0703125
 idy	=	18        ;.03515625, 1 = 1/512
