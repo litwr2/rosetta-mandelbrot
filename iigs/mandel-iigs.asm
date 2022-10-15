@@ -30,12 +30,12 @@ r0 = $ec   ;$ed
 r1 = $ee   ;$ef
 r2 = $fa   ;$fb
 r3 = $4a   ;$4b
-t = $4c   ;$4d
-tmp = $4e   ;4f
+t = $fc   ;$fd
+tmp = $ce   ;$cf
 
-dx = $50   ;$51
-dy = $ce   ;$cf
-mx = $fc   ;$fd
+dx = $4c   ;$4d   ;these 3 values must be in one bundle
+dy = $4e   ;$4f
+mx = $50   ;$51
 
 d = $fa   ;..$fd
 divisor = $4a     ;$4b, $4c..$4d used for hi-bytes and the product
@@ -472,7 +472,15 @@ r4hi = * + 1
          ;**get timing
     sec
     xce
+    lda $4e
+    pha
+    lda $4f
+    pha
     jsr RDKEY
+    pla
+    sta $4f
+    pla
+    sta $4e
     clc
     xce
     jmp mandel
