@@ -99,10 +99,9 @@ start:   jsr IOSAVE
     bpl .l2
 
 fillsqr:
-    lda #0
-    sta r0
-    sta r1
-    sta r2
+    stz r0
+    stz r1
+    stz r2
 
     lda #sqrbase
     sta tmp
@@ -140,10 +139,8 @@ sqrloop:
 	inc r2   ;inc	r2
     bne sqrloop
 mandel:
-         lda #0
-         sta tmp
-         sta time  ;clear timer
-         sta time+1
+         stz time  ;clear timer
+         stz time+1
 
     lda dy   ;mov	@#dya, r5
 	xba      ;swab	r5
@@ -224,7 +221,7 @@ r4 = * + 1
     lda r2   ;color index
 .xtoggle = * + 1
     ldy #0
-    sep #$20  ;8-bit acc
+    sep #$20  ;8-bit acc ?? .xtoggle to byte
     a8
     bne .loc8
 
@@ -245,10 +242,9 @@ r4 = * + 1
     beq .la
     jmp .mloop2
 
-.la:inc .xtoggle
-    lda #0
-    sta .index
-    beq .lr   ;always
+.la:stz .index
+    inc .xtoggle
+    bne .lr   ;always
 
 .loc8:
     a8
@@ -274,8 +270,7 @@ r4 = * + 1
     beq .lzz
     jmp .mloop2
 .lzz:
-    lda #0
-    sta .index
+    stz .index
     dec .xtoggle
     inc .z0+1
     inc .z2+1
@@ -291,78 +286,58 @@ r4 = * + 1
     beq .lzx
     jmp .mloop0
 .lzx:
-    sep #$30     ;8-bit index/acc
-    x8
-    a8
     clc
     lda .x0
     adc mx
-    sta .x0
-    lda .x0+1
-    adc mx+1
-    sta .x0+1     ;add	@#mxa, @#x0a
+    sta .x0     ;add	@#mxa, @#x0a
     ldx #4
 .loc4:
     clc
-    lda #<(sqrbase+sf4)
+    lda #sqrbase+sf4
     adc dx,x
-    and #$fe
+    and #$fffe
     tay
-    lda #>(sqrbase+sf4)
-    adc dx+1,x
-    sta tmp+1
-    iny
-    lda (tmp),y
-    pha
-    dey
-    lda (tmp),y
+    lda 0,y
     pha        ;mov	sqr+sf4(r2), (r1)
-    lda #<(sqrbase-sf4)
+    lda #sqrbase-sf4
     clc
     adc dx,x
-    and #$fe
+    and #$fffe
     tay
-    lda #>(sqrbase-sf4)
-    adc dx+1,x      ;sets C=0
-    sta tmp+1
     pla
     sec
-    sbc (tmp),y
+    sbc 0,y
     sta dx,x
-    iny
-    pla
-    sbc (tmp),y
-    sta dx+1,x
     dex
     dex   ;sub	sqr-sf4(r2), (r1)+
     bpl .loc4  ;sob	r0, 4$
 
+    sep #$20  ;8-bit acc
+    a8
     lda #$7f
     sta .z1+1
     sta .z4+1
-    lda #0
-    sta .z0+1
-    sta .z2+1
-    sta .z3+1
-
+    stz .z0+1
+    stz .z2+1
+    stz .z3+1
     inc	.niter
+    rep #$20  ;16-bit acc
+    a16
          ;**get timing
-    sec
-    xce
+
     lda $4e
     pha
-    lda $4f
-    pha
+    sec
+    xce
     jsr RDKEY
-    pla
-    sta $4f
-    pla
-    sta $4e
     clc
     xce
     rep #$30     ;16-bit index/acc
     x16
     a16
+
+    pla
+    sta $4e
     jmp mandel
     ;and #$df
     cmp #"Q"
@@ -453,8 +428,7 @@ exitprg  jmp IOREST
 pr000:   sta d+2
          lda #100
          sta d
-         lda #0
-         sta d+1
+         stz d+1
          jsr pr0
          lda #10
          sta d
@@ -514,8 +488,7 @@ div32x16w        ;dividend+2 < divisor, divisor < $8000
         sta remainder+1
         lda dividend+2
         sta remainder
-        ;lda #0
-        ;sta dividend+2
+        ;stz dividend+2
 	;sta dividend+3
 	rts
   endif
