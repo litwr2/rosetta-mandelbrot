@@ -140,150 +140,92 @@ sqrloop:
 	inc r2   ;inc	r2
     bne sqrloop
 mandel:
-    sep #$30     ;8-bit index/acc
-    a8
-    x8
          lda #0
          sta tmp
+         sta time  ;clear timer
+         sta time+1
 
-         ldx #2          ;clear timer
-.loopt:  sta time,x
-         dex
-         bpl .loopt
-
-    lda dy
-    lsr
-    sta r5hi
-    lda #0
-    ror
-    sta r5lo    ;r5 = 128*dy
+    lda dy   ;mov	@#dya, r5
+	xba      ;swab	r5
+	lsr      ;asr	r5		; r5 = 128*dy
+    sta r5
 .mloop0:
-.x0lo = * + 1
-    lda #<ix0
-    sta r4lo
-.x0hi = * + 1
-    lda #>ix0
-    sta r4hi  ;mov	#x0, r4
+.x0 = * + 1
+    lda #ix0
+    sta r4     ;mov	#x0, r4
 .mloop2:
-    clc  
-    lda r4lo
+    clc
+    lda r4
     adc dx
-    sta r4lo
-    sta r0
-    lda r4hi
-    adc #$ff
-    sta r4hi      ;add	@#dxa, r4
-    sta r0+1           ;mov	r4, r0
+    sta r4
+    sta r0      ;add	@#dxa, r4
+               ;mov	r4, r0
 .niter = * + 1
-    lda #initer   
+    lda #initer
     sta r2        ;mov	#niter, r2
-	lda r5lo
-    sta r1
-    lda r5hi
-    sta r1+1      ;mov	r5, r1
+	lda r5
+    sta r1       ;mov	r5, r1
 .loc1:
     clc
-    lda r1+1
-    adc #>sqrbase
-    sta tmp+1
     lda r1
-    and #$fe
+    adc #sqrbase
+    and #$fffe
     tay
-    lda (tmp),y
-    sta r3
-    iny
-    lda (tmp),y
-    sta r3+1         ;mov	sqr(r1), r3
+    lda 0,y
+    sta r3         ;mov	sqr(r1), r3
 
-    lda r0+1
-    clc
-    adc #>sqrbase  ;C=0
-    sta tmp+1
+    clc   ;??
     lda r0
-    ora #1
+    adc #sqrbase
+    and #$fffe
     tay
-    lda (tmp),y   ;y=1
-    tax
-    dey
-    lda (tmp),y   ;mov	sqr(r0), r0
-    clc
-    adc r3
-    sta t
-    txa
-    adc r3+1
-    sta t+1      ;add	r3, r0
+    lda 0,y
+          ;mov	sqr(r0), r0
 
-    cmp #8
+    clc   ;??
+    adc r3
+    sta t      ;add	r3, r0
+    cmp #$800
     bcs .loc2
 
     lda r0
     adc r1    ;C=0
-    tax
-    lda r0+1
-    adc r1+1
-    ;sta r1+1      ;add	r0, r1
-    ;lda r1+1
+    ;sta r1      ;add	r0, r1
     clc
-    adc #>sqrbase
-    sta tmp+1
-    txa
-    and #$fe
+    adc #sqrbase
+    and #$fffe
     tay
-    lda (tmp),y
-    clc
-r5lo = * + 1
+    lda 0,y
+    ;sta r1     ;mov sqr(r1), r1
+    clc   ;??
+r5 = * + 1
     adc #0   ;C=0
-    tax 
-    iny
-    lda (tmp),y     ;mov sqr(r1), r1
-r5hi = * + 1
-    adc #0
-    tay        ;add	r5, r1
+    ;sta r1     ;add	r5, r1
 
-    sec
-    txa
+    sec   ;??
     sbc t
-    sta r1
-    tya
-    sbc t+1
-    sta r1+1     ;sub	r0, r1
-    sec
+    sta r1     ;sub	r0, r1
+    sec    ;??
     lda t
     sbc r3
-    tax
-    lda t+1
-    sbc r3+1
-    tay        ;sub	r3, r0
+    ;sta r0        ;sub	r3, r0
 	;sec   ;it seems, C=1 is always here
-    txa
     sbc r3
-    tax
-    tya
-    sbc r3+1
-    tay        ;sub	r3, r0
-	clc
-    txa
-r4lo = * + 1
+    ;sta r0        ;sub	r3, r0
+	clc   ;??
+r4 = * + 1
     adc #0
-    sta r0
-    tya
-r4hi = * + 1
-    adc #0
-    sta r0+1     ;add	r4, r0
+    sta r0     ;add	r4, r0
     dec r2
-    ;bne .loc1
-	beq .loc2
-    jmp .loc1       ;sob	r2, 1$
+    bne .loc1       ;sob	r2, 1$
 .loc2:
-    rep #$10   ;16-bit index
-    x16
-
 .index = * + 1
     ldx #0
-
     lda r2   ;color index
 .xtoggle = * + 1
     ldy #0
+    sep #$20  ;8-bit acc
+    a8
     bne .loc8
 
     and #15
@@ -300,20 +242,16 @@ r4hi = * + 1
     adc #$a0
     sta .index
     cmp #160*128
-    bne .la
-
-    lda #0
-    sta .index
-    inc .xtoggle
-    jmp .lr
-
-.la:sep #$30     ;8-bit index/acc
-    x8
-    a8
+    beq .la
     jmp .mloop2
 
-    x16
+.la:inc .xtoggle
+    lda #0
+    sta .index
+    beq .lr   ;always
+
 .loc8:
+    a8
     and #15
 .z2:ora $e12000,x
 .z3 sta $e12000,x
@@ -326,20 +264,15 @@ r4hi = * + 1
 .z4:sta $e1207f,x
     rep #$20  ;16-bit acc
     a16
+
     txa
     clc
     adc #$a0
     sta .index
     cmp #160*128
+;    bne .mloop2
     beq .lzz
-.lzx:
-    sep #$30     ;8-bit index/acc
-    x8
-    a8
     jmp .mloop2
-
-    x16
-    a16
 .lzz:
     lda #0
     sta .index
@@ -350,33 +283,24 @@ r4hi = * + 1
     dec .z1+1
     dec .z4+1
 
-.lr:sep #$30
-    a8
-    x8
-    sec
-    lda r5lo
+.lr:sec
+    lda r5
     sbc dy
-    sta r5lo
-    lda r5hi
-    sbc #0
-    sta r5hi   ;sub	@#dya, r5
-	beq .loc7
-.lf:sep #$30     ;8-bit index/acc
+    sta r5   ;sub	@#dya, r5
+;	bne .mloop0
+    beq .lzx
     jmp .mloop0
-.loc7:
-    lda r5lo
-    bne .lf
-
+.lzx:
     sep #$30     ;8-bit index/acc
     x8
     a8
     clc
-    lda .x0lo
+    lda .x0
     adc mx
-    sta .x0lo
-    lda .x0hi
+    sta .x0
+    lda .x0+1
     adc mx+1
-    sta .x0hi     ;add	@#mxa, @#x0a
+    sta .x0+1     ;add	@#mxa, @#x0a
     ldx #4
 .loc4:
     clc
@@ -436,21 +360,24 @@ r4hi = * + 1
     sta $4e
     clc
     xce
+    rep #$30     ;16-bit index/acc
+    x16
+    a16
     jmp mandel
     ;and #$df
     cmp #"Q"
     bne .noq
 
-    lda $c029  ;reset super hi-res
-    and #$3f
-    sta $c029
-   jmp exit
+    ;lda $c029  ;reset super hi-res
+    ;and #$3f
+    ;sta $c029
+   ;jmp exit
 
 .noq:
+  if 0
     cmp #"T"
     ;**beq *+5
     jmp mandel
-  if 0
    lda #31   ;set the cursor position
    jsr OSWRCH
    lda #8    ;x
