@@ -71,22 +71,19 @@ start:   jsr IOSAVE
 
     CLC            ; set native mode
     XCE
-    ldx #0
-    stx dy+1
-    lda #idx
-    sta dx
-    lda #idy
-    sta dy
-    dex
-    stx dx+1
-    lda #<imx
-    sta mx
-    lda #>imx
-    sta mx+1
-
     lda $c029  ;set super hi-res
     ora #$c0
     sta $c029
+    rep #$30   ;16-bit index/acc
+    x16
+    a16
+
+    lda #idy
+    sta dy
+    lda #idx
+    sta dx
+    lda #imx
+    sta mx
 
 ;    lda #0     ;fill scan-line control bytes
 ;    ldx #200
@@ -94,102 +91,58 @@ start:   jsr IOSAVE
 ;    sta $e19d00,x
 ;    bne .l1
 
-    ldx #31   ;fill palette #0 bytes
+    ldx #30   ;fill palette #0 bytes
 .l2:lda pal,x
     sta $e19e00,x
+    dex
     dex
     bpl .l2
 
 fillsqr:
-    inx
-    txa
-    tay
-.loop:
-    sta r0,x
-    inx
-    cpx #6
-    bne .loop
+    lda #0
+    sta r0
+    sta r1
+    sta r2
 
-    lda #>sqrbase
-    ;ldx #<sqrbase   ;=0
-    sta tmp+1
-    sty tmp
-    sta t+1
-    sty t
+    lda #sqrbase
+    sta tmp
+    sta t
 sqrloop:
     lda r1     ;mov	r1, (r5)+	; to upper half tbl
-    sta (t),y
-    lda r1+1
-    iny
-    sta (t),y
-    dey
-    clc
-    lda t
-    adc #2
-    sta t
-    bcc .l1
-
-    inc t+1
-.l1:inc r2	  ;inc	r2		; R2 = x + 2^-9
-    bne .l2
-
-    inc r2+1
-.l2:lda r2    ;mov	r2, -(r6)
+    sta (t)
+    inc t
+    inc t
+    inc r2	  ;inc	r2		; R2 = x + 2^-9
+    lda r2    ;mov	r2, -(r6)
     pha
-    lda r2+1
-    pha
-	asl r2    ;asl	r2		; R2 = 2*x + 2^-8
-    rol       ;swab	r2		; LLLLLL00 00HHHHHH
-    ldx r2
-    stx r2+1
+	asl       ;asl	r2		; R2 = 2*x + 2^-8
+    xba       ;swab	r2		; LLLLLL00 00HHHHHH
     sta r2
-	sta r3    ;movb	r2, r3		; 00000000 00HHHHHH
-    sty r3+1
+    pha
+	and #$ff    ;movb	r2, r3		; 00000000 00HHHHHH
+    sta r3
+    pla
 	clc       ;add	r2, r0		; add up lower bits
     adc r0
     sta r0
-    txa
-    adc r0+1
-    sta r0+1
-	tya       ;adc	r1		; add carry to r1
-    adc r1
-    tax
-    tya
-    adc r1+1   ;sets C=0
-    sta r1+1
-	txa        ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+	lda r1       ;adc	r1		; add carry to r1
+    adc #0
+	;clc        ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
     adc r3
     sta r1
-    lda r3+1
-    adc r1+1
-    sta r1+1
-    php
-	lda tmp    ;mov	r1, -(r4)	; to lower half tbl
-    sec
-    sbc #2
-    sta tmp
-    bcs .l3
-
-    dec tmp+1
-.l3:lda r1
-    sta (tmp),y
-    lda r1+1
-    iny
-    sta (tmp),y
-    dey
-    plp
+	dec tmp    ;mov	r1, -(r4)	; to lower half tbl
+    dec tmp
+    sta (tmp)
 	pla      ;mov	(r6)+, r2
-    sta r2+1
-    pla
     sta r2
     bcs mandel		; exit on overflow
 
 	inc r2   ;inc	r2
     bne sqrloop
-
-    inc r2+1
-	bne	sqrloop
 mandel:
+    sep #$30     ;8-bit index/acc
+    a8
+    x8
          lda #0
          sta tmp
 
