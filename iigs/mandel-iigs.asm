@@ -31,13 +31,15 @@ r3 = $4a   ;$4b
 t = $fc   ;$fd
 tmp = $ce   ;$cf
 
-dx = $4c   ;$4d   ;these 3 values must be in one bundle
-dy = $4e   ;$4f
-mx = $50   ;$51
+dx = $e0   ;$e1   ;these 3 values must be in one bundle
+dy = $e2   ;$e3
+mx = $e4   ;$e5
+
+xpos = $62
 
 d = $fa   ;..$fd
 divisor = $4a     ;$4b, $4c..$4d used for hi-bytes and the product
-dividend = $4e	  ;..$51 used for hi-bytes
+dividend = $50	  ;..$53 used for hi-bytes
 remainder = $ce   ;$cf used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 
@@ -68,12 +70,11 @@ start:  jsr IOSAVE
         ldx #SETMOUSE
         jsr mousesub
 
-
-    CLC            ; set native mode
-    XCE
     lda $c029  ;set super hi-res
     ora #$c0
     sta $c029
+    CLC            ; set native mode
+    XCE
     rep #$30   ;16-bit index/acc
     x16
     a16
@@ -96,7 +97,7 @@ start:  jsr IOSAVE
 ;    sta $e19d00,x
 ;    bne .l1
 
-    ldx #30   ;fill palette #0 bytes
+    ldx #30   ;fill palette #0 bytes, MVP??
 .l2:lda pal,x
     sta $e19e00,x
     dex
@@ -145,8 +146,9 @@ start:  jsr IOSAVE
     bne .sqrloop
 .mandel:
          stz time  ;clear timer
-         stz time+1
-
+         stz time+2
+    lda #$db0   ;$b0 = bcs - start timer
+    sta timeirq.sw
     lda dy   ;mov	@#dya, r5
 	xba      ;swab	r5
 	lsr      ;asr	r5		; r5 = 128*dy
@@ -326,12 +328,11 @@ r4 = * + 1
     stz .z2+1
     stz .z3+1
     inc	.niter
+    lda #$90   ;bcc  - stop timer
+    sta timeirq.sw
     rep #$20  ;16-bit acc
     a16
-         ;**get timing
 
-    lda $4e
-    pha
     sec
     xce
     x8
@@ -347,8 +348,6 @@ r4 = * + 1
     x16
     a16
 
-    plx
-    stx $4e
 .irqv:
     lda #0
     sta $3fe
@@ -363,7 +362,8 @@ r4 = * + 1
          lda #0
          ldx #SETMOUSE
          jsr mousesub
-   jmp IOREST
+   jsr IOREST
+   jmp 3
 
 .noq:
     cmp #"T"&$1f
@@ -374,153 +374,83 @@ r4 = * + 1
     rep #$30     ;16-bit index/acc
     x16
     a16
-    pla
-    sta $4e
     jmp .mandel
 
-    x8
-    a8
-.t: lda #31   ;set the cursor position
-  if 0
-   jsr OSWRCH
-   lda #8    ;x
-   jsr OSWRCH
-   lda #6     ;y
-   jsr OSWRCH
+.t: clc
+    xce
+    rep #$31  ;16-bit idx/acc
+    ldx #0
+    stx xpos
     lda .niter
-    sec
-    sbc #7
-    tax
-    lda #0
+    sbc #6   ;C=0
+
     jsr pr000
-    lda #" "
-    jsr OSWRCH
-    lda ti
-         sta dividend
-         lda ti+1
-         sta dividend+1
-         lda ti+2
-         sta dividend+2
-         lda ti+3
-         sta dividend+3
-         lda #0
-         sta divisor+1
-         lda #100
-         sta divisor
-         lda dividend+3   ;dividend = quotient
-         jsr div32x16w
-         ldx quotient
-         lda quotient+1
-         jsr pr000
-         lda #"."
-         jsr OSWRCH
-         lda remainder  ;*10,*5
-         ldx remainder+1
+    ldy #10*8   ;space
+    jsr outdigi
+
+    lda time
+    sta dividend
+    lda time+2
+    sta dividend+2
+    lda #60
+    sta divisor
+    jsr div32x16m
+    lda quotient
+    jsr pr000
+    ldy #11*8   ;dot
+    jsr outdigi
+         lda remainder  ;*50
          asl
-         rol remainder+1
          asl
-         rol remainder+1
          adc remainder
-         sta remainder
-         txa
-         adc remainder+1
-         sta remainder+1
-
-         lda remainder  ;*2
+         sta dividend
          asl
-         rol remainder+1
-         ;sta remainder
-         tax
-
-         lda remainder+1
-         ;ldx remainder
+         asl
+         adc dividend
+         asl
+         sta dividend
+         lda #0
+         sta dividend+2
+         lda #3
+         sta divisor
+         jsr div32x16m
+         lda remainder
+         cmp #2
+         bcc *+4
+         inc quotient
+         lda quotient
          jsr pr000
-    lda #30  ;hide cursor
-    jsr OSWRCH
-    jsr OSRDCH
+    sec
+    xce
+    jsr RDKEY
+    clc
+    xce
+    rep #$30
+    a16
+    x16
     jmp .mandel
- 
-pr000:   sta d+2
-         lda #100
-         sta d
-         stz d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp COUT
 
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn  ;always
-
-div32x16w        ;dividend+2 < divisor, divisor < $8000
-        ;;lda dividend+3
+       x16
+       a16 
+div32x16m:       ;dividend+2 < divisor
+        lda dividend+2
+        clc
         ldy #16
-
-.l3      asl dividend
-        rol dividend+1
-        rol dividend+2
-	rol
-        ;bcs .l2   ;for divisor>$7fff
-
-        cmp divisor+1
-        bcc .l1
-        bne .l2
-
-        ldx dividend+2
-        cpx divisor
+.l3:    rol dividend
+        rol
+        cmp divisor
         bcc .l1
 
-.l2     tax
-        lda dividend+2
         sbc divisor
-        sta dividend+2
-        txa
-        sbc divisor+1
-	inc quotient
-.l1     dey
+.l1:    dey
         bne .l3
-
-        sta remainder+1
-        lda dividend+2
+        rol dividend
         sta remainder
-        ;stz dividend+2
-	;sta dividend+3
-	rts
-  endif
+        stz dividend+2
+	    rts
 
-time    byte 0,0,0
-msg     byte "**********************************",13
-        byte "* Superfast Mandelbrot generator *",13
-        byte "*              v1                *",13
-        byte "**********************************",13
-        byte "The original version was published for",13
-        byte "the BK0011 in 2021 by Stanislav",13
-        byte "Maslovski.",13
-        byte "This Apple IIgs port was created by",13
-        byte "Litwr, 2022.",13
-        byte "The T-key gives us timings.",13
-        byte "Use the Q-key to quit",0
-
+       x8
+       a8
 mousesub:stx .p6+1
 .p6:     ldx $c400
          stx .p2+1
@@ -537,6 +467,7 @@ mousesub:stx .p6+1
 
 timeirq: jsr $c400
          bcs .nomouse
+.sw:     bcc .nomouse
 
          inc time
          bne .nomouse
@@ -550,6 +481,94 @@ timeirq: jsr $c400
 setmouse:lda $c400+SERVEMOUSE
          sta timeirq+1
          rts
+
+       x16
+       a16
+outdigi:   ;xpos,Y-char(0..11)*8,8/16-bit acc/idx
+t1 = r0
+t2 = r1
+t3 = r2
+         sep #$20
+         a8
+         ldx xpos
+.l3:     lda digifont,y
+         phy
+         sta t1
+         lda #4
+         sta t2
+.l6:     lda #2
+         sta t3
+.l4:     ldy #4
+.l1:     clc
+         bit t1
+         bpl .l5
+
+         sec
+.l5:     rol
+         dey
+         bne .l1
+
+         asl t1
+         dec t3
+         bne .l4
+
+         sta $e12000,x
+         inx
+         dec t2
+         bne .l6
+
+         rep #$20
+         a16
+         txa
+         clc
+         adc #$a0-4
+         tax
+         sep #$20
+         a8
+         ply
+         iny
+         tya
+         and #7
+         bne .l3
+
+         lda xpos
+         clc
+         adc #4
+         sta xpos
+         rep #$20
+         rts
+
+        a16
+pr000: ;prints C = B:A
+         sta d+2
+         lda #100
+         sta d
+         jsr .pr0
+         lda #10
+         sta d
+         jsr .pr0
+         ldx d+2
+.prd:    txa
+         asl
+         asl
+         asl
+         tay
+         sep #$20
+         a8
+         jsr outdigi
+         rep #$20
+         a16
+         rts
+
+.pr0:    ldx #65535
+.prn:    inx
+         lda d+2
+         cmp d
+         bcc .prd
+
+         sbc d
+         sta d+2
+         bcs .prn   ;always
 
 pal: word 0     ;0 black  RGB
      word $fff  ;1 white
@@ -567,4 +586,30 @@ pal: word 0     ;0 black  RGB
      word $770  ;d yellow
      word $707  ;e cyan
      word $077  ;f magenta
+         
+digifont db $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
+         db $18,$18,$38,$18,$18,$18,$7e,0  ;1
+         db $3c,$66,6,$c,$30,$60,$7e,0     ;2
+         db $3c,$66,6,$c,6,$66,$3c,0     ;3
+         db 6,$e,$1e,$36,$7f,6,6,0       ;4
+         db $7e,$60,$7c,6,6,$66,$3c,0   ;5
+         db $3c,$66,$60,$7c,$66,$66,$3c,0  ;6
+         db $7e,$66,$c,$18,$18,$18,$18,0   ;7
+         db $3c,$66,$66,$3c,$66,$66,$3c,0  ;8
+         db $3c,$66,$66,$3e,6,$66,$3c,0   ;9
+         db 0,0,0,0,0,0,0,0               ;space
+         db 0,0,0,0,0,$18,$18,0         ;dot
+
+time    byte 0,0,0,0
+msg     byte "**********************************",13
+        byte "* Superfast Mandelbrot generator *",13
+        byte "*              v1                *",13
+        byte "**********************************",13
+        byte "The original version was published for",13
+        byte "the BK0011 in 2021 by Stanislav",13
+        byte "Maslovski.",13
+        byte "This Apple IIgs port was created by",13
+        byte "Litwr, 2022.",13
+        byte "The T-key gives us timings.",13
+        byte "Use the Q-key to quit",0
 
