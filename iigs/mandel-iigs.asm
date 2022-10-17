@@ -16,8 +16,6 @@ SETMOUSE = $12
 SERVEMOUSE = $13
 INITMOUSE = $19
 
-SEEKMOUSE = 1         ;seek mouse card, 0 means to use the $c400 address
-
 sqrbase = $2600 ;must be $xx00, it takes area $f50-$3bb0
 initer	= 7
 idx	=	-36       ;-.0703125
@@ -48,26 +46,28 @@ quotient = dividend ;save memory by reusing divident to store the quotient
    x8
    ;setdp 0
 
-start:   jsr IOSAVE
-         ;jsr HOME  ;clear screen
+start:  jsr IOSAVE
+        ;jsr HOME  ;clear screen
+.m:     lda msg
+        beq .exm
 
-         ;**jsr setmouse
+        ora #$80
+        jsr COUT
+        inc .m+1
+        bne .m
 
-         sei
-         ldx #INITMOUSE
-         ;**jsr mousesub
-         lda #8
-         ldx #SETMOUSE
-         ;**jsr mousesub
-         lda $3fe
-         ;**sta mlo+1
-         lda $3ff
-         ;**sta mhi+1
-         ;**lda #<timeirq
-         ;**sta $3fe
-         ;**lda #>timeirq
-         ;**sta $3ff
-         cli
+        inc .m+2
+.lg:    bne .m    ;always
+
+.exm:   jsr RDKEY
+        jsr setmouse
+        sei
+        ldx #INITMOUSE
+        jsr mousesub
+        lda #8
+        ldx #SETMOUSE
+        jsr mousesub
+
 
     CLC            ; set native mode
     XCE
@@ -78,6 +78,11 @@ start:   jsr IOSAVE
     x16
     a16
 
+        lda $3fe
+        sta .irqv
+        lda #timeirq
+        sta $3fe
+        cli
     lda #idy
     sta dy
     lda #idx
@@ -85,7 +90,7 @@ start:   jsr IOSAVE
     lda #imx
     sta mx
 
-;    lda #0     ;fill scan-line control bytes
+;    lda #0     ;fill scan-line control bytes, it is done automatic for zeroes
 ;    ldx #200
 ;.l1:dex
 ;    sta $e19d00,x
@@ -98,7 +103,7 @@ start:   jsr IOSAVE
     dex
     bpl .l2
 
-fillsqr:
+.fillsqr:
     stz r0
     stz r1
     stz r2
@@ -106,7 +111,7 @@ fillsqr:
     lda #sqrbase
     sta tmp
     sta t
-sqrloop:
+.sqrloop:
     lda r1     ;mov	r1, (r5)+	; to upper half tbl
     sta (t)
     inc t
@@ -134,11 +139,11 @@ sqrloop:
     sta (tmp)
 	pla      ;mov	(r6)+, r2
     sta r2
-    bcs mandel		; exit on overflow
+    bcs .mandel		; exit on overflow
 
 	inc r2   ;inc	r2
-    bne sqrloop
-mandel:
+    bne .sqrloop
+.mandel:
          stz time  ;clear timer
          stz time+1
 
@@ -329,31 +334,54 @@ r4 = * + 1
     pha
     sec
     xce
+    x8
+    a8
     jsr RDKEY
+    and #$1f
+    cmp #"Q"&$1f
+    bne .noq
+
     clc
     xce
     rep #$30     ;16-bit index/acc
     x16
     a16
 
-    pla
-    sta $4e
-    jmp mandel
-    ;and #$df
-    cmp #"Q"
-    bne .noq
-
-    ;lda $c029  ;reset super hi-res
-    ;and #$3f
-    ;sta $c029
-   ;jmp exit
+    plx
+    stx $4e
+.irqv:
+    lda #0
+    sta $3fe
+    sec
+    xce
+    a8
+    x8
+    sei
+    lda $c029  ;reset super hi-res
+    and #$3f
+    sta $c029
+         lda #0
+         ldx #SETMOUSE
+         jsr mousesub
+   jmp IOREST
 
 .noq:
+    cmp #"T"&$1f
+    beq .t
+
+    clc
+    xce
+    rep #$30     ;16-bit index/acc
+    x16
+    a16
+    pla
+    sta $4e
+    jmp .mandel
+
+    x8
+    a8
+.t: lda #31   ;set the cursor position
   if 0
-    cmp #"T"
-    ;**beq *+5
-    jmp mandel
-   lda #31   ;set the cursor position
    jsr OSWRCH
    lda #8    ;x
    jsr OSWRCH
@@ -410,21 +438,8 @@ r4 = * + 1
     lda #30  ;hide cursor
     jsr OSWRCH
     jsr OSRDCH
-    jmp mandel
-  endif
-exit     sec
-         xce
-         sei
-;mlo      lda #0
-;         sta $3fe
-;mhi      lda #0
-;         sta $3ff
-;         lda #0
-;         ldx #SETMOUSE
-;         jsr mousesub
-exitprg  jmp IOREST
+    jmp .mandel
  
-  if 0
 pr000:   sta d+2
          lda #100
          sta d
@@ -492,9 +507,8 @@ div32x16w        ;dividend+2 < divisor, divisor < $8000
 	;sta dividend+3
 	rts
   endif
-time: byte 0,0,0    ;@timer@
 
-  if 0
+time    byte 0,0,0
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
         byte "*              v1                *",13
@@ -507,11 +521,11 @@ msg     byte "**********************************",13
         byte "The T-key gives us timings.",13
         byte "Use the Q-key to quit",0
 
-mousesub stx p6+1
-p6       ldx $c400
-         stx p2+1
+mousesub:stx .p6+1
+.p6:     ldx $c400
+         stx .p2+1
          pha
-         lda p6+2
+         lda #$c4   ;.p6+2
          tax
          asl
          asl
@@ -519,70 +533,23 @@ p6       ldx $c400
          asl
          tay
          pla
-p2       jmp 0
+.p2:     jmp $c400
 
-timeirq
-p3       jsr 0
-         bcs nomouse
+timeirq: jsr $c400
+         bcs .nomouse
 
          inc time
-         bne nomouse
+         bne .nomouse
 
          inc time+1
-         bne nomouse
+         bne .nomouse
 
          inc time+2
-nomouse
-         rti
+.nomouse:rti
 
-setmouse
-  if SEEKMOUSE
-         ldx #$c1
-         stx .p4+2
-.loop3    ldx #4
-.loop4    ldy .amagic,x
-         lda .vmagic,x
-.p4       cmp $c000,y
-         beq .match
-
-         inc .p4+2
-         ldy .p4+2
-         cpy #$c8
-         bne .loop3
-
-         jsr .mouserr
-         pla
-         pla
-         jmp exitprg
-
-.amagic .byte 5,7,$b,$c,$fb
-.vmagic .byte $38,$18,1,$20,$d6
-
-.match    dex
-         bpl .loop4
-
-         lda .p4+2
-         sta .p7+2
-         sta p3+2
-         sta p2+2
-         sta p6+2
-  endif
-.p7      lda $c400+SERVEMOUSE
-         sta p3+1
+setmouse:lda $c400+SERVEMOUSE
+         sta timeirq+1
          rts
-
-.mouserr  ldx #0
-.loop8    lda msg,x
-         beq .exiterr
-
-         jsr COUT
-         inx
-         bne .loop8
-.exiterr  rts
-
-msg .text "can't find a mouse card"
-    .byte 0
-  endif
 
 pal: word 0     ;0 black  RGB
      word $fff  ;1 white
