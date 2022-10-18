@@ -6,6 +6,7 @@
 ;128x256 Mandelbrot for the Amiga (only the 68000 code), 16 colors
 
 QCOLORS=16
+NOCALC=0
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -123,8 +124,11 @@ mandel:
 	move dy(a3),d5
 	asl #7,d5		; r5 = 128*dy
 loop0:
+  if NOCALC=0
 	move x0(a3),d4
+  endif
 loop2:
+  if NOCALC=0
 	add dx(a3),d4   ;add	@#dxa, r4		; update a
 	move niter(a3),d2	; max iter. count
 	move d4,d0		; r0 = x = a
@@ -152,6 +156,7 @@ loc1:
     subi #1,d2
 	bne loc1        ;sob	r2, 1$		; to next iteration  ??dbra
 loc2:
+  endif
 	and #15,d2      ;bic	#177770, r2	; get bits of color
     lea.l tcolor1(a3),a0
     movem.l (a0)+,d0/d1/d3/d7
@@ -191,7 +196,7 @@ loc3:
     adda #32,a5
 	sub dy(a3),d5          ;sub	@#dya, r5
 	bne loop0
-
+  if NOCALC=0
 	move mx(a3),d0
     add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
 
@@ -211,6 +216,7 @@ loc4:
 	dbra d0,loc4          ;sob	r0, 4$
 
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
+  endif
     move.l time(a3),d5
     bsr getkey
     andi.b #$df,d0
