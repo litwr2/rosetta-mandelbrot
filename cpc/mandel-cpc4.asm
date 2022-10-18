@@ -95,13 +95,13 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-if NOCALC
+if NOCALC=0
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
 endif
 loop2:
-if NOCALC
+if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
@@ -111,7 +111,7 @@ if NOCALC
 endif
 niter equ $+2
     ld ixh,initer
-if NOCALC
+if NOCALC=0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -150,11 +150,11 @@ r4 equ $+1
 endif
 r5 equ $+1
     ld bc,0
-if NOCALC
+if NOCALC=0
     add hl,bc    ;sets C=0
     pop bc   ;r0
     sbc hl,bc    ;2xy+y0
-    dec ixh     
+    dec ixh
     jr nz,loc1   ;sob r2,1$
 endif
 loc2:
@@ -221,7 +221,7 @@ lx8:
     sbc hl,de
     ld (r5),hl
     jp nz,loop0
-if NOCALC
+if NOCALC=0
     ld hl,(x0)
     ld de,(mx)
     add hl,de
