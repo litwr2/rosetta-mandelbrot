@@ -8,8 +8,15 @@ timerport2 = ^O177710            ;$ffc8
 timerport3 = ^O177712            ;$ffca
 kbddtport  = ^O177662            ;kbd data, palette, timer, $ffb2
 
+NOCALC = 0
+
 	.asect
 	.=1000
+.if ne NOCALC
+.rept 27.
+    nop
+.endr
+.endc
     mov #msg,r1
     clr r2
     emt ^O20
@@ -63,19 +70,26 @@ mdlbrt:
 	swab	r5
 	asr	r5		; r5 = 200*dy = b
 loop0:
+.if eq NOCALC
 x0a	=	.+2
 	mov	#x0, r4		; r4 = a
+.endc
 loop1:
 	mov	r0, -(r6)	; push address on stack
+.if eq NOCALC
 	clr	r1		; clear
     mov r1,r3
 	inc	r1		;   pixels
+.endc
 loop2:
     mov r1, -(r6)
 	mov	r3, -(r6)	; push mask on stack
+.if eq NOCALC
 	add	@#dxa, r4		; update a
+.endc
 nitera	=	.+2
 	mov	#niter, r2	; max iter. count
+.if eq NOCALC
 	mov	r4, r0		; r0 = x = a
 	mov	r5, r1		; r1 = y = b
 1$:
@@ -93,6 +107,7 @@ nitera	=	.+2
 	sub	r3, r0		; r0 = x^2-y^2
 	add	r4, r0		; r0 = x^2-y^2+a, updated x
 	sob	r2, 1$		; to next iteration
+.endc
 2$:
     mov (r6)+,r3
     asl	r3		; shift
@@ -124,7 +139,7 @@ patt1	=	.+2
 	mov	r1,@#patt1	; switch patterns
 	sub	@#dya, r5		; update b
 	bgt	loop0		; continue while b > 0
-
+.if eq NOCALC
 	add	@#mxa, @#x0a	; shift x0
 
 	; scale the params
@@ -137,6 +152,7 @@ patt1	=	.+2
 	sob	r0, 4$
 
 	inc	@#nitera	; increase the iteration count
+.endc
     sub @#timerport2,@#time
     emt 6
     bic #^B1111111100100000,r0
@@ -290,14 +306,14 @@ mxa:	.word	mx
 pat0:	.byte	0,1,2,3,16,5,12,17
 pat1:	.byte	0,4,10,14,4,5,12,17
 
-msg:.byte 12.,155.
-    .ascii "Superfast Mandelbrot generator, v2"
+msg:.byte 12., 155.
+    .ascii "Superfast Mandelbrot generator, v3"
     .byte 10.
-    .ascii "The original version"
+    .ascii "The original version was "
     .byte 10.
-    .ascii "was published"
+    .ascii "published in 2021 by Stanislav"
     .byte 10.
-    .ascii "in 2021 by Stanislav Maslovski."
+    .ascii "Maslovski."
     .byte 10.
     .ascii "This version just uses several"
     .byte 10.
@@ -308,3 +324,4 @@ msg:.byte 12.,155.
     .ascii "The T-key gives us timings"
     .byte 0
 	.end
+

@@ -1,3 +1,4 @@
+if [ $# -eq 0 ]; then exit; fi
 F=${1%%asm}
 AWKOPT=~/retro/bk/xlife-bk0011/bkbasic/jmp2br.awk
 AWKHEX=~/retro/bk/xlife-bk0011/lst2hex.awk
