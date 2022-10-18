@@ -20,6 +20,8 @@ ix0	equ	-62*idx
 imx	equ	10*idx		; x move
 sf4	equ	436/4		; sf/4
 
+NOCALC equ 0
+
 org #9700
 
 start
@@ -93,18 +95,23 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
+if NOCALC
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
+endif
 loop2:
+if NOCALC
     ld hl,(r4)
     ld de,(dx)
     add hl,de
     ld (r4),hl
     ld d,h
     ld e,l      ;mov	r4, r0
+endif
 niter equ $+2
     ld ixh,initer
+if NOCALC
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -140,13 +147,16 @@ r4 equ $+1
     inc l
     ld h,(hl)
     ld l,a       ;(x+y)^2
+endif
 r5 equ $+1
     ld bc,0
+if NOCALC
     add hl,bc    ;sets C=0
     pop bc   ;r0
     sbc hl,bc    ;2xy+y0
     dec ixh     
     jr nz,loc1   ;sob r2,1$
+endif
 loc2:
     ld a,ixh   ;color
     and 7
@@ -211,7 +221,7 @@ lx8:
     sbc hl,de
     ld (r5),hl
     jp nz,loop0
-
+if NOCALC
     ld hl,(x0)
     ld de,(mx)
     add hl,de
@@ -257,6 +267,7 @@ dx2p equ $+1
     jr lx5
 
 lx2:pop hl
+endif
     call KL_TIME_PLEASE
     xor a
     ld bc,(ti)
