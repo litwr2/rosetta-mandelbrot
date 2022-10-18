@@ -23,6 +23,8 @@ WSEL2   EQU     01110110B       ;2
 
 WBIT    EQU     00000001B       ;write 1
 
+NOCALC equ 0
+
 initer	equ	7
 idx	equ	-36       ;-.0703125
 idy	equ	18        ;.03515625
@@ -116,10 +118,13 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
+if NOCALC=0
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
+endif
 loop2:
+if NOCALC=0
     ld hl,(dx)
     ex de,hl
     ld hl,(r4)
@@ -127,8 +132,10 @@ loop2:
     ld (r4),hl
     ld d,h
     ld e,l      ;mov	r4, r0
+endif
 niter equ $+1
     ld a,initer
+if NOCALC=0
     ld (ixhmem),a
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
@@ -172,8 +179,10 @@ r4 equ $+1
     inc l
     ld h,(hl)
     ld l,a       ;(x+y)^2
+endif
 r5 equ $+1
     ld bc,0
+if NOCALC=0
     add hl,bc
     pop bc   ;r0
     ld a,l
@@ -189,6 +198,7 @@ ixhmem equ $+1
     jp nz,loc1   ;sob r2,1$
 loc2:
     ld a,(ixhmem)   ;color
+endif
     and 7
 patx equ $+1
     ld hl,pat0
@@ -305,7 +315,7 @@ lx8:
     ld (r5+1),a
     or l
     jp nz,loop0
-
+if NOCALC=0
     ld hl,(mx)
     ex de,hl
     ld hl,(x0)
@@ -354,6 +364,7 @@ dx2p equ $+1
     jp lx5
 
 lx2:pop hl
+endif
     ld hl,(KL+1)
     ld (0xf7f1),hl   ;stop timer
     call waitk
@@ -491,7 +502,9 @@ tihi equ $+1
 kq   pop hl
      pop af
 KL   jp 0
-
+   if NOCALC=1
+   ds 2
+   endif
           ;0,    1,    2,    3,    4,    5,    6,    7
 pat0:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
         db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
