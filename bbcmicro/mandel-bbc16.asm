@@ -11,6 +11,8 @@ OSRDCH = $FFE0
 OSWORD = $FFF1
 OSBYTE = $FFF4
 
+NOCALC = 0
+
 sqrbase = $2900 ;must be $xx00, it takes area $1250-$3fb0
 initer	= 7
 idx	=	-36       ;-.0703125
@@ -172,13 +174,16 @@ mandel:
     ror
     sta r5lo    ;r5 = 128*dy
 .mloop0:
+  if NOCALC=0
 .x0lo = * + 1
     lda #<ix0
     sta r4lo
 .x0hi = * + 1
     lda #>ix0
     sta r4hi  ;mov	#x0, r4
+  endif
 .mloop2:
+  if NOCALC=0
     clc  
     lda r4lo
     adc dx
@@ -188,8 +193,10 @@ mandel:
     adc #$ff
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
+  endif
 .niter = * + 1
-    lda #initer   
+    lda #initer
+  if NOCALC=0
     sta r2        ;mov	#niter, r2
 	lda r5lo
     sta r1
@@ -245,13 +252,17 @@ mandel:
     tay
     lda (tmp),y
     clc
+  endif
 r5lo = * + 1
-    adc #0   ;C=0   
+    adc #0   ;C=0
+  if NOCALC=0
     tax 
     iny
     lda (tmp),y     ;mov sqr(r1), r1
+  endif
 r5hi = * + 1
     adc #0
+  if NOCALC=0
     tay        ;add	r5, r1
 
     sec
@@ -288,6 +299,7 @@ r4hi = * + 1
     ;bne .loc1
 	beq .loc2
     jmp .loc1       ;sob	r2, 1$
+  endif
 .loc2:
     lda r2
     and #15   ;color index
@@ -361,7 +373,7 @@ r4hi = * + 1
 .loc7:
     lda r5lo
     bne .loop0t  ;bgt	loop0
-
+  if NOCALC=0
     clc
     lda .x0lo
     adc mx
@@ -406,6 +418,7 @@ r4hi = * + 1
     bpl .loc4  ;sob	r0, 4$
 
     inc	.niter
+  endif
          ldx #<ti
          ldy #>ti
          lda #1
