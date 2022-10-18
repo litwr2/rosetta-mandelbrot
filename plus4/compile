@@ -1,4 +1,5 @@
 F=${1%%.asm}
-vasm6502_oldstyle $F.asm -Fbin -cbm-prg -o $F.prg -L $F.lstx
-awk -f vasm-normlst.awk $F.lstx >$F.lst
-rm $F.lstx
+vasm6502_oldstyle $F.asm -Fbin -cbm-prg -o $F.prg -L $F.lst
+#vasm6502_oldstyle $F.asm -Fbin -cbm-prg -o $F.prg -L $F.lstx
+#awk -f vasm-normlst.awk $F.lstx >$F.lst
+#rm $F.lstx

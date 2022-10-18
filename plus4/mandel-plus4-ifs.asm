@@ -37,12 +37,6 @@ alo = $d5
 dx = $d8
 dy = $d9
 
-d = $d0    ;..$d3
-divisor = $d4     ;..$d7
-dividend = $de	  ;..$e1
-remainder = $d8   ;$d9
-quotient = dividend ;save memory by reusing divident to store the quotient
-
 color0 = 1    ;black
 color1 = $3d  ;blue
 color2 = $35  ;green
@@ -52,7 +46,7 @@ color3 = $32  ;red
        org $1001
        include mandel-i.inc
 
-       org $149d
+       org $14c8
 start: lda #$a0    ;@start@
        sta loopi2+2
        lda #$a8
@@ -507,14 +501,14 @@ r4hi = * + 1
     sei
     lda $a5
     sbc ti
-    sta ti
+    sta $d0
     lda $a4
     sbc ti+1
-    sta ti+1
+    sta $d1
     lda $a3
-    sbc ti+2
-    sta ti+2
     cli
+    sbc ti+2
+    sta $d2
     jsr getkey
     ;sei
     sta $ff3e
@@ -530,49 +524,6 @@ r4hi = * + 1
     LDA #$C4
     STA $FF12
     ;cli
-    lda ti
-         sta dividend
-         lda ti+1
-         sta dividend+1
-         lda ti+2
-         sta dividend+2
-         lda #0
-         sta dividend+3
-         sta divisor+1
-         lda #50
-         sta divisor
-         lda dividend+3   ;dividend = quotient
-         jsr div32x16w
-         ldx quotient
-         lda quotient+1
-         jsr pr000
-         lda #"."
-         jsr BSOUT
-         lda remainder  ;*20,*5
-         ldx remainder+1
-         asl
-         rol remainder+1
-         asl
-         rol remainder+1
-         adc remainder
-         sta remainder
-         txa
-         adc remainder+1
-         sta remainder+1
-
-         lda remainder  ;*4
-         asl
-         rol remainder+1
-         asl
-         rol remainder+1
-         ;sta remainder
-         tax
-
-         lda remainder+1
-         ;ldx remainder
-         jsr pr000
-    jsr JPRIMM
-    byte "S",13,13,0
 
     ldy #0
     ldx #0
@@ -679,7 +630,7 @@ irqe3  PHA    ;@206
        EOR #$10   ;$2000/$6000 toggle
        STA .bma
 .l3:
-       inc $a5
+       inc $a5   ;a3-a5 60Hz!
        bne .l2
 
        inc $a4
@@ -691,41 +642,6 @@ irqe3  PHA    ;@206
 
   assert *&0xff00==irqe1&0xff00, alignment error
 
-div32x16w:        ;dividend+2 < divisor, divisor < $8000
-        ;;lda dividend+3
-        ldy #16
-.l3     asl dividend
-        rol dividend+1
-        rol dividend+2
-	    rol
-        ;bcs .l2   ;for divisor>$7fff
-
-        cmp divisor+1
-        bcc .l1
-        bne .l2
-
-        ldx dividend+2
-        cpx divisor
-        bcc .l1
-
-.l2:    tax
-        lda dividend+2
-        sbc divisor
-        sta dividend+2
-        txa
-        sbc divisor+1
-	    inc quotient
-.l1:    dey
-        bne .l3
-
-        sta remainder+1
-        lda dividend+2
-        sta remainder
-        ;lda #0
-        ;sta dividend+2
-	;sta dividend+3
-	rts
-
 getkey:
    ldx #$7f
 .waitkey:
@@ -735,40 +651,6 @@ getkey:
    inx
    beq .waitkey
    rts
-
-pr000:   ;prints ac:xr < 10000
-         sta d+2
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr .pr0
-         lda #10
-         sta d
-         jsr .pr0
-         txa
-         tay
-.prd:    tya
-         eor #$30
-         jmp BSOUT
-
-.pr0:    ldy #255
-.prn:    iny
-         lda d+2
-         cmp d+1
-         bcc .prd
-         bne .prc
-
-         cpx d
-         bcc .prd
-
-.prc     txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs .prn
 
 iniirq:lda flash_st
        beq .l1

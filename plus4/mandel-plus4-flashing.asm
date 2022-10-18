@@ -20,6 +20,8 @@
 BSOUT = $FFD2
 JPRIMM = $FF4F
 
+NOCALC = 0
+
 colors = 16   ;2/4/8/16
 sqrbase = $BF00 ;must be $xx00, $A850-D4B0
 initer	= 7
@@ -36,6 +38,7 @@ r3 = $d6
 ;r4 = $d8
 ;r5 = $da
 t = $da
+xpos = t
 tmp = $dc
 vy = $de
 vx = $df
@@ -142,7 +145,7 @@ irqe3  pha    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V5F *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V6F *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
@@ -347,18 +350,14 @@ sqrloop:
     sta r2+1
     pla
     sta r2
-    bcs mandel		; exit on overflow
+    bcs mandel0		; exit on overflow
 
 	inc r2   ;inc	r2
     bne sqrloop
 
     inc r2+1
 	bne	sqrloop
-mandel:
-    ldx #0
-    stx tmp
-
-    sei
+mandel0:
     STA $FF3F
     LDX #$3B
     STX $FF06
@@ -367,6 +366,11 @@ mandel:
     LDA #color0
     STA $FF15
     JSR iniirq
+mandel:
+    ldx #0
+    stx tmp
+
+    sei
     lda $a5  ;timer
     sta ti
     lda $a4
@@ -392,13 +396,16 @@ mandel:
     ror
     sta r5lo    ;r5 = 128*dy
 .mloop0:
+   if NOCALC = 0
 .x0lo = * + 1
     lda #<ix0
     sta r4lo
 .x0hi = * + 1
     lda #>ix0
     sta r4hi  ;mov	#x0, r4
+   endif
 .mloop2:
+   if NOCALC = 0
     clc  
     lda r4lo
     adc dx
@@ -408,8 +415,10 @@ mandel:
     adc #$ff   ;dx+1
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
+   endif
 .niter = * + 1
     lda #initer   
+  if NOCALC = 0
     sta r2        ;mov	#niter, r2
 	lda r5lo
     sta r1
@@ -465,13 +474,17 @@ mandel:
     tay
     lda (tmp),y
     clc
+   endif
 r5lo = * + 1
-    adc #0   ;C=0   
+    adc #0   ;C=0
+  if NOCALC = 0
     tax 
     iny
     lda (tmp),y     ;mov sqr(r1), r1
+   endif
 r5hi = * + 1
     adc #0
+  if NOCALC = 0
     tay        ;add	r5, r1
 
     sec
@@ -508,6 +521,7 @@ r4hi = * + 1
     ;bne .loc1
 	beq .loc2
     jmp .loc1       ;sob	r2, 1$
+   endif
 .loc2:
     lda r2
     and #colors-1   ;color index
@@ -626,7 +640,7 @@ r4hi = * + 1
 .loc10:
     lda r5lo
     bne .loop0t  ;bgt	loop0
-
+  if NOCALC=0
     clc
     lda .x0lo
     adc mx
@@ -671,6 +685,7 @@ r4hi = * + 1
     bpl .loc4  ;sob	r0, 4$
 
     inc	.niter
+  endif
     sei
     sec
     lda $a5
@@ -688,28 +703,15 @@ r4hi = * + 1
     beq *+5
     jmp .mandel
 
-    sei
-    sta $ff3e
-    lda #8
-    sta $ff14
-    STA $FF07
-    lda #$F1
-    sta $ff15
-    LDA #$1B
-    STA $FF06
-    LDA #$C4
-    STA $FF12
-    cli
-    lda #147    ;clear screen
-    jsr BSOUT
     lda .niter
     sec
     sbc #7
     tax
     lda #0
+    sta xpos
     jsr pr000
-         lda #" "
-         jsr BSOUT
+    lda #0    ;space
+    jsr outdigi
     lda ti
          sta dividend
          lda ti+1
@@ -726,8 +728,8 @@ r4hi = * + 1
          ldx quotient
          lda quotient+1
          jsr pr000
-         lda #"."
-         jsr BSOUT
+         lda #14   ;dot
+         jsr outdigi
          lda remainder  ;*20,*5
          ldx remainder+1
          asl
@@ -838,9 +840,14 @@ pr000:   ;prints ac:xr < 10000
          jsr .pr0
          txa
          tay
-.prd:    tya
-         eor #$30
-         jmp BSOUT
+.prd:    txa
+         pha
+         tya
+         eor #$10
+         jsr outdigi
+         pla
+         tax
+         rts
 
 .pr0:    ldy #255
 .prn:    iny
@@ -875,4 +882,72 @@ comm1: LDA #<irqe1
        LDA #$A3		;1 - hi byte, raster irq only
        STA $FF0A
        RTS
+
+outdigi:   ;xpos, A-char(0..11)
+t1 = r0
+t2 = r0+1
+t3 = r1
+t4 = r1+1
+         ldx #$20
+         stx .m1+2
+         stx .m1+1
+         stx .m2+1
+         ldx #$60
+         stx .m2+2
+         ldx xpos
+         asl
+         asl
+         asl
+         tay
+.l3:     sei
+         sta $ff3e
+         lda $d100,y  ;chargen
+         sta $ff3f
+         cli
+         sty t4
+         sta t1
+         lda #2
+         sta t2
+.l6:     lda #4
+         sta t3
+.l4:     ldy #2
+.l1:     clc
+         bit t1
+         bpl .l5
+
+         sec
+.l5:     rol
+         dey
+         bne .l1
+
+         asl t1
+         dec t3
+         bne .l4
+
+.m1:     sta $2020,x
+.m2:     sta $6020,x
+         txa
+         eor #8
+         tax
+         dec t2
+         bne .l6
+
+         inc .m1+1
+         bne *+5
+         inc .m1+2
+         inc .m2+1
+         bne *+5
+         inc .m2+2
+         
+         ldy t4
+         iny
+         tya
+         and #7
+         bne .l3
+
+         txa
+         clc
+         adc #16
+         sta xpos
+         rts
 

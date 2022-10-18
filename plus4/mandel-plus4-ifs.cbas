@@ -1,7 +1,7 @@
 10 printchr$(9)chr$(14)
 15 print"**************************************"
 20 print"*  {red}Superfast Fullscreen Mandelbrot{blk}   *"
-25 print"*      {blu}Interactive Generator v1{blk}      *"
+25 print"*      {blu}Interactive Generator v2{blk}      *"
 30 print"*      {pur}2/4/8/16 Colors 160X256{blk}       *"
 35 print"**************************************"
 40 print"This Plus4 code was created by Litwr in 2022. It is based on code published for ";
@@ -20,6 +20,6 @@
 165 ifc>5thenprint"0-interlacing, 1-flashing ("f")";:inputf:iff<>0andf<>1thengosub200:goto165
 170 poke@colidx@,c-1:a=@coltab@+2*c:poke@flash@,f
 180 fori=0toc-1:poke8032+i,peek(a+i):poke8048+i,peek(a+i+c):next
-190 u=u+1:printu" time=";:sys@start@:goto80
+190 u=u+1:printu" time=";:sys@start@:print(peek(208)+peek(209)*256+peek(210)*65536)/50;"s":print:goto80
 200 printchr$(145)chr$(27)"d";:return
 

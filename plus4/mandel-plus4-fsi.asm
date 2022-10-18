@@ -29,6 +29,7 @@ r1 = $d2
 r2 = $d4
 r3 = $d6
 t = $da
+xpos = t
 tmp = $dc
 alo = $d5
 
@@ -119,7 +120,7 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*   gENERATOR V3 160x256 iNTERLACED  *",13
+       byte "*   gENERATOR V4 160x256 iNTERLACED  *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
        byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
@@ -250,13 +251,22 @@ sqrloop:
     sta r2+1
     pla
     sta r2
-    bcs mandel		; exit on overflow
+    bcs mandel0		; exit on overflow
 
 	inc r2   ;inc	r2
     bne sqrloop
 
     inc r2+1
 	bne	sqrloop
+mandel0:
+    STA $FF3F
+    LDX #$3B
+    STX $FF06
+    LDX #$18
+    STX $FF07
+    LDA #color0
+    STA $FF15
+    JSR iniirq
 mandel:
 
 .m1hi = $e3
@@ -298,14 +308,6 @@ mandel:
     sta tmp
 
     sei
-    STA $FF3F
-    LDX #$3B
-    STX $FF06
-    LDX #$18
-    STX $FF07
-    LDA #color0
-    STA $FF15
-    JSR iniirq
     lda $a5  ;timer
     sta ti
     lda $a4
@@ -615,25 +617,12 @@ r4hi = * + 1
     beq *+5
     jmp .mandel
 
-    sei
-    sta $ff3e
-    lda #8
-    sta $ff14
-    STA $FF07
-    lda #$F1
-    sta $ff15
-    LDA #$1B
-    STA $FF06
-    LDA #$C4
-    STA $FF12
-    cli
-    lda #147    ;clear screen
-    jsr BSOUT
     ldx counter
     lda #0
+    sta xpos
     jsr pr000
-         lda #" "
-         jsr BSOUT
+         lda #0
+         jsr outdigi
     lda ti
          sta dividend
          lda ti+1
@@ -650,8 +639,8 @@ r4hi = * + 1
          ldx quotient
          lda quotient+1
          jsr pr000
-         lda #"."
-         jsr BSOUT
+         lda #14
+         jsr outdigi
          lda remainder  ;*20,*5
          ldx remainder+1
          asl
@@ -762,9 +751,14 @@ pr000:   ;prints ac:xr < 10000
          jsr .pr0
          txa
          tay
-.prd:    tya
-         eor #$30
-         jmp BSOUT
+.prd:    txa
+         pha
+         tya
+         eor #$10
+         jsr outdigi
+         pla
+         tax
+         rts
 
 .pr0:    ldy #255
 .prn:    iny
@@ -839,3 +833,73 @@ data  ;     dx, dy, x0, niter
      word 260
      byte 37  ;12
 dataindex byte 0
+
+
+outdigi:   ;xpos, A-char(0..11)
+t1 = r0
+t2 = r0+1
+t3 = r1
+t4 = r1+1
+         ldx #$20
+         stx .m1+2
+         stx .m1+1
+         stx .m2+1
+         ldx #$60
+         stx .m2+2
+         ldx xpos
+         asl
+         asl
+         asl
+         tay
+.l3:     sei
+         sta $ff3e
+         lda $d100,y  ;chargen
+         sta $ff3f
+         cli
+         sty t4
+         sta t1
+         lda #2
+         sta t2
+.l6:     lda #4
+         sta t3
+.l4:     ldy #2
+.l1:     clc
+         bit t1
+         bpl .l5
+
+         sec
+.l5:     rol
+         dey
+         bne .l1
+
+         asl t1
+         dec t3
+         bne .l4
+
+.m1:     sta $2020,x
+.m2:     sta $6020,x
+         txa
+         eor #8
+         tax
+         dec t2
+         bne .l6
+
+         inc .m1+1
+         bne *+5
+         inc .m1+2
+         inc .m2+1
+         bne *+5
+         inc .m2+2
+         
+         ldy t4
+         iny
+         tya
+         and #7
+         bne .l3
+
+         txa
+         clc
+         adc #16
+         sta xpos
+         rts
+
