@@ -5,6 +5,8 @@
 ;
 ;128x256 Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 color mode
 
+NOCALC = 1
+
 Screen_Mode = 9   ;320x200 16 colors
 
 VD_ScreenStart = 148
@@ -97,10 +99,13 @@ mandel:
     mov r5,r5,lsl #7
 loop0:
     mov r9,#16
+if NOCALC=0
     ldr r4,[x0a]
+end if
 loop1:
     mov r11,#1
 loop2:
+if NOCALC=0
     add r4,r4,r10
     mov r2,r6
     mov r0,r4
@@ -133,6 +138,7 @@ loop2:
     subs r2,#1
     bne .l1
 .l2:
+end if
     and r2,r2,#15
     movs r11,r11,lsl #4
     orr r11,r2
