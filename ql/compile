@@ -10,7 +10,7 @@ else
    P='/^150/d;/^170/d'
    cp mandel-ql2.cbas mandel
 fi
-sed $P  mandel-ql.cbas > boot
+sed $P mandel-ql.cbas > boot
 gcc bin2basic.c -o bin2basic
 dd if=$F.bin of=$F.bin1 bs=1 count=$(ls -l $F.bin | awk '{print $5-'$S})
 bin2basic <$F.bin1 >>boot

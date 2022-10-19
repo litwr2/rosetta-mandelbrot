@@ -6,6 +6,8 @@
 ;128x256 Mandelbrot for the Sinclair Ql (the 68000 code)
 ;pseudo 16 colors = 4 bits per pixel but flashing is almost unusable on the QL :(
 
+NOCALC = 1
+
 initer	= 7
 idx	=	-36       ;-.0703125
 idy	=	18        ;.03515625, 1 = 1/512
@@ -74,8 +76,11 @@ mandel:
 	move dy(a3),d5
 	asl #7,d5		; r5 = 128*dy
 loop0:
+  if NOCALC=0
 	move x0(a3),d4
+  endif
 loop2:
+  if NOCALC=0
 	add dx(a3),d4   ;add	@#dxa, r4		; update a
 	move niter(a3),d2	; max iter. count
 	move d4,d0		; r0 = x = a
@@ -104,6 +109,7 @@ loc1:
     subi #1,d2
 	bne loc1        ;sob	r2, 1$		; to the next iteration  ??dbra
 loc2:
+  endif
 	and #15,d2      ;bic	#177770, r2	; get bits of color
     lsl d2
     move icolor(a3,d2.w),d0
@@ -127,7 +133,7 @@ loc3:
     lea.l -64(a2),a2
 	sub dy(a3),d5          ;sub	@#dya, r5
 	bne loop0
-
+  if NOCALC=0
 	move mx(a3),d0
     add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
 
@@ -145,7 +151,7 @@ loc4:
     move (a4,d3.w),d1
 	sub d1,(a1)+          ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
 	dbra d0,loc4          ;sob	r0, 4$
-
+  endif
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
 
     move.l a6_save(a3),a6
