@@ -9,6 +9,8 @@
          use16
          org 100h
 
+NOCALC = 0
+FASTTIMER = 1  ;200Hz instead of 18.21Hz standard
 debug = 0
 
 sqr = 800h + 1700h
@@ -38,7 +40,23 @@ start:
   end if
     ;mov ax,800h
     ;out dx,ax   ;mask, all bits open
-
+if FASTTIMER
+                MOV     AX,3508H        ;SAVE/SET INTR8 VECTOR
+                INT     21H
+                MOV     [SAVE8LO],BX
+                MOV     [SAVE8HI],ES
+                MOV     DX,intr8
+                MOV     AX,2508H
+                INT     21H
+                cli
+                MOV     AL,36H          ;SET TIMER HARDWARE
+                OUT     43H,AL
+                MOV     AL,5966 AND 0FFH
+                OUT     40H,AL               ;1193180Hz/5966=FREQ OF INTR8=199.996648Hz
+                MOV     AL,5966 SHR 8
+                OUT     40H,AL
+                sti
+end if
 	xor cx,cx   ;clr	r0		; 7 lower bits in high byte
 	xor bx,bx   ;clr	r1		; higher 11+1 bits
 	xor dx,dx   ;clr	r2		; operand-index
@@ -67,10 +85,15 @@ fillsqr:
 	jmp fillsqr ;br	fsqr
 mandel:
     mov sp,0x804
-         mov ah,2ch
-         int 21h
-         mov [time+2],cx
+    xor ax,ax
+if FASTTIMER
+         mov [time],ax
+         ;mov [time+2],ax
+else
+         int 1ah
+         ;mov [time+2],cx
          mov [time],dx
+end if
     mov ax,0a000h
     mov es,ax
     mov di,80*255+16+160-1  ;80*255+16 - bottom for top left, 160 is a +2 shift down 
@@ -79,11 +102,14 @@ mandel:
 	xchg dl,dh  ;swab	r5
 	shr dx,1    ;asr	r5		; r5 = 200*dy
 loop0:
+if NOCALC=0
 	mov bp,[x0]   ;mov	#x0, r4
+end if
 loop1:
     push di
     push bx
 loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
+if NOCALC=0
 	add bp,[vdx] ;add	@#dxa, r4
 	mov cx,[niter] ;mov	#niter, r2	; max iter. count
 	mov si,bp    ;mov	r4, r0
@@ -111,6 +137,7 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
     dec cl
 	jnz .l1        ;sob	r2, 1$		; to next iteration
 .l2:
+end if
     and cl,15
     mov ax,[colorm]
     xchg dx,bx    ;faster than MOV on the 8088
@@ -138,7 +165,7 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
     sub di,65
 	sub dx,[vdy]    ;sub	@#dya, r5		; update b
     jne loop0       ;bgt	loop0		; continue while b > 0
-
+if NOCALC=0
 	mov ax,[vmx]
     add [x0],ax       ;add	@#mxa, @#x0a	; shift x0
 
@@ -158,15 +185,54 @@ loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
 	loop .l4            ;sob	r0, 4$
 
 	inc byte [niter]     ;inc	@#nitera	; increase the iteration count
-l0:	mov ah,2ch
-    int 21h   ;get time
+end if
+l0:
+if FASTTIMER
+         ;cli
+         mov dx,[time]
+         ;mov cx,[time+2]
+         ;sti
+else
+         xor ax,ax
+         int 1ah
+         sub dx,[time]
+         ;sbb cx,[time+2]
+         mov ax,dx
+         shl dx,1
+         shl dx,1
+         add dx,ax
+         shl dx,1   ;*10
+         xor ax,ax   ;*65536
+         mov bx,59659  ;1193180/20
+         div bx
+         shl dx,1
+         cmp dx,59659
+         jc .ft1
 
+         inc ax
+.ft1:    mov dx,ax
+end if
     xor ah,ah
     int 16h   ;wait a kbd event
     and al,0dfh
     cmp al,'Q'
     jne noquit
 
+if FASTTIMER
+                PUSH    DS
+                MOV     DX,[SAVE8LO]     ;RESTORE INTR8 VECTOR
+                MOV     DS,[SAVE8HI]
+                MOV     AX,2508H
+                INT     21H
+                cli
+                POP     DS
+                MOV     AL,36H          ;RESTORE TIMER HARDWARE
+                OUT     43H,AL
+                XOR     AL,AL
+                OUT     40H,AL
+                OUT     40H,AL
+                STI
+end if
     mov ax,3
     int 10h    ;std video
     int 20h
@@ -176,11 +242,12 @@ noquit:
     je showtime
     jmp mandel
 showtime:
+    shr dx,1
+    adc dx,0
     push dx
-    push cx
+  if debug = 0
     mov dx,3ceh
     mov ax,5
-  if debug = 0
     out dx,ax   ;mode 0
     mov ax,0ff08h
     out dx,ax   ;bit mask = 0
@@ -193,87 +260,22 @@ showtime:
          call PR000
          mov dl,' '
          call PR00.le
-    pop cx
-    pop dx
-    sub dl,byte [time]
-         sub dh,byte [time+1]
-         sub cl,byte [time+2]
-         sub ch,byte [time+3]
-         jns .l12
-
-         add ch,24
-.l12:    xor ax,ax    ;ch*3600
-         xor bx,bx
-         mov al,ch
-         add al,al
-         add al,ch    ;*3
-         cbw
-         mov bp,ax
-         add ax,ax
-         add ax,bp    ;*3
-         mov bp,ax
-         add ax,ax
-         add ax,ax
-         add ax,bp    ;*5
-         mov bp,ax
-         add ax,ax
-         add ax,ax
-         add ax,bp    ;*5
-         add ax,ax
-         rol bx,1
-         add ax,ax
-         rol bx,1
-         add ax,ax
-         rol bx,1
-         add ax,ax
-         rol bx,1     ;*16 = bx:ax
-         push bx
-         push ax
-         mov al,cl    ;cl*60
-         cbw
-         mov bp,ax
-         add ax,ax
-         add ax,bp    ;*3
-         mov bp,ax
-         add ax,ax
-         add ax,ax
-         add ax,bp    ;*5
-         add ax,ax
-         add ax,ax    ;*4 = ax
-         pop cx
-         pop bx
-         push dx
-         cwd
-         add cx,ax
-         adc bx,dx
-         pop dx
-         push dx
-         mov al,dh
-         cbw
-         cwd
-         add cx,ax
-         adc bx,dx
-         pop dx
-         jne .l11
-
-         or dl,dl
-         jns .l14
-
-         dec cx
-         add dl,100
-.l14:    push dx
-         mov ax,cx
-         call PR0000
-         mov dl,'.'
-         call PR00.le
-         pop ax
-         xor ah,ah
-         call PR00
+    pop ax
+    xor dx,dx
+    mov bx,100
+    div bx
+    push dx
+    call PR000
+    mov dl,'.'
+    call PR00.le
+    pop ax
+    call PR00
          xor ah,ah
          int 16h   ;wait a kbd event
-.l11:    mov ax,205h
-         mov dx,3ceh
+.l11:
   if debug = 0
+    mov ax,205h
+    mov dx,3ceh
     out dx,ax   ;mode 2
   end if
          jmp mandel
@@ -303,6 +305,28 @@ PR00:
 	mov ax,cx
 	jmp .l2
 
+if FASTTIMER
+intr8:          inc [cs:time]
+;                jnz .l1
+
+;                inc [cs:time+2]
+;.l1:
+                dec [cs:INTR8COUNT]
+                je  .lc
+
+                PUSH    AX
+                MOV     AL,20H
+                OUT     20H,AL
+                POP     AX
+                IRET
+
+.lc:            MOV     [cs:INTR8COUNT],11  ;200/11=18.1818 Hz instead of 1193180/65536=18.2065 Hz
+                DB      0EAH
+SAVE8LO         DW      0
+SAVE8HI         DW      0
+INTR8COUNT      DB      11    ;65536/5966 = 10.98491
+end if
+
     align 2
 vdx: dw	idx
 vdy: dw	idy
@@ -311,15 +335,14 @@ x0:  dw ix0
 niter: dw initer+0xfe00
 r4:  dw 0
 r5:  dw 0
-;pat:	db	0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
-time dw 0,0
+time dw 0  ;,0
 colorm: dw 108h  ;8 - the mask register index
 
     align 2
 pe:
 msg     db " ************************************",13,10
         db " *  Superfast Mandelbrot generator  *",13,10
-        db " * EGA 16 colors (write mode 2), v2 *",13,10
+        db " * EGA 16 colors (write mode 2), v3 *",13,10
         db " ************************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav Maslovski.",13,10
