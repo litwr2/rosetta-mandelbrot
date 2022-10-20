@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
 ;
-;128x256 Mandelbrot for the Amiga (only the 68000 code), 16 colors
+;128x256 Mandelbrot for the Amiga (only the 68000 code), 16/32 colors
 
 QCOLORS=16
 NOCALC=0
@@ -254,6 +254,7 @@ noquit:
     move.b d1,(a2)+
     move.b d2,(a2)
     addq #1,d0
+    ;movea.l RASTER_PORT(a3),a1
     jsr Text(a6)
     bsr getkey
 	bra mandel
@@ -389,16 +390,16 @@ IEADDR:		DC.L	0	; IAddress
 		DC.L	0	; TimeStamp
 WINDOW_HANDLE:	DC.L	0
 time dc.l 0
-fmt     dc.b "%d %d",0   ;even number of bytes!
+fmt     dc.b "%d %02d",0   ;even number of bytes
 CONHANDLE   DC.L 0
 data = CONHANDLE
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v3         *",13,10
+        dc.b "  *          16 colors, v4         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        dc.b "This Amiga port was created by Litwr, 2021.",13,10
+        dc.b "This Amiga port was created by Litwr, 2021-22.",13,10
         dc.b "The T-key gives us timings.",13,10
         dc.b "Use the Q-key to quit.",13,10
         dc.b "Press Enter now"

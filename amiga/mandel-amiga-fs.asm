@@ -452,7 +452,7 @@ IEADDR:		DC.L	0	; IAddress
 		DC.L	0	; TimeStamp
 WINDOW_HANDLE:	DC.L	0
 time dc.l 0
-fmt     dc.b "%d %d",0   ;even number of bytes!
+fmt     dc.b "%d %02d",0   ;even number of bytes!
 
    align 1
 CONHANDLE   DC.L 0
@@ -465,7 +465,7 @@ msg     dc.b "  **********************************",10
   else
         dc.b "16"
   endif
-        dc.b" colors, v1     *",10
+        dc.b" colors, v2     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
         dc.b "Litwr in 2022. It is based on code",10
