@@ -16,6 +16,8 @@ SETMOUSE = $12
 SERVEMOUSE = $13
 INITMOUSE = $19
 
+NOCALC = 0
+
 sqrbase = $2600 ;must be $xx00, it takes area $f50-$3bb0
 initer	= 7
 idx	=	-36       ;-.0703125
@@ -24,12 +26,12 @@ ix0	=	-62*idx
 imx	=	10*idx		; x move
 sf4	=	436/4		; sf/4
 
-r0 = $ec   ;$ed
+;r0 = $ec   ;$ed
 r1 = $ee   ;$ef
 r2 = $fa   ;$fb
 r3 = $4a   ;$4b
 t = $fc   ;$fd
-tmp = $ce   ;$cf
+;tmp = $ce   ;$cf
 
 dx = $e0   ;$e1   ;these 3 values must be in one bundle
 dy = $e2   ;$e3
@@ -46,7 +48,7 @@ quotient = dividend ;save memory by reusing divident to store the quotient
    org $a00
    a8
    x8
-   ;setdp 0
+   setdp 0
 
 start:  jsr IOSAVE
         ;jsr HOME  ;clear screen
@@ -80,7 +82,7 @@ start:  jsr IOSAVE
     a16
 
         lda $3fe
-        sta .irqv
+        sta .irqv+1
         lda #timeirq
         sta $3fe
         cli
@@ -97,26 +99,25 @@ start:  jsr IOSAVE
 ;    sta $e19d00,x
 ;    bne .l1
 
-    ldx #30   ;fill palette #0 bytes, MVP??
-.l2:lda pal,x
-    sta $e19e00,x
-    dex
-    dex
-    bpl .l2
+     phb
+     lda #31
+     ldx #pal
+     ldy #$9e00
+     mvn 0,$e1
+     plb
 
 .fillsqr:
-    stz r0
+    stz t
     stz r1
     stz r2
 
-    lda #sqrbase
-    sta tmp
-    sta t
+    ldx #sqrbase
+    txy
 .sqrloop:
-    lda r1     ;mov	r1, (r5)+	; to upper half tbl
-    sta (t)
-    inc t
-    inc t
+    lda t     ;mov	r1, (r5)+	; to upper half tbl
+    sta 0,x
+    inx
+    inx
     inc r2	  ;inc	r2		; R2 = x + 2^-9
     lda r2    ;mov	r2, -(r6)
     pha
@@ -127,17 +128,16 @@ start:  jsr IOSAVE
 	and #$ff    ;movb	r2, r3		; 00000000 00HHHHHH
     sta r3
     pla
-	clc       ;add	r2, r0		; add up lower bits
-    adc r0
-    sta r0
-	lda r1       ;adc	r1		; add carry to r1
-    adc #0
-	;clc        ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+	clc       ;add	r2, r5		; add up lower bits
+    adc r5
+    sta r5
+	lda t       ;adc	r1		; add carry to r1
+    adc #0      ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
     adc r3
-    sta r1
-	dec tmp    ;mov	r1, -(r4)	; to lower half tbl
-    dec tmp
-    sta (tmp)
+    sta t
+	dey    ;mov	r1, -(r4)	; to lower half tbl
+    dey
+    sta 0,y
 	pla      ;mov	(r6)+, r2
     sta r2
     bcs .mandel		; exit on overflow
@@ -154,18 +154,23 @@ start:  jsr IOSAVE
 	lsr      ;asr	r5		; r5 = 128*dy
     sta r5
 .mloop0:
+  if NOCALC=0
 .x0 = * + 1
     lda #ix0
     sta r4     ;mov	#x0, r4
+  endif
 .mloop2:
+  if NOCALC=0
     clc
     lda r4
     adc dx
     sta r4
-    sta r0      ;add	@#dxa, r4
+    tay        ;add	@#dxa, r4
                ;mov	r4, r0
+  endif
 .niter = * + 1
     lda #initer
+  if NOCALC=0
     sta r2        ;mov	#niter, r2
 	lda r5
     sta r1       ;mov	r5, r1
@@ -174,62 +179,61 @@ start:  jsr IOSAVE
     lda r1
     adc #sqrbase
     and #$fffe
-    tay
-    lda 0,y
+    tax
+    lda 0,x
     sta r3         ;mov	sqr(r1), r3
-
-    clc   ;??
-    lda r0
+    clc
+    tya
     adc #sqrbase
     and #$fffe
-    tay
-    lda 0,y
-          ;mov	sqr(r0), r0
-
-    clc   ;??
+    tax
+    lda 0,x       ;mov	sqr(r0), r0
+    clc
     adc r3
     sta t      ;add	r3, r0
     cmp #$800
     bcs .loc2
 
-    lda r0
+    tya
     adc r1    ;C=0
     ;sta r1      ;add	r0, r1
     clc
     adc #sqrbase
     and #$fffe
-    tay
-    lda 0,y
+    tax
+    lda 0,x
     ;sta r1     ;mov sqr(r1), r1
-    clc   ;??
+    clc
+  endif
 r5 = * + 1
     adc #0   ;C=0
+  if NOCALC=0
     ;sta r1     ;add	r5, r1
-
-    sec   ;??
+    sec
     sbc t
     sta r1     ;sub	r0, r1
-    sec    ;??
+    sec
     lda t
     sbc r3
-    ;sta r0        ;sub	r3, r0
+    ;tay        ;sub	r3, r0
 	;sec   ;it seems, C=1 is always here
     sbc r3
-    ;sta r0        ;sub	r3, r0
-	clc   ;??
+    ;tay        ;sub	r3, r0
+	clc
 r4 = * + 1
     adc #0
-    sta r0     ;add	r4, r0
+    tay     ;add	r4, r0
     dec r2
     bne .loc1       ;sob	r2, 1$
 .loc2:
+  endif
 .index = * + 1
     ldx #0
+    sep #$20
+    a8
     lda r2   ;color index
 .xtoggle = * + 1
     ldy #0
-    sep #$20  ;8-bit acc ?? .xtoggle to byte
-    a8
     bne .loc8
 
     and #15
@@ -239,10 +243,9 @@ r4 = * + 1
     asl
     asl
 .z0:sta $e12000,x
-    rep #$20  ;16-bit acc
+    rep #$21  ;16-bit acc
     a16
     txa
-    clc   ;rep??
     adc #$a0
     sta .index
     cmp #160*128
@@ -293,6 +296,7 @@ r4 = * + 1
     beq .lzx
     jmp .mloop0
 .lzx:
+  if NOCALC=0
     clc
     lda .x0
     adc mx
@@ -318,7 +322,7 @@ r4 = * + 1
     dex
     dex   ;sub	sqr-sf4(r2), (r1)+
     bpl .loc4  ;sob	r0, 4$
-
+  endif
     sep #$20  ;8-bit acc
     a8
     lda #$7f
@@ -362,8 +366,7 @@ r4 = * + 1
          lda #0
          ldx #SETMOUSE
          jsr mousesub
-   jsr IOREST
-   jmp 3
+   jmp IOREST
 
 .noq:
     cmp #"T"&$1f
@@ -379,8 +382,7 @@ r4 = * + 1
 .t: clc
     xce
     rep #$31  ;16-bit idx/acc
-    ldx #0
-    stx xpos
+    stz xpos
     lda .niter
     sbc #6   ;C=0
 
@@ -409,8 +411,7 @@ r4 = * + 1
          adc dividend
          asl
          sta dividend
-         lda #0
-         sta dividend+2
+         stz dividend+2
          lda #3
          sta divisor
          jsr div32x16m
@@ -485,7 +486,7 @@ setmouse:lda $c400+SERVEMOUSE
        x16
        a16
 outdigi:   ;xpos,Y-char(0..11)*8,8/16-bit acc/idx
-t1 = r0
+t1 = r3
 t2 = r1
 t3 = r2
          sep #$20

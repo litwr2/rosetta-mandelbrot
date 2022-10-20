@@ -1,1 +1,0 @@
-../plus4/vasm-normlst.awk
