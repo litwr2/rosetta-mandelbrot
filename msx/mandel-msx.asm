@@ -9,8 +9,9 @@
 CHGET equ #009F
 CHPUT equ #00A2
 CHGMOD equ #005F
-TOTEXT equ #00D2
-FILVRM equ #0056
+;WRTVDP equ #0047
+;TOTEXT equ #00D2
+;FILVRM equ #0056
 ;SNSMAT equ #0141
 ;KILBUF equ #0156
 
@@ -20,7 +21,7 @@ RG9SAV	equ #FFE8  ;reg #8!
 RG10SAV	equ #FFE9  ;reg #9!
 
 NOCALC equ 0
-SA equ $8000  ;start address
+SA equ $8100  ;start address
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -51,6 +52,16 @@ l2       ld a,(hl)
          jr l2
 
 l1       call CHGET
+         ld a,1
+         ld c,$90
+         call wrreg
+         ld a,$77
+         out ($9a),a
+         ld a,0
+         out ($9a),a   ;sets color 1
+
+         ld a,5
+         call CHGMOD
 if 0
          ld a,(RG0SAV)
          and $f1
@@ -63,12 +74,12 @@ if 0
          ld c,$81
          call wrreg    ;graphic 4, vertical retrace interrupts
 endif
-         ld a,5
-         call CHGMOD
          ;ld a,(RG9SAV)
-         ;or 2     ;disable sprites
+         ;or $22     ;disable sprites and make color 0 normal
          ;ld c,$88
+         ;ld (RG9SAV),a
          ;call wrreg
+
          ld a,(RG10SAV)
          and $73
          or $c    ;192 lines, interlaced
@@ -81,20 +92,30 @@ endif
     ld hl,$fd9b     ;prepare the timer handler
     ld (hl),timer
 
-         ld de,0
+         ld de,0   ;clean screen
 l5:      ld h,d
          ld l,e
          ld b,128
-         ld c,$ff
-l4:      call wvmem0
+         ld c,$0
+l4:      xor a
+         bit 6,h
+         jr z,l4x
+
+         or 1
+l4x:     call wvmem
          inc hl
          djnz l4
 
          ld h,d
          ld l,e
          ld b,128
-         ld c,$ff
-l3:      call wvmem1
+         ld c,0
+l3:      ld a,2
+         bit 6,h
+         jr z,l3x
+
+         or 1
+l3x:     call wvmem
          inc hl
          djnz l3
 
@@ -107,7 +128,7 @@ l3:      call wvmem1
          jp nz,l5
 
          ld a,d
-         cp $40
+         cp $60
          jp nz,l5
 
     ld hl,sqrbase
@@ -238,7 +259,7 @@ if NOCALC=0
 loc2:
     ld a,ixh   ;color
 endif
-    and 7
+    and 15
     dec ixl
     jp nz,lx1
 
