@@ -10,6 +10,7 @@ CHGET equ #009F
 CHPUT equ #00A2
 CHGMOD equ #005F
 CHGCLR equ #0062
+GRPPRT equ #008D
 ;WRTVDP equ #0047
 ;TOTEXT equ #00D2
 ;FILVRM equ #0056
@@ -21,6 +22,8 @@ RG1SAV	equ #F3E0
 RG9SAV	equ #FFE8  ;reg #8!
 RG10SAV	equ #FFE9  ;reg #9!
 BDRCLR	equ #F3EB
+GRPACX equ #FCB7
+GRPACY equ #FCB9
 
 NOCALC equ 0
 SA equ $8100  ;start address
@@ -94,14 +97,14 @@ endif
          ld c,$82
          call wrreg
 
-    ld hl,$fd9b     ;prepare the timer handler
-    ld (hl),timer
+         ld hl,timer     ;prepare the timer handler
+         ld ($fd9b),hl
 
          ld de,0   ;clean screen
 l5:      ld h,d
          ld l,e
          ld b,128
-         ld c,$a5
+         ld c,$aa
 l4:      xor a
          bit 6,h
          jr z,l4x
@@ -114,7 +117,7 @@ l4x:     call wvmem
          ld h,d
          ld l,e
          ld b,128
-         ld c,$a5
+         ld c,$aa
 l3:      ld a,2
          bit 6,h
          jr z,l3x
@@ -389,31 +392,63 @@ endif
 
 noq:cp 'T'
     jp nz,mandel
+
+         ld a,1
+         ld (GRPACX),a
+         ld (GRPACY),a
     ld a,(niter)
     sub 7
     ld l,a
     ld h,0
-if 0
     call PR000
-    ld e," "
-    ld c,2
-    call BDOS
-    ld hl,(tilo)
+    ld a," "
+    call GRPPRT
+    ld hl,(ticks)
     ex de,hl
-    ld hl,(tihi)
-    ld bc,50
+    ld a,(ticks+2)
+    ld l,a
+    ld h,0
+    ld bc,60
+    ld a,(RG10SAV)
+    and 2
+    jr z,ntsc
+
+    ld c,50
     call div32x16r
 	PUSH HL
 	EX DE,HL
 	call PR000
-	LD e,'.'
-    ld c,2
-    call BDOS
+	LD a,'.'
+    call GRPPRT
 	POP hl
-        add hl,hl  ;*2
+    add hl,hl  ;*2
+    jr lminus
+ntsc
+    call div32x16r
+	PUSH HL
+	EX DE,HL
+	call PR000
+	LD a,'.'
+    call GRPPRT
+	POP hl
+    push hl
+    add hl,hl
+    add hl,hl  ;*2
+    pop de
+    add hl,de
+    ld de,0
+    ex de,hl
+    ld bc,3
+    call div32x16r
+    ex de,hl
+    dec e
+    dec e
+    jp m,lminus
+
+    inc hl
+lminus
 	call PR00
-    call waitk
-endif
+    call CHGET
     jp mandel
 
 div0 macro
@@ -440,7 +475,7 @@ t1
 t2
 endm
 
-div32x16r proc
+div32x16r proc   ;HL:DE/BC -> HL - rem, DE - quo
      local t,t0,t1,t2,t3
      call t
      ld bc,0
@@ -480,12 +515,7 @@ PR00	ld de,-10
 	CALL PR0
 	ld A,L
 PRD	add a,$30
-    push hl
-    ld e,a
-    ld c,2
-;    call BDOS
-    pop hl
-    ret
+    jp GRPPRT
 
 PR0	ld A,$FF
 	ld B,H
@@ -546,7 +576,7 @@ timer:
     ld (hl),a
     pop hl
     pop af
-    rts
+    ret
 
 ticks db 0,0,0
 
