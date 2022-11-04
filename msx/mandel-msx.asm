@@ -86,7 +86,7 @@ endif
          ;or $22     ;disable sprites and make color 0 normal
          ;ld c,$88
          ;ld (RG9SAV),a
-         ;call wrreg
+         ;call wrreg ;any access to this register break interlaced mode on openMSX 0.15
 
          ld a,(RG10SAV)
          and $73
@@ -100,44 +100,53 @@ endif
          ld hl,timer     ;prepare the timer handler
          ld ($fd9b),hl
 
-         ld de,0   ;clean screen
-l5:      ld h,d
-         ld l,e
-         ld b,128
-         ld c,$aa
-l4:      xor a
-         bit 6,h
-         jr z,l4x
+         xor a       ;clean screen
+         ld c,$11
+         ld hl,0
+         call wvmem
+         ld hl,16383
+l4:      ld a,c
+         out ($98),a
+         dec hl
+         ld a,l
+         or h
+         jr nz,l4
 
-         or 1
-l4x:     call wvmem
-         inc hl
-         djnz l4
+         ld a,1
+         ;ld c,$11
+         ld hl,0
+         call wvmem
+         ld hl,8191
+l5:      ld a,c
+         out ($98),a
+         dec hl
+         ld a,l
+         or h
+         jr nz,l5
 
-         ld h,d
-         ld l,e
-         ld b,128
-         ld c,$aa
-l3:      ld a,2
-         bit 6,h
-         jr z,l3x
+         ld a,2
+         ;ld c,$11
+         ld hl,0
+         call wvmem
+         ld hl,16383
+l3:      ld a,c
+         out ($98),a
+         dec hl
+         ld a,l
+         or h
+         jr nz,l3
 
-         or 1
-l3x:     call wvmem
-         inc hl
-         djnz l3
-
-         ex de,hl
-         ld de,128
-         add hl,de
-         ex de,hl
-         ld a,e
-         or a
-         jp nz,l5
-
-         ld a,d
-         cp $60
-         jp nz,l5
+         ld a,3
+         ;ld c,$11
+         ld hl,0
+         call wvmem
+         ld hl,8191
+l7:      ld a,c
+         out ($98),a
+         dec hl
+         ld a,l
+         or h
+         jr nz,l7
 
     ld hl,sqrbase
     push hl
