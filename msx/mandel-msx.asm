@@ -36,9 +36,7 @@ imx	equ	10*idx		; x move
 sf4	equ	436/4		; sf/4
 
 sqrtab macro
-    ld a,l
-    and $fe
-    ld l,a
+    res 0,l
     ld a,h
     add a,high(sqrbase)
     ld h,a
@@ -221,9 +219,8 @@ x0 equ $+1
 endif
 loop2:
 if NOCALC=0
-    ld hl,(dx)
-    ex de,hl
     ld hl,(r4)
+    ld de,(dx)
     add hl,de
     ld (r4),hl
     ld d,h
@@ -250,7 +247,7 @@ loc1:
     add hl,bc    ;add	r3, r0
     ld a,h
     and $f8
-    jp nz,loc2
+    jr nz,loc2    ;jp?
 
     push hl
     sbc hl,bc   ;x^2  ;set C=0
@@ -338,15 +335,13 @@ endl1
     push hl
     ld de,(dy)
     ld hl,(r5)
-    or a   ;set C=0
+    or a   ;sets C=0
     sbc hl,de
     ld (r5),hl
     jp nz,loop0
-
 if NOCALC=0
-    ld hl,(mx)
-    ex de,hl
     ld hl,(x0)
+    ld de,(mx)
     add hl,de
     ld (x0),hl   ;x0 += mx
     ld hl,niter
