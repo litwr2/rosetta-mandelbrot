@@ -9,6 +9,7 @@
 CHGET equ #009F
 CHPUT equ #00A2
 CHGMOD equ #005F
+CHGCLR equ #0062
 ;WRTVDP equ #0047
 ;TOTEXT equ #00D2
 ;FILVRM equ #0056
@@ -19,6 +20,7 @@ RG0SAV	equ #F3DF
 RG1SAV	equ #F3E0
 RG9SAV	equ #FFE8  ;reg #8!
 RG10SAV	equ #FFE9  ;reg #9!
+BDRCLR	equ #F3EB
 
 NOCALC equ 0
 SA equ $8100  ;start address
@@ -62,6 +64,9 @@ l1       call CHGET
 
          ld a,5
          call CHGMOD
+         xor a
+         ld (BDRCLR),a
+         call CHGCLR
 if 0
          ld a,(RG0SAV)
          and $f1
@@ -96,7 +101,7 @@ endif
 l5:      ld h,d
          ld l,e
          ld b,128
-         ld c,$0
+         ld c,$a5
 l4:      xor a
          bit 6,h
          jr z,l4x
@@ -109,7 +114,7 @@ l4x:     call wvmem
          ld h,d
          ld l,e
          ld b,128
-         ld c,0
+         ld c,$a5
 l3:      ld a,2
          bit 6,h
          jr z,l3x
