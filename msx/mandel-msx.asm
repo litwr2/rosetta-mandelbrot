@@ -213,8 +213,7 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld hl,$40  ;scridx
-    push hl
+    ld iyh,$40  ;scridx
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
@@ -292,21 +291,19 @@ lx1
 tcolor equ $+1
     ld a,0
     or b
-    pop hl
-    dec l
-    push hl
-    ld b,l
-    ld de,buf
-    add hl,de         
+    dec iyh
+    ld c,iyh
+    ld b,0
+    ld hl,buf
+    add hl,bc
     ld (hl),a
-    ld a,b
+    ld a,c
     or a
     jp nz,loop2
 
     ld a,iyl
     xor 1
     ld iyl,a
-    pop hl  ;scridx
     pop hl  ;scrbas
     push hl
     jr z,oddli
