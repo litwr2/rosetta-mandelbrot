@@ -1,7 +1,6 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the Amstrad CPC, 16 color mode
@@ -222,8 +221,8 @@ lx5:
 
     ld (dx1p),a
     ld (dx2p),a
-    add a,2
-    ld l,a
+    inc l
+    inc l
     push hl
     ld de,-sf4
 dx1p equ $+1
@@ -240,11 +239,11 @@ dx1p equ $+1
     add hl,de
     res 0,l
     set 7,h
-    or a ;sets C=0
     ld a,(hl)
     inc l
     ld h,(hl)
     ld l,a
+    or a ;sets C=0
     sbc hl,bc  ;C=0
 dx2p equ $+1
     ld (dx),hl
@@ -454,13 +453,13 @@ db &6,32,&7,35,&c,16,&d,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         16 colors, v2          *",13,10
+        db "*         16 colors, v3          *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Amstrad CPC port was created by",13,10
-        db "Litwr, 2021.",13,10
+        db "Litwr, 2021-22.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",0
    end start

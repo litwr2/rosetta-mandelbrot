@@ -1,7 +1,6 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the MSX2, 16 colors, interlaced (256x384 raster)
@@ -19,6 +18,7 @@ GRPPRT equ #008D
 
 RG0SAV	equ #F3DF
 RG1SAV	equ #F3E0
+RG2SAV	equ #F3E0
 RG9SAV	equ #FFE8  ;reg #8!
 RG10SAV	equ #FFE9  ;reg #9!
 BDRCLR	equ #F3EB
@@ -27,6 +27,7 @@ GRPACY equ #FCB9
 
 NOCALC equ 0
 SA equ $8100  ;start address
+VDP equ 1  ;faster and lesser
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -73,11 +74,13 @@ if 0
          and $f1
          or 6
          ld c,$80
+         ld (RG0SAV),a
          call wrreg
          ld a,(RG1SAV)
          and $e7
          or $20
          ld c,$81
+         ld (RG1SAV),a
          call wrreg    ;graphic 4, vertical retrace interrupts
 endif
          ;ld a,(RG9SAV)
@@ -90,9 +93,11 @@ endif
          and $73
          or $c    ;192 lines, interlaced
          ld c,$89
+         ld (RG10SAV),a
          call wrreg
          ld a,$3f    ;$1f - page 0, $3f - page 1
          ld c,$82
+         ld (RG2SAV),a
          call wrreg
 
          ld hl,timer     ;prepare the timer handler
@@ -314,26 +319,56 @@ tcolor equ $+1
     xor a
     call wvmem
     ld hl,buf
+    ;otir    ;unroll?
 rept $40
     outi
 endm
-    ;otir    ;unroll?
     pop hl
     push hl
+if VDP=0
     ld a,h
     xor $3f
     ld h,a
     ld a,l
     xor $80
     ld l,a
-    xor a
+    ld a,2
     call wvmem
-    ;ld b,$40
     ld hl,buf
+    ;ld b,$40
     ;otir     ;unroll?
 rept $40
     outi
 endm
+else
+    ld de,128
+    add hl,hl
+    ld a,127
+    sub h
+    ld b,a
+    ld a,34
+    inc l
+    ld c,#9B
+    di
+    out (#99),a
+    ld a,17 + 128
+    out (#99),a
+    out (c),h   ;start Y
+    out (c),d
+    out (c),d   ;start X
+    out (c),d
+    out (c),b   ;end Y
+    out (c),l
+    out (c),e   ;size X
+    out (c),d
+    out (c),l   ;size Y
+    out (c),d
+    out (c),d   ;0
+    out (c),d
+    ld a,$e0   ;YMMM
+    ei
+    out ($9b),a
+endif
     jp endli
 oddli
     ld a,2
@@ -345,22 +380,51 @@ rept $40
 endm
     pop hl
     push hl
+    ld de,128
+if VDP=0
     ld a,h
     xor $3f
     ld h,a
     ld a,l
     xor $80
     ld l,a
-    ld a,2
+    xor a
     call wvmem
-    ;ld b,$40
     ld hl,buf
+    ;ld b,$40
     ;otir   ;unroll?
 rept $40
     outi
 endm
+else
+    add hl,hl
+    ld a,127
+    sub h
+    ld b,a
+    ld a,34
+    inc l
+    ld c,#9B
+    di
+    out (#99),a
+    ld a,17 + 128
+    out (#99),a
+    out (c),h   ;start Y
+    out (c),l
+    out (c),d   ;start X
+    out (c),d
+    out (c),b   ;end Y
+    out (c),d
+    out (c),e   ;size X
+    out (c),d
+    out (c),l   ;size Y
+    out (c),d
+    out (c),d   ;0
+    out (c),d
+    ld a,$e0   ;YMMM
+    ei
+    out ($9b),a
+endif
     pop hl
-    ld de,128
     add hl,de
     push hl
 endli
@@ -413,9 +477,8 @@ dx1p equ $+1
 dx2p equ $+1
     ld (dx),hl
     jp lx5
-
-lx2:pop hl
 endif
+lx2:pop hl
     ld a,$c9   ;opcode for RET
     ld ($fd9a),a   ;stop timer
     call CHGET
