@@ -306,13 +306,18 @@ tcolor equ $+1
     ld iyl,a
     pop hl  ;scrbas
     push hl
-    ld bc,$4098
-    jr z,oddli
+    ;ld bc,$4098
+    ld c,$98
+    ;jr z,oddli
+    jp z,oddli
 
     xor a
     call wvmem
     ld hl,buf
-    otir    ;unroll?
+rept $40
+    outi
+endm
+    ;otir    ;unroll?
     pop hl
     push hl
     ld a,h
@@ -323,15 +328,21 @@ tcolor equ $+1
     ld l,a
     xor a
     call wvmem
-    ld b,$40
+    ;ld b,$40
     ld hl,buf
-    otir     ;unroll?
+    ;otir     ;unroll?
+rept $40
+    outi
+endm
     jp endli
 oddli
     ld a,2
     call wvmem
     ld hl,buf
-    otir   ;unroll?
+    ;otir   ;unroll?
+rept $40
+    outi
+endm
     pop hl
     push hl
     ld a,h
@@ -342,9 +353,12 @@ oddli
     ld l,a
     ld a,2
     call wvmem
-    ld b,$40
+    ;ld b,$40
     ld hl,buf
-    otir   ;unroll?
+    ;otir   ;unroll?
+rept $40
+    outi
+endm
     pop hl
     ld de,128
     add hl,de
