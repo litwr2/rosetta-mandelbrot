@@ -102,7 +102,7 @@ endif
          ld c,$11
          ld hl,0
          call wvmem
-         ld hl,16383
+         ld hl,16384
 l4:      ld a,c
          out ($98),a
          dec hl
@@ -114,7 +114,7 @@ l4:      ld a,c
          ;ld c,$11
          ld hl,0
          call wvmem
-         ld hl,8191
+         ld hl,8192
 l5:      ld a,c
          out ($98),a
          dec hl
@@ -126,7 +126,7 @@ l5:      ld a,c
          ;ld c,$11
          ld hl,0
          call wvmem
-         ld hl,16383
+         ld hl,16384
 l3:      ld a,c
          out ($98),a
          dec hl
@@ -138,7 +138,7 @@ l3:      ld a,c
          ;ld c,$11
          ld hl,0
          call wvmem
-         ld hl,8191
+         ld hl,8192
 l7:      ld a,c
          out ($98),a
          dec hl
@@ -202,8 +202,9 @@ mandel:
 
     ld ixl,1   ;dot even/odd
     ld iyl,0   ;line even/odd
-    ld hl,$3f  ;scrtop
+    ld hl,0  ;scrbase
     push hl
+
     ld hl,(dy)
     ld a,h
     ld h,l
@@ -212,6 +213,8 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
+    ld hl,$40  ;scridx
+    push hl
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
@@ -290,55 +293,74 @@ tcolor equ $+1
     ld a,0
     or b
     pop hl
+    dec l
     push hl
-    ld c,a
-    dec iyl
-    inc iyl
-    jr z,evenl
-
-    call wvmem1
-    ld a,h
-    xor $3f
-    ld h,a
-    ld a,l
-    xor $80
-    ld l,a
-    call wvmem0
-    jp endl
-evenl
-    call wvmem0
-    ld a,h
-    xor $3f
-    ld h,a
-    ld a,l
-    xor $80
-    ld l,a
-    call wvmem1
-endl
-    ld a,l
-    pop hl
-    dec hl
-    push hl
-    and $3f
+    ld b,l
+    ld de,buf
+    add hl,de         
+    ld (hl),a
+    ld a,b
+    or a
     jp nz,loop2
 
     ld a,iyl
     xor 1
     ld iyl,a
-    pop hl  ;scrtop
-    ld de,192
-    jr z,endl1
+    pop hl  ;scridx
+    pop hl  ;scrbas
+    push hl
+    jr z,oddli
 
-    ld de,64
-endl1
+    xor a
+    call wvmem
+    ld bc,$4098
+    ld hl,buf
+    otir
+    pop hl
+    push hl
+    ld a,h
+    xor $3f
+    ld h,a
+    ld a,l
+    xor $80
+    ld l,a
+    xor a
+    call wvmem
+    ld bc,$4098
+    ld hl,buf
+    otir
+    jp endli
+oddli
+    ld a,2
+    call wvmem
+    ld bc,$4098
+    ld hl,buf
+    otir
+    pop hl
+    push hl
+    ld a,h
+    xor $3f
+    ld h,a
+    ld a,l
+    xor $80
+    ld l,a
+    ld a,2
+    call wvmem
+    ld bc,$4098
+    ld hl,buf
+    otir
+    pop hl
+    ld de,128
     add hl,de
     push hl
+endli
     ld de,(dy)
     ld hl,(r5)
     or a   ;sets C=0
     sbc hl,de
     ld (r5),hl
     jp nz,loop0
+
 if NOCALC=0
     ld hl,(x0)
     ld de,(mx)
@@ -532,9 +554,7 @@ PR0	ld A,$FF
 	ld L,C
 	jp PRD
 
-wvmem0  ;c - value, hl - addr
-    xor a
-wvmem:
+wvmem:   ;a - bank, hl - addr
     di
     out (#99),a
     ld a,14 + 128
@@ -545,13 +565,7 @@ wvmem:
     or 64
     ei
     out (#99),a
-    ld a,c
-    out (#98),a
     ret
-
-wvmem1  ;c - value, hl - addr
-    ld a,2
-    jr wvmem
 
 wrreg   ;a - value, c - reg+128
     di
@@ -583,6 +597,7 @@ timer:
     ret
 
 ticks db 0,0,0
+buf ds 64   ;optimize?
 
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
