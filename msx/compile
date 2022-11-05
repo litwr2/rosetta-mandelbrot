@@ -1,0 +1,2 @@
+f=${1%%.asm}
+pasmo6 --listing $f.lst $f.asm $f.bin
