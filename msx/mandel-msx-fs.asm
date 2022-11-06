@@ -12,9 +12,6 @@ CHGCLR equ #0062
 GRPPRT equ #008D
 ;WRTVDP equ #0047
 ;TOTEXT equ #00D2
-;FILVRM equ #0056
-;SNSMAT equ #0141
-;KILBUF equ #0156
 
 RG0SAV	equ #F3DF
 RG1SAV	equ #F3E0
@@ -25,9 +22,8 @@ BDRCLR	equ #F3EB
 GRPACX equ #FCB7
 GRPACY equ #FCB9
 
-NOCALC equ 0
 SA equ $8100  ;start address
-VDP equ 0  ;faster and lesser
+VDP equ 1  ;faster and lesser
 
 sqrtab macro
     res 0,l
@@ -271,11 +267,11 @@ tcolor equ $+1
     ld b,0
     or b
     dec iyh
+
+    ld b,high(buf)
     ld c,iyh
-    ld b,0
-    ld hl,buf     ;byte align!
-    add hl,bc
-    ld (hl),a
+    ld (bc),a
+
     ld a,c
     or a
     jp nz,loop2
@@ -581,7 +577,6 @@ data
      dw 440
      db 37  ;12
 ticks db 0,0,0
-buf ds 256   ;optimize?
 
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
@@ -595,8 +590,8 @@ msg     db "****************************",13,10
         db "Maslovski.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",0
-
-sqrbase equ (msg + $16b0 + $ff) and $ff00
 ec:
+sqrbase equ (msg + $16b0 + $ff) and $ff00
+buf equ sqrbase + $1700
    end start
 

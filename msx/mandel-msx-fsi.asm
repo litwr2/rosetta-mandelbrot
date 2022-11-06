@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the MSX2, 16 colors, interlaced (256x384 raster)
+;Fullscreen (512x414) Mandelbrot for the MSX2, 16 colors, interlaced
 
 CHGET equ #009F
 CHPUT equ #00A2
@@ -14,7 +14,6 @@ GRPPRT equ #008D
 ;TOTEXT equ #00D2
 ;FILVRM equ #0056
 ;SNSMAT equ #0141
-;KILBUF equ #0156
 
 RG0SAV	equ #F3DF
 RG1SAV	equ #F3E0
@@ -25,16 +24,8 @@ BDRCLR	equ #F3EB
 GRPACX equ #FCB7
 GRPACY equ #FCB9
 
-NOCALC equ 0
 SA equ $8100  ;start address
-VDP equ 1  ;faster and lesser
-
-initer	equ	7
-idx	equ	-36       ;-.0703125
-idy	equ	18        ;.03515625
-ix0	equ	-62*idx
-imx	equ	10*idx		; x move
-sf4	equ	436/4		; sf/4
+VDP equ 0  ;faster and lesser
 
 sqrtab macro
     res 0,l
@@ -64,7 +55,7 @@ l1       call CHGET
          ld a,0
          out ($9a),a   ;sets color 1
 
-         ld a,5
+         ld a,7
          call CHGMOD
          xor a
          ld (BDRCLR),a
@@ -91,7 +82,7 @@ endif
 
          ld a,(RG10SAV)
          and $73
-         or $c    ;192 lines, interlaced
+         or $8c    ;212 lines, interlaced
          ld c,$89
          ld (RG10SAV),a
          call wrreg
@@ -102,54 +93,6 @@ endif
 
          ld hl,timer     ;prepare the timer handler
          ld ($fd9b),hl
-
-         xor a       ;clean screen
-         ld c,$11
-         ld hl,0
-         call wvmem
-         ld hl,16384
-l4:      ld a,c
-         out ($98),a
-         dec hl
-         ld a,l
-         or h
-         jr nz,l4
-
-         ld a,1
-         ;ld c,$11
-         ld hl,0
-         call wvmem
-         ld hl,8192
-l5:      ld a,c
-         out ($98),a
-         dec hl
-         ld a,l
-         or h
-         jr nz,l5
-
-         ld a,2
-         ;ld c,$11
-         ld hl,0
-         call wvmem
-         ld hl,16384
-l3:      ld a,c
-         out ($98),a
-         dec hl
-         ld a,l
-         or h
-         jr nz,l3
-
-         ld a,3
-         ;ld c,$11
-         ld hl,0
-         call wvmem
-         ld hl,8192
-l7:      ld a,c
-         out ($98),a
-         dec hl
-         ld a,l
-         or h
-         jr nz,l7
 
     ld hl,sqrbase
     push hl
@@ -196,6 +139,33 @@ r4l:
 mandel0:
     pop hl
 mandel:
+    ld a,(dataindex)
+    ld l,a
+    ld h,0
+    push hl
+    add hl,hl
+    add hl,hl
+    pop de
+    add hl,de
+    ld de,data
+    add hl,de
+    ld a,(hl)
+    ld (dx),a
+    inc hl
+    ld a,(hl)
+    ld (dy),a
+    inc hl
+    ld a,(hl)
+    ld (x0),a
+    inc hl
+    ld a,(hl)
+    ld (x0+1),a
+    inc hl
+    ld a,(hl)
+    ld (niter),a
+    add a,2
+    ld (hl),a
+
     ld hl,ticks
     xor a
     ld (hl),a
@@ -210,33 +180,40 @@ mandel:
     ld iyl,0   ;line even/odd
     ld hl,0  ;scrbase
     push hl
-
-    ld hl,(dy)
-    ld a,h
-    ld h,l
-    srl h
-    rra
-    ld l,a       ;dy*128
+dy equ $+1
+    ld hl,0
+    add hl,hl
+    push hl
+    add hl,hl
+    add hl,hl
+    push hl
+    add hl,hl
+    add hl,hl
+    push hl
+    add hl,hl
+    pop de
+    add hl,de
+    pop de
+    add hl,de
+    pop de
+    add hl,de
+    add hl,hl      ;dy*212
     ld (r5),hl
 loop0:
-    ld iyh,$40  ;scridx
-if NOCALC=0
+    ld iyh,0  ;scridx
 x0 equ $+1
-    ld hl,ix0
+    ld hl,0
     ld (r4),hl
-endif
-loop2:
-if NOCALC=0
+loop2
     ld hl,(r4)
-    ld de,(dx)
+dx equ $+1
+    ld de,$ff00
     add hl,de
     ld (r4),hl
     ld d,h
     ld e,l      ;mov	r4, r0
-endif
 niter equ $+2
-    ld ixh,initer
-if NOCALC=0
+    ld ixh,0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -269,10 +246,8 @@ r4 equ $+1
     inc l
     ld h,(hl)
     ld l,a       ;(x+y)^2
-endif
 r5 equ $+1
     ld bc,0
-if NOCALC=0
     add hl,bc    ;sets C=0
     pop bc   ;r0
     sbc hl,bc    ;2xy+y0
@@ -280,7 +255,6 @@ if NOCALC=0
     jp nz,loc1   ;sob r2,1$
 loc2:
     ld a,ixh   ;color
-endif
     and 15
     dec ixl
     jp nz,lx1
@@ -309,9 +283,8 @@ tcolor equ $+1
     ld a,iyl
     xor 1
     ld iyl,a
-    pop hl  ;scrbas
+    pop hl  ;scrbas, l is always 0!!
     push hl
-    ;ld bc,$4098
     ld c,$98
     ;jr z,oddli
     jp z,oddli
@@ -319,33 +292,30 @@ tcolor equ $+1
     xor a
     call wvmem
     ld hl,buf
-    ;otir    ;unroll?
-rept $40
+    ;otir
+rept $100
     outi
 endm
     pop hl
     push hl
 if VDP=0
-    ld a,h
-    xor $3f
+    ld a,$d3
+    sub h
     ld h,a
-    ld a,l
-    xor $80
-    ld l,a
-    ld a,2
+    ld a,1
     call wvmem
     ld hl,buf
     ;ld b,$40
     ;otir     ;unroll?
-rept $40
+rept $100
     outi
 endm
 else
-    ld de,128
-    add hl,hl
-    ld a,127
+    ld d,l
+    ld a,$d3
     sub h
     ld b,a
+
     ld a,34
     inc l
     ld c,#9B
@@ -358,9 +328,11 @@ else
     out (c),d   ;start X
     out (c),d
     out (c),b   ;end Y
-    out (c),l
-    out (c),e   ;size X
     out (c),d
+    out (c),d   ;size X
+    inc l
+    out (c),l
+    dec l
     out (c),l   ;size Y
     out (c),d
     out (c),d   ;0
@@ -371,32 +343,29 @@ else
 endif
     jp endli
 oddli
-    ld a,2
+    ld a,1
     call wvmem
     ld hl,buf
     ;otir   ;unroll?
-rept $40
+rept $100
     outi
 endm
     pop hl
     push hl
-    ld de,128
 if VDP=0
-    ld a,h
-    xor $3f
+    ld a,$d3
+    sub h
     ld h,a
-    ld a,l
-    xor $80
-    ld l,a
     xor a
     call wvmem
     ld hl,buf
     ;ld b,$40
     ;otir   ;unroll?
-rept $40
+rept $100
     outi
 endm
 else
+    ld de,128
     add hl,hl
     ld a,127
     sub h
@@ -425,7 +394,7 @@ else
     out ($9b),a
 endif
     pop hl
-    add hl,de
+    inc h
     push hl
 endli
     ld de,(dy)
@@ -435,52 +404,21 @@ endli
     ld (r5),hl
     jp nz,loop0
 
-if NOCALC=0
-    ld hl,(x0)
-    ld de,(mx)
-    add hl,de
-    ld (x0),hl   ;x0 += mx
-    ld hl,niter
-    inc (hl)     ;iter++
-    ld hl,dx
-    push hl
-lx5:
     pop hl
-    ld a,l
-    cp low(mx)+2
-    jp z,lx2
 
-    ld (dx1p),a
-    ld (dx2p),a
-    inc l
-    inc l
-    push hl
-    ld de,-sf4
-dx1p equ $+1
-    ld hl,(dx)
-    push hl
-    add hl,de
-    sqrtab
-    ld c,(hl)
-    inc l
-    ld b,(hl)
-    ld de,sf4
-    pop hl
-    add hl,de
-    sqrtab
-    ld a,(hl)
-    inc l
-    ld h,(hl)
-    ld l,a
-    or a ;sets C=0
-    sbc hl,bc  ;C=0
-dx2p equ $+1
-    ld (dx),hl
-    jp lx5
-endif
-lx2:pop hl
     ld a,$c9   ;opcode for RET
     ld ($fd9a),a   ;stop timer
+
+    ld hl,counter
+    inc (hl)
+    ld a,(dataindex)
+    inc a
+    cp dataentries
+    jr nz,lx2
+
+    xor a
+lx2 ld (dataindex),a
+
     call CHGET
     and 0dfh
     cp 'Q'
@@ -495,8 +433,7 @@ noq:cp 'T'
          ld a,1
          ld (GRPACX),a
          ld (GRPACY),a
-    ld a,(niter)
-    sub 7
+    ld a,(counter)
     ld l,a
     ld h,0
     call PR000
@@ -552,22 +489,16 @@ lminus
 
 div0 macro
      local t1,t2
-     ex de,hl
-     add hl,hl
-     ex de,hl
-     ld a,l
-     adc a,l
-     ld l,a
-     ld a,h
-     adc a,h
-     ld h,a
-     jp c,t1
+     sla e
+     rl d
+     ADC   HL, HL
+     jr c,t1
 
      LD    A,L
      ADD   A,C
      LD    A,H
      ADC   A,B
-     jp nc,t2
+     JR    NC,t2
 t1
      ADD   HL,BC
      inc e
@@ -599,13 +530,6 @@ t3
      RET
      endp
 
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
-  endif
-
 PR0000  ld de,-1000
 	CALL PR0
 PR000	ld de,-100
@@ -621,13 +545,19 @@ PR0	ld A,$FF
 	ld C,L
 	inc A
 	add HL,DE
-	jp C,$-4
+	jr C,$-4
 
 	ld H,B
 	ld L,C
-	jp PRD
+	JR PRD
 
 wvmem:   ;a - bank, hl - addr
+    rlc h
+    rla
+    rlc h
+    rla
+    srl h
+    srl h
     di
     out (#99),a
     ld a,14 + 128
@@ -669,18 +599,58 @@ timer:
     pop af
     ret
 
+dataentries equ 12
+counter db 0
+dataindex db 0
+data 
+     db -9, 18
+     dw 2232   ;dx, dy, x0, niter
+     db 7   ;1
+     db -7, 13
+     dw 1841
+     db 8   ;2
+     db -6, 11
+     dw 1500
+     db 9   ;3
+     db -5, 9
+     dw 1330
+     db 10  ;4
+     db -4, 8
+     dw 1000
+     db 11  ;5
+     db -4, 6
+     dw 800
+     db 12  ;6
+     db -4, 4
+     dw 900
+     db 13  ;7
+     db -3, 3
+     dw 480
+     db 14  ;8
+     db -3, 3
+     dw 410
+     db 15  ;9
+     db -3, 3
+     dw 340
+     db 16  ;10
+     db -3, 3
+     dw 340
+     db 25  ;11
+     db -3, 3
+     dw 440
+     db 37  ;12
 ticks db 0,0,0
 
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
-        db "*        generator         *",13,10
-        db "*     interlaced, v1       *",13,10
+        db "*   fullscreen generator   *",13,10
+        db "*  interlaced, 512x424, v1 *",13,10
         db "****************************",13,10
-        db "The original version was",13,10
-        db "published for the BK0011 in",13,10
-        db "2021 by Stanislav Maslovski.",13,10
-        db "This MSX2 port was created",13,10
-        db "by Litwr, 2022.",13,10
+        db "This MSX2 code was created",13,10
+        db "by Litwr, 2022. It is based",13,10
+        db "on code published for the",13,10
+        db "BK0011 in 2021 by Stanislav",13,10
+        db "Maslovski.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",0
 ec:
