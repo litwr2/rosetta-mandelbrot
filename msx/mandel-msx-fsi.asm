@@ -25,7 +25,7 @@ GRPACX equ #FCB7
 GRPACY equ #FCB9
 
 SA equ $8100  ;start address
-VDP equ 0  ;faster and lesser
+VDP equ 1  ;faster and lesser
 
 sqrtab macro
     res 0,l
@@ -328,7 +328,7 @@ else
     out (c),d   ;start X
     out (c),d
     out (c),b   ;end Y
-    out (c),d
+    out (c),l
     out (c),d   ;size X
     inc l
     out (c),l
@@ -365,11 +365,11 @@ rept $100
     outi
 endm
 else
-    ld de,128
-    add hl,hl
-    ld a,127
+    ld d,l
+    ld a,$d3
     sub h
     ld b,a
+
     ld a,34
     inc l
     ld c,#9B
@@ -383,8 +383,10 @@ else
     out (c),d
     out (c),b   ;end Y
     out (c),d
-    out (c),e   ;size X
-    out (c),d
+    out (c),d   ;size X
+    inc l
+    out (c),l
+    dec l
     out (c),l   ;size Y
     out (c),d
     out (c),d   ;0
