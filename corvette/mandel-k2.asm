@@ -36,7 +36,7 @@ sqrtab macro
     add a,high(sqrbase)
     ld h,a
 endm
- 
+
 start
     ld de,msg
     ld c,9
@@ -53,7 +53,8 @@ start
     ld hl,sqrbase
     push hl
     ld bc,0
-    ld de,0
+    ld d,b
+    ld e,c
 sqrloop:
     pop hl
     ld (hl),c
@@ -490,7 +491,7 @@ curpos db 1,33,65,"$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     8 colors + textures, v1    *",13,10
+        db "*     8 colors + textures, v2    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10

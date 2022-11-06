@@ -35,7 +35,8 @@ ni: call KM_WAIT_CHAR
     ld hl,sqrbase
     push hl
     ld bc,0
-    ld de,0
+    ld d,b
+    ld e,c
 sqrloop:
     pop hl
     ld (hl),c
@@ -73,7 +74,7 @@ r4l:
     inc de
     jr sqrloop
 
-mandel0: 
+mandel0:
     pop hl
 mandel:
     ld a,(dataindex)
@@ -344,7 +345,7 @@ t1
 t2
 endm
 
-div32x16r proc
+div32x16r proc   ;HL:DE/BC -> HL - rem, DE - quo
      local t,t0,t1,t2,t3
      call t
      ld bc,0
@@ -374,10 +375,9 @@ c8t:    db 0, 8, $22, $88, $2a, $28, 2, $8a
 
 PR0000  ld de,-1000
 	CALL PR0
-PR000
-	ld de,-100
+PR000	ld de,-100
 	CALL PR0
-	ld de,-10
+PR00	ld de,-10
 	CALL PR0
 	ld A,L
 PRD	add a,$30
@@ -554,7 +554,7 @@ msg     db "**********************************",13,10
         db HMAX/100+48
         db (HMAX-(HMAX/100)*100)/10+48
         db HMAX % 10+48
-        db "x256, 16 colors, v1     *",13,10
+        db "x256, 16 colors, v2     *",13,10
         db "**********************************",13,10
         db "This Amstrad CPC code was created by",13,10
         db "Litwr in 2022. It is based on code",13,10

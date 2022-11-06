@@ -27,7 +27,7 @@ sqrtab macro
     add a,high(sqrbase)
     ld h,a
 endm
- 
+
 start
     ld de,msg
     ld c,9
@@ -44,7 +44,8 @@ start
     ld hl,sqrbase
     push hl
     ld bc,0
-    ld de,0
+    ld d,b
+    ld e,c
 sqrloop:
     pop hl
     ld (hl),c
@@ -477,7 +478,7 @@ dataindex dw data
 
 msg     db "**************************************",13,10
         db "*   Superfast Mandelbrot generator   *",13,10
-        db "* 8 colors, fullscreen (512x256), v1 *",13,10
+        db "* 8 colors, fullscreen (512x256), v2 *",13,10
         db "**************************************",13,10
         db "This Corvette code was created by Litwr, 2022.",13,10
         db "It is based on code published for",13,10

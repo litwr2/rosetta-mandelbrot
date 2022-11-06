@@ -39,7 +39,8 @@ ni: call KM_WAIT_CHAR
     ld hl,sqrbase
     push hl
     ld bc,0
-    ld de,0
+    ld d,b
+    ld e,c
 sqrloop:
     pop hl
     ld (hl),c
@@ -453,7 +454,7 @@ db &6,32,&7,35,&c,16,&d,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         16 colors, v3          *",13,10
+        db "*         16 colors, v4          *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10

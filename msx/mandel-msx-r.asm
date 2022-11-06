@@ -72,7 +72,7 @@ endm
 
          org SA-7
 db $fe,low(SA),high(SA),low(ec),high(ec),low(SA),high(SA)
- 
+
 start    ld hl,msg
 l2       ld a,(hl)
          or a
@@ -156,7 +156,8 @@ l5:      ld a,c
     ld hl,sqrbase
     push hl
     ld bc,0
-    ld de,0
+    ld d,b
+    ld e,c
 sqrloop:
     pop hl
     ld (hl),c
