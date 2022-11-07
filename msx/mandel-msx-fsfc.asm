@@ -161,8 +161,7 @@ mandel:
     ld a,$c3     ;opcode for CALL
     ld ($fd9a),a   ;start timer
 
-    ld hl,0  ;scrbase
-    push hl
+    ld ixl,0  ;scrbase
 dy equ $+1
     ld hl,0
     add hl,hl
@@ -251,23 +250,23 @@ loc2:
     or a
     jp nz,loop2
 
-    pop hl  ;scrbas
-    push hl
+    ld a,ixl
+    ld h,a
     ld c,$98
     xor a
+    ld l,a
     call wvmem
     ld hl,buf
     ;otir    ;unroll?
 rept $100
     outi
 endm
-    pop hl
-    push hl
 if VDP=0
     ld a,$d3
-    sub h
+    sub ixl
     ld h,a
     xor a
+    ld l,a
     call wvmem
     ld hl,buf
     ;ld b,$40
@@ -276,19 +275,20 @@ rept $100
     outi
 endm
 else
-    ld d,l
+    ld e,ixl
+    ld l,1
+    ld d,0
     ld a,$d3
-    sub h
+    sub e
     ld b,a
 
     ld a,34
-    inc l
     ld c,#9B
     di
     out (#99),a
     ld a,17 + 128
     out (#99),a
-    out (c),h   ;start Y
+    out (c),e   ;start Y
     out (c),d
     out (c),d   ;start X
     out (c),d
@@ -304,9 +304,7 @@ else
     ei
     out ($9b),a
 endif
-    pop hl
-    inc h
-    push hl
+    inc ixl
     ld de,(dy)
     ld hl,(r5)
     or a   ;sets C=0
@@ -314,7 +312,6 @@ endif
     ld (r5),hl
     jp nz,loop0
 
-    pop hl
     ld a,$c9   ;opcode for RET
     ld ($fd9a),a   ;stop timer
 
@@ -513,13 +510,13 @@ dataindex db 0
 data 
      db -9, 18
      dw 1100   ;dx, dy, x0, niter
-     db 107   ;1
+     db 27   ;1
      db -14, 15
      dw 1640
-     db 114   ;2
+     db 28   ;2
      db -11, 13
      dw 1280
-     db 121   ;3
+     db 115   ;3
      db -9, 11
      dw 1080
      db 141  ;4
