@@ -22,7 +22,7 @@ BDRCLR	equ #F3EB
 GRPACX equ #FCB7
 GRPACY equ #FCB9
 
-SA equ $8100  ;start address
+SA equ $8500  ;start address
 VDP equ 1  ;faster and lesser
 
 sqrtab macro

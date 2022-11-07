@@ -11,9 +11,6 @@ CHGMOD equ #005F
 CHGCLR equ #0062
 GRPPRT equ #008D
 ;WRTVDP equ #0047
-;TOTEXT equ #00D2
-;FILVRM equ #0056
-;SNSMAT equ #0141
 
 RG0SAV	equ #F3DF
 RG1SAV	equ #F3E0
@@ -24,7 +21,7 @@ BDRCLR	equ #F3EB
 GRPACX equ #FCB7
 GRPACY equ #FCB9
 
-SA equ $8100  ;start address
+SA equ $8500  ;start address
 VDP equ 1  ;faster and lesser
 
 sqrtab macro
