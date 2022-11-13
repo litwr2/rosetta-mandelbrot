@@ -13,6 +13,9 @@ NOCALC = 0
 FASTTIMER = 1  ;200Hz instead of 18.21Hz standard
 debug = 0
 
+HSize = 640
+VSize = 350
+
 sqr = 800h + 1700h
 start:
     mov ah,9
@@ -86,7 +89,9 @@ mandel:
     mov [vdy],ax
     lodsw
     mov [x0],ax
-    lodsb
+    mov al,[si]
+    add byte [si],2
+    inc si
     mov [niter],al
     cmp si,dataindex
     jne .l11
@@ -340,7 +345,7 @@ colorm: dw 108h  ;8 - the mask register index
 msg     db " ************************************",13,10
         db " *  Superfast Mandelbrot generator  *",13,10
         db " *      EGA Fullscreen, 640x350     *",13,10
-        db " *   16 colors (write mode 2), v1   *",13,10
+        db " *   16 colors (write mode 2), v3   *",13,10
         db " ************************************",13,10
         db "This IBM PC EGA/VGA code was created by",13,10
         db "Litwr, 2022. It is based on code published",13,10
@@ -349,43 +354,26 @@ msg     db " ************************************",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
 
+macro mentry dx,dy,ni {
+     db -dx, dy
+     dw dx*HSize/2-777/dx   ;dx, dy, x0 = dx*HSize, niter
+     db ni
+}
+
 iter db 0
 ;x-min = (x0+x*640)/512, x-max = x0/512, y-max = dy*175/512
-mdata db -9, 16
-     dw 2900   ;dx, dy, x0, niter
-     db 7   ;1
-     db -8, 15
-     dw 2200
-     db 8   ;2
-     db -7, 14
-     dw 2140
-     db 9   ;3
-     db -6, 13
-     dw 1600
-     db 10  ;4
-     db -4, 12
-     dw 1000
-     db 11  ;5
-     db -3,  7
-     dw 800
-     db 12  ;6
-     db -3,  5
-     dw 875
-     db 13  ;7
-     db -2,  4
-     dw 280
-     db 14  ;8
-     db -2,  3
-     dw 512
-     db 15  ;9
-     db -2,  4
-     dw 255
-     db 16  ;10
-     db -2,  4
-     dw 255
-     db 25  ;11
-     db -2,  4
-     dw 255
-     db 37  ;12
+mdata:
+     mentry 9, 16, 7   ;1
+     mentry 8, 15, 8   ;2
+     mentry 7, 14, 9   ;3
+     mentry 6, 13, 10  ;4
+     mentry 4, 12, 11  ;5
+     mentry 3,  7, 12  ;6
+     mentry 3,  5, 13  ;7
+     mentry 2,  4, 14  ;8
+     mentry 2,  3, 15  ;9
+     mentry 2,  4, 16  ;10
+     mentry 2,  4, 25  ;11
+     mentry 2,  4, 37  ;12
 dataindex dw mdata
 

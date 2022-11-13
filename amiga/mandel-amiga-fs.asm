@@ -6,6 +6,7 @@
 ;320x256 (Fullscreen) Mandelbrot for the Amiga (only the 68000 code), 16/32 colors
 
 QCOLORS = 32 ;16
+HSize = 320
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -306,44 +307,26 @@ charCount     dc.l 0
 mouseleft dc.b 0     ;?? remove
 mouseright dc.b 0
 
+  macro mentry
+     dc.b -\1, \2
+     dc.w \1*HSize/2-1510/\1   ;dx, dy, x0 = dx*HSize, niter
+     dc.b \3,0
+  endm
+
 dataindex dc.w 0
 iter dc.w 0
-data dc.b -9, 18
-     dc.w 1432   ;dx, dy, x0, niter
-     dc.b 17,0 ;1
-     dc.b -7, 15
-     dc.w 1141
-     dc.b 18,0 ;2
-     dc.b -6, 13
-     dc.w 880
-     dc.b 19,0 ;3
-     dc.b -5, 11
-     dc.w 480
-     dc.b 20,0;4
-     dc.b -4, 10
-     dc.w 280
-     dc.b 21,0  ;5
-     dc.b -4,  8
-     dc.w 260
-     dc.b 22,0  ;6
-     dc.b -4,  6
-     dc.w 280
-     dc.b 23,0  ;7
-     dc.b -3,  5
-     dc.w 140
-     dc.b 24,0  ;8
-     dc.b -3,  5
-     dc.w 210
-     dc.b 25,0  ;9
-     dc.b -3,  5
-     dc.w 140
-     dc.b 26,0  ;10
-     dc.b -3,  5
-     dc.w 180
-     dc.b 27,0  ;11
-     dc.b -4,  5
-     dc.w 264
-     dc.b 37,0  ;12
+data mentry 9, 18, 17 ;1
+     mentry 7, 15, 18 ;2
+     mentry 6, 13, 19 ;3
+     mentry 5, 11, 20 ;4
+     mentry 4, 10, 21 ;5
+     mentry 4,  8, 22 ;6
+     mentry 4,  6, 23 ;7
+     mentry 3,  5, 24 ;8
+     mentry 3,  5, 25 ;9
+     mentry 3,  5, 26 ;10
+     mentry 3,  5, 27 ;11
+     mentry 4,  5, 37 ;12
 
     align 1
 SCREEN_DEFS:
@@ -465,7 +448,7 @@ msg     dc.b "  **********************************",10
   else
         dc.b "16"
   endif
-        dc.b" colors, v2     *",10
+        dc.b" colors, v3     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
         dc.b "Litwr in 2022. It is based on code",10

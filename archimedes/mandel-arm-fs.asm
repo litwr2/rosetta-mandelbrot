@@ -5,9 +5,11 @@
 ;
 ;128x256 Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 color mode
 
-NOCALC = 0
-
-Screen_Mode = 9   ;320x200 16 colors
+;use Screen Mode for WriteC 22
+Screen_Mode = 12   ;640x256 16 colors
+NColors = 4
+HSize = 640
+VSize = 256
 
 VD_ScreenStart = 148
 
@@ -39,12 +41,15 @@ processor +cpu32_v2
 
 Start:
     mov sp,#stack_base and 0xfffffc00
-    add sp,#stack_base and 0x3ff
+    add sp,#stack_base and 0x3fc
+    ;add r1, pc, stack_base-$-8
     bl init
+    ;bl getkey
     ;bl debug_write_32
 
     mov r4,#sqr and 0xfffffc00
-    add r4,#sqr and 0x3ff
+    add r4,#sqr and 0x3fc
+    ;add r1, pc, sqr-$-8
     mov r8,r4
     mov r5,r4
     mov r0,#0
@@ -71,41 +76,50 @@ sqrloop:
     mov r9,r1,lsr #16
     strb r9,[r4,#-1]!    ;mov	r1, -(r4)	; to lower half tbl
 	mov r2,r6            ;mov	(r6)+, r2
-	bcs mandel0          ;bcs	mdlbrt		; exit on overflow
+	bcs mandel           ;bcs	mdlbrt		; exit on overflow
 
 	add r2,#0x10000      ;inc	r2
 	b sqrloop            ;br	fsqr
 
-initer	= 7
-idx	= -36       ;-.0703125
-idy	=	18        ;.03515625
-ix0	=	-62*idx
-imx	=	10*idx		; x move
-sf4	=	436/4*65536		; sf/4
-
-mandel0:
-    mov r6,#initer
 mandel:
+    ldr r0,[dataindex]
+    ldrb r1,[r0],1
+    strb r1,[dxa+2]
+    ldrb r1,[r0],1
+    strb r1,[dya+2]
+    ldrb r1,[r0],1
+    strb r1,[x0a+2]
+    ldrb r1,[r0],1
+    strb r1,[x0a+3]
+    eor r6,r6
+    ldrb r6,[r0]   ;niter
+    add r1,r6,2
+    strb r1,[r0],1
+    add r1, pc, iter-$-8
+    cmp r0,r1
+    bne .l11
+
+    add r0, pc, mdata-$-8
+.l11:
+    str r0,[dataindex]
+
     swi OS_ReadMonotonicTime
     str r0,[timer]
-    mov r7,#0x9f00
-    add r7,#0xa0
+    mov r7,HSize*VSize/8*NColors
     ldr r12,[screen_addr]
     add r7,r7,r12
-    add r12,r12,#64
+    add r12,r12,HSize/8*NColors
 
     ldr r10,[dxa]
     ldr r5,[dya]
     mov r5,r5,lsl #7  ;*128
+    ;mov r5,r5,lsl #8  ;*256
 loop0:
-    mov r9,#16
-if NOCALC=0
+    mov r9,HSize*NColors/32
     ldr r4,[x0a]
-end if
 loop1:
     mov r11,#1
 loop2:
-if NOCALC=0
     add r4,r4,r10
     mov r2,r6
     mov r0,r4
@@ -138,9 +152,8 @@ if NOCALC=0
     subs r2,#1
     bne .l1
 .l2:
-end if
     and r2,r2,#15
-    movs r11,r11,lsl #4
+    movs r11,r11,lsl NColors
     orr r11,r2
     bcc loop2
 
@@ -149,13 +162,14 @@ end if
     subs r9,r9,#1
     bne loop1
 
-    add r12,r12,#224
-    sub r7,r7,#96
+    add r12,r12,HSize/4*NColors
     ldr r0,[dya]
     subs r5,r5,r0
     bne loop0
 
-    add r6,#1   ;inc	@#nitera
+    ldrb r0,[iter]
+    add r0,1
+    strb r0,[iter]
     swi OS_ReadMonotonicTime
     ldr r1,[timer]
     sub r0,r0,r1
@@ -166,12 +180,12 @@ end if
     beq exit
 
     cmp r1,#"T"
-    bne .l5
+    bne mandel
 
 	mov r0, #30   ;VDU = Home Cursor
 	swi OS_WriteC
-    mov r0,r6
-    sub r0,#7
+    eor r0,r0
+    ldrb r0,[iter]
 	add r1, pc, text_string-$-8
 	mov r2, #12
 	swi OS_ConvertCardinal2
@@ -211,30 +225,7 @@ end if
     add r0, pc, text_string-$-8
 	swi OS_WriteO
     bl getkey
-.l5:ldr r1,[mxa]
-    ldr r2,[x0a]
-    add r2,r1
-    str r2,[x0a]      ;add	@#mxa, @#x0a
-
-    mov r5,#3
-    add r1,pc,dxa-$-8
-.l4:ldr r2,[r1]       ;mov	(r1), r2
-    add r3,r2,#sf4
-    tst r3,#0x20000
-    bic r3,#0x30000
-    ldr r3,[r8,r3,asr 16]
-    movne r3,r3,lsr #16
-    sub r4,r2,#sf4
-    tst r4,#0x20000
-    bic r4,#0x30000
-    ldr r4,[r8,r4,asr 16]
-    movne r4,r4,lsr #16
-    sub r3,r3,r4
-    mov r3,r3,lsl #16
-    str r3,[r1],#4     ;mov	sqr+sf4(r2), (r1) // sub	sqr-sf4(r2), (r1)+
-    subs r5,#1
-    bne .l4
-	b mandel
+    b mandel
 	
 get_screen_addr:
 	str lr, [sp, #-4]!
@@ -247,10 +238,9 @@ screen_addr_input:
 	dw VD_ScreenStart, -1
 screen_addr:
 	dw 0
-dxa:	dw	idx*65536
-dya:	dw	idy*65536
-mxa:	dw	imx*65536
-x0a:    dw  ix0*65536
+dxa:	dw	0xffff0000
+dya:	dw	0
+x0a:    dw  0
 timer:  dw 0
 
 exit:	
@@ -342,8 +332,30 @@ debug_write_32:
 	mov pc, lr
  end if
 
-text_string:
-	rb 12
+text_string: 	rb 12
+dataindex: dw mdata
+
+macro mentry dx,dy,ni {
+     db -dx*640/HSize, dy*256/VSize
+     dh dx*320-770/dx   ;dx, dy, x0 = dx/160, niter
+     db ni
+}
+
+;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
+mdata:    ;dx, dy, iterations
+     mentry 7, 16, 7   ;1
+     mentry 7, 15, 8   ;2
+     mentry 7, 14, 9   ;3
+     mentry 6, 13, 10  ;4
+     mentry 4, 12, 11  ;5
+     mentry 3, 7, 12   ;6
+     mentry 3, 5, 13   ;7
+     mentry 2, 4, 14   ;8
+     mentry 2, 3, 15   ;9
+     mentry 2, 4, 16   ;10
+     mentry 2, 4, 25   ;11
+     mentry 2, 5, 37   ;12
+iter db 0
 
 colors:
 	db 8, 16, 0, 0, 128
@@ -355,21 +367,21 @@ colors:
 	db 14, 16, 128, 128, 128
 	db 15, 16, 128, 0, 0
 
-msg     db "  **********************************",13,10
-        db "  * Superfast Mandelbrot generator *",13,10
-        db "  *          16 colors, v2         *",13,10
-        db "  **********************************",13,10
-        db "The original version was published for",13,10
-        db "the BK0011 in 2021 by Stanislav",13,10
-        db "Maslovski.",13,10
-        db "This Acorn Archimedes port was created",13,10
-        db "by Litwr, 2022.",13,10
+msg     db " ************************************",13,10
+        db " *  Superfast Mandelbrot generator  *",13,10
+        db " *       Fullscreen, 1056x256       *",13,10
+        db " *          16 colors, v1           *",13,10
+        db " ************************************",13,10
+        db "This Acorn Archimedes code was created",13,10
+        db "by Litwr, 2022. It is based on code",13,10
+        db "published for the BK0011 in 2021 by",13,10
+        db "Stanislav Maslovski.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit.",0
 
     align 4
 sqr0:
-    rb 0x16b0-sqr0+colors
+    rb 0x16b0-sqr0+(colors and 0xfffffffc)
 sqr:rb 0x16b0
     rb 16
 stack_base:

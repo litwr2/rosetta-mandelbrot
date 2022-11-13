@@ -22,6 +22,8 @@ BSOUT = $FFD2
 JPRIMM = $FF4F
 
 colors = 8   ;2/4/8/16
+HSize = 160
+
 sqrbase = $BF00 ;must be $xx00
 
 r0 = $d0
@@ -120,7 +122,7 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*   gENERATOR V4 160x256 iNTERLACED  *",13
+       byte "*   gENERATOR V5 160x256 iNTERLACED  *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
        byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
@@ -792,48 +794,28 @@ comm1: LDA #<irqe1
        STA $FF0A
        RTS
 
+  macro mentry
+     byte -\1, \2
+     word \1*HSize/2-3040/\1   ;dx, dy, x0 = dx*HSize, niter
+     byte \3
+  endm
+
 dataentries = 12
 counter byte 0
-data  ;     dx, dy, x0, niter
-      ; to convert to real values divide by 512
-     byte -18, 18
-     word 1400  ;2232
-     byte 7   ;1
-     byte -15, 15
-     word 1100  ;1841
-     byte 8   ;2
-     byte -13, 13
-     word 1040  ;1714
-     byte 9   ;3
-     byte -11, 11
-     word 680
-     byte 10  ;4
-     byte -9, 10
-     word 400
-     byte 11  ;5
-     byte  -9,  8
-     word 400
-     byte 12  ;6
-     byte -8,  6
-     word 270
-     byte 13  ;7
-     byte -7,  5
-     word 220
-     byte 14  ;8
-     byte  -6,  5
-     word 0
-     byte 15  ;9
-     byte  -5,  5
-     word 0
-     byte 16  ;10
-     byte  -5,  5
-     word 0
-     byte 25  ;11
-     byte -8,  5
-     word 260
-     byte 37  ;12
+data  ;     dx, dy, x0, niter - to convert to real values divide by 512
+     mentry 18, 18, 7  ;1
+     mentry 15, 15, 8   ;2
+     mentry 13, 13, 9   ;3
+     mentry 11, 11, 10  ;4
+     mentry 9, 10, 11  ;5
+     mentry 9,  8, 12  ;6
+     mentry 8,  6, 13  ;7
+     mentry 7,  5, 14  ;8
+     mentry 6,  5, 15  ;9
+     mentry 5,  5, 16  ;10
+     mentry 5,  5, 25  ;11
+     mentry 8,  5, 37  ;12
 dataindex byte 0
-
 
 outdigi:   ;xpos, A-char(0..11)
 t1 = r0
@@ -890,7 +872,7 @@ t4 = r1+1
          inc .m2+1
          bne *+5
          inc .m2+2
-         
+
          ldy t4
          iny
          tya

@@ -25,6 +25,9 @@ GRPACY equ #FCB9
 SA equ $8500  ;start address
 VDP equ 1  ;faster and lesser
 
+HSize equ 256
+VSize equ 212
+
 sqrtab macro
     res 0,l
     ld a,h
@@ -504,52 +507,35 @@ timer:
     pop af
     ret
 
+mentry macro dx,dy,ni
+     db -dx, dy
+     dw dx*HSize/2-1860/dx   ;dx, dy, x0 = dx*HSize, niter
+     db ni
+endm
+
 dataentries equ 12
 counter db 0
 dataindex db 0
-data 
-     db -9, 18
-     dw 1100   ;dx, dy, x0, niter
-     db 27   ;1
-     db -14, 15
-     dw 1640
-     db 28   ;2
-     db -11, 13
-     dw 1280
-     db 115   ;3
-     db -9, 11
-     dw 1080
-     db 141  ;4
-     db -7, 10
-     dw 680
-     db 151  ;5
-     db -7,  8
-     dw 570
-     db 162  ;6
-     db -7,  6
-     dw 600
-     db 172  ;7
-     db -6,  5
-     dw 470
-     db 182  ;8
-     db -5,  5
-     dw 280
-     db 192  ;9
-     db -6,  5
-     dw 410
-     db 202  ;10
-     db -6,  5
-     dw 410
-     db 212  ;11
-     db -6,  6
-     dw 410
-     db 255  ;12
+data
+     mentry 6,  5, 182  ;8
+     mentry 14, 15, 28   ;2
+     mentry 11, 13, 115   ;3
+     mentry 9, 11, 141  ;4
+     mentry 7, 10, 151  ;5
+     mentry 7,  8, 162  ;6
+     mentry 7,  6, 172  ;7
+     mentry 9, 18, 27   ;1
+     mentry 5,  5, 192  ;9
+     mentry 6,  5, 202  ;10
+     mentry 6,  5, 212  ;11
+     mentry 6,  6, 255  ;12
+
 ticks db 0,0,0
 
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*  256 colors, 256x212, v1 *",13,10
+        db "*  256 colors, 256x212, v2 *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
         db "by Litwr, 2022. It is based",13,10

@@ -24,6 +24,9 @@ GRPACY equ #FCB9
 SA equ $8500  ;start address
 VDP equ 1  ;faster and lesser
 
+HSize equ 512
+VSize equ 212
+
 sqrtab macro
     res 0,l
     ld a,h
@@ -598,52 +601,35 @@ timer:
     pop af
     ret
 
+mentry macro dx,dy,ni
+     db -dx, dy
+     dw dx*HSize/2-777/dx   ;dx, dy, x0 = dx*HSize, niter
+     db ni
+endm
+
+;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
 dataentries equ 12
 counter db 0
 dataindex db 0
-data 
-     db -9, 18
-     dw 2232   ;dx, dy, x0, niter
-     db 7   ;1
-     db -7, 13
-     dw 1841
-     db 8   ;2
-     db -6, 11
-     dw 1500
-     db 9   ;3
-     db -5, 9
-     dw 1330
-     db 10  ;4
-     db -4, 8
-     dw 1000
-     db 11  ;5
-     db -4, 6
-     dw 800
-     db 12  ;6
-     db -4, 4
-     dw 900
-     db 13  ;7
-     db -3, 3
-     dw 480
-     db 14  ;8
-     db -3, 3
-     dw 410
-     db 15  ;9
-     db -3, 3
-     dw 340
-     db 16  ;10
-     db -3, 3
-     dw 340
-     db 25  ;11
-     db -3, 3
-     dw 440
-     db 37  ;12
+data mentry 9, 18, 7 ;1
+     mentry 7, 13, 8 ;2
+     mentry 6, 11, 9 ;3
+     mentry 5, 9, 10 ;4
+     mentry 4, 8, 11 ;5
+     mentry 4, 6, 12 ;6
+     mentry 4, 4, 13 ;7
+     mentry 3, 3, 14 ;8
+     mentry 3, 3, 15 ;9
+     mentry 3, 3, 16 ;10
+     mentry 3, 3, 25 ;11
+     mentry 3, 3, 37 ;12
+
 ticks db 0,0,0
 
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*  interlaced, 512x424, v1 *",13,10
+        db "*  interlaced, 512x424, v2 *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
         db "by Litwr, 2022. It is based",13,10

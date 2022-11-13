@@ -18,6 +18,9 @@ ODOSA   EQU     1CH
 
 NCREG   EQU     0BFH  ;color reg
 
+HSize equ 256
+VSize equ 256
+
 org #100
 
 sqrtab macro
@@ -470,49 +473,31 @@ curoff db 27,";$"
 ;curon  db 27,":$"
 ;curpos db 1,33,65,"$"
 
+mentry macro dx,dy,ni
+     db -dx, dy
+     dw dx*HSize/2-1880/dx   ;dx, dy, x0 = dx*HSize, niter
+     db ni
+endm
+
 iter db 0
-data db -18, 18
-     dw 2232   ;dx, dy, x0, niter
-     db 7   ;1
-     db -15, 15
-     dw 1841
-     db 8   ;2
-     db -13, 13
-     dw 1714
-     db 9   ;3
-     db -11, 11
-     dw 1430
-     db 10  ;4
-     db -9, 10
-     dw 1200
-     db 11  ;5
-     db -9,  8
-     dw 1120
-     db 12  ;6
-     db -8,  6
-     dw 1000
-     db 13  ;7
-     db -7,  5
-     dw 700
-     db 14  ;8
-     db -6,  5
-     dw 500
-     db 15  ;9
-     db -5,  5
-     dw 320
-     db 16  ;10
-     db -5,  5
-     dw 300
-     db 25  ;11
-     db -5,  5
-     dw 270
-     db 37  ;12
+data mentry 18, 18, 7   ;1
+     mentry 15, 15, 8   ;2
+     mentry 13, 13, 9   ;3
+     mentry 11, 11, 10  ;4
+     mentry 9, 10,  11  ;5
+     mentry 9,  8,  12  ;6
+     mentry 8,  6,  13  ;7
+     mentry 7,  5,  14  ;8
+     mentry 6,  5,  15  ;9
+     mentry 5,  5,  16  ;10
+     mentry 5,  5,  25  ;11
+     mentry 5,  5,  37  ;12
 dataindex dw data
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*       8 colors + textures      *",13,10
-        db "*   fullscreen (512x256) , v2    *",13,10
+        db "*   fullscreen (512x256) , v3    *",13,10
         db "**********************************",13,10
         db "This Corvette code was created by Litwr, 2022.",13,10
         db "It is based on code published for",13,10

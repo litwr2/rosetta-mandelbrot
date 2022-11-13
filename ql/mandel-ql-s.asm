@@ -6,6 +6,8 @@
 ;256x256 (fullscreen) Mandelbrot for the Sinclair Ql (the 68000 code)
 ;pseudo 16 colors = 4 bits per pixel but flashing is almost unusable on the QL :(
 
+HSize = 256
+
     basereg SOD,a3
 
 start:
@@ -189,20 +191,27 @@ SOD:
 tcolor dc.w $80
 icolor dc.w 0,$1<<6,$2<<6,$3<<6,$00<<6,$01<<6,$02<<6,$03<<6,$200<<6,$201<<6
        dc.w $202<<6,$203<<6,$200<<6,$201<<6,$202<<6,$203<<6
-data  ; x in [x0+256dx,x0+dx], y in [-128dy,128dy] 
+
+  macro mentry
+     dc.w -\1, \2
+     dc.w \1*HSize/2-1870/\1   ;dx, dy, x0 = dx*HSize, niter
+     dc.w \3
+  endm
+
+data:  ; x in [x0+256dx,x0+dx], y in [-128dy,128dy] 
      ;     dx, dy,   x0, niter
-     dc.w -18, 18, 2232, 7   ;1
-     dc.w -15, 15, 1841, 8   ;2
-     dc.w -13, 13, 1714, 9   ;3
-     dc.w -11, 11, 1430, 10  ;4
-     dc.w  -9, 10, 1200, 11  ;5
-     dc.w  -9,  8, 1120, 12  ;6
-     dc.w  -8,  6, 1000, 13  ;7
-     dc.w  -7,  5,  700, 14  ;8
-     dc.w  -6,  5,  500, 15  ;9
-     dc.w  -5,  5,  320, 16  ;10
-     dc.w  -5,  5,  300, 25  ;11
-     dc.w  -5,  5,  270, 37  ;12
+     mentry 18, 18, 7   ;1
+     mentry 15, 15, 8   ;2
+     mentry 13, 13, 9   ;3
+     mentry 11, 11, 10  ;4
+     mentry  9, 10, 11  ;5
+     mentry  9,  8, 12  ;6
+     mentry  8,  6, 13  ;7
+     mentry  7,  5, 14  ;8
+     mentry  6,  5, 15  ;9
+     mentry  5,  5, 16  ;10
+     mentry  5,  5, 25  ;11
+     mentry  5,  5, 37  ;12
 
 define     dc.w     1               ;One procedure
            dc.w     mandel-*

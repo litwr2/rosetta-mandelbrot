@@ -471,90 +471,36 @@ db 12,&c,13,&20
 initvvideocfg
 db &6,32,&7,35
 
+mentry macro dx,dy,ni
+     db -dx, dy
+     dw dx*HMAX/2-2800/dx   ;dx, dy, x0 = dx*HMAX/2, niter
+     db ni
+endm
+
 dataentries equ 12
 counter db 0
 dataindex db 0
-data  ;     dx, dy, x0, niter
-      ; to convert to real values divide by 512
-     db -18, 18
-     dw 1400+(HMAX-160)/4*25
-     db 7   ;1
-     db -15, 15
-     dw 1100+(HMAX-160)/4*25
-     db 8   ;2
-     db -13, 13
-     dw 1040+(HMAX-160)/4*25
-     db 9   ;3
-     db -11, 11
-     dw 680+(HMAX-160)/2*15
-     db 10  ;4
-     db -9, 10
-     dw 400+(HMAX-160)/2*15
-     db 11  ;5
-     db  -9,  8
-     dw 400+(HMAX-160)/4*35
-     db 12  ;6
-     db -8,  6
-     dw 270+(HMAX-160)/4*25
-     db 13  ;7
-if HMAX=160
-     db -7,  5
-     dw 220
-     db 14  ;8
-     db  -6,  5
-     dw 0
-     db 15  ;9
-     db  -5,  5
-     dw 0
-     db 16  ;10
-     db  -5,  5
-     dw 0
-     db 25  ;11
-     db -8,  5
-     dw 260
-     db 37  ;12
-endif
-if HMAX=176
-     db -7,  5
-     dw 290
-     db 14  ;8
-     db  -6,  5
-     dw 100
-     db 15  ;9
-     db  -5,  5
-     dw 100
-     db 16  ;10
-     db  -5,  5
-     dw 100
-     db 25  ;11
-     db -8,  5
-     dw 350
-     db 37  ;12
-endif
-if HMAX=192
-     db -7,  5
-     dw 290
-     db 14  ;8
-     db  -6,  5
-     dw 140
-     db 15  ;9
-     db  -5,  5
-     dw 100
-     db 16  ;10
-     db  -5,  5
-     dw 100
-     db 25  ;11
-     db -7,  5
-     dw 300
-     db 37  ;12
-endif
+data  ;     dx, dy, x0, niter - to convert to real values divide by 512
+     mentry 18, 18, 7   ;1
+     mentry 15, 15, 8   ;2
+     mentry 13, 13, 9   ;3
+     mentry 11, 11, 10  ;4
+     mentry 9, 10, 11  ;5
+     mentry 9,  8, 12  ;6
+     mentry 8,  6, 13  ;7
+     mentry 7,  5, 14  ;8
+     mentry 6,  5, 15  ;9
+     mentry 5,  5, 16  ;10
+     mentry 5,  5, 25  ;11
+     mentry 8,  5, 37  ;12
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*     "
         db HMAX/100+48
         db (HMAX-(HMAX/100)*100)/10+48
         db HMAX % 10+48
-        db "x256, 16 colors, v2     *",13,10
+        db "x256, 16 colors, v3     *",13,10
         db "**********************************",13,10
         db "This Amstrad CPC code was created by",13,10
         db "Litwr in 2022. It is based on code",13,10
