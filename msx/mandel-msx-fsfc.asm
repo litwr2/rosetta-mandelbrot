@@ -26,7 +26,6 @@ SA equ $8500  ;start address
 VDP equ 1  ;faster and lesser
 
 HSize equ 256
-VSize equ 212
 
 sqrtab macro
     res 0,l
@@ -240,9 +239,9 @@ r5 equ $+1
 loc2:
     ld a,ixh   ;color
 
-    rrca    ;make a better palette
-    xor 255
-    inc a
+    ;rrca    ;make a better palette
+    ;xor 255
+    ;inc a
 
     dec iyh
     ld b,high(buf)
@@ -517,18 +516,18 @@ dataentries equ 12
 counter db 0
 dataindex db 0
 data
-     mentry 6,  5, 182  ;8
-     mentry 14, 15, 28   ;2
-     mentry 11, 13, 115   ;3
-     mentry 9, 11, 141  ;4
-     mentry 7, 10, 151  ;5
-     mentry 7,  8, 162  ;6
-     mentry 7,  6, 172  ;7
-     mentry 9, 18, 27   ;1
-     mentry 5,  5, 192  ;9
-     mentry 6,  5, 202  ;10
-     mentry 6,  5, 212  ;11
-     mentry 6,  6, 255  ;12
+     mentry 9, 18, 17   ;1
+     mentry 14, 15, 19   ;2
+     mentry 11, 13, 23   ;3
+     mentry 9, 11, 25  ;4
+     mentry 7, 10, 31  ;5
+     mentry 7,  8, 34  ;6
+     mentry 7,  6, 47  ;7
+     mentry 6,  5, 52  ;8
+     mentry 5,  5, 64  ;9
+     mentry 6,  5, 96  ;10
+     mentry 6,  5, 115  ;11
+     mentry 6,  6, 116  ;12
 
 ticks db 0,0,0
 

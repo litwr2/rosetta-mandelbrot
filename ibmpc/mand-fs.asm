@@ -14,7 +14,6 @@ FASTTIMER = 1  ;200Hz instead of 18.21Hz standard
 debug = 0
 
 HSize = 640
-VSize = 350
 
 sqr = 800h + 1700h
 start:
@@ -361,7 +360,7 @@ macro mentry dx,dy,ni {
 }
 
 iter db 0
-;x-min = (x0+x*640)/512, x-max = x0/512, y-max = dy*175/512
+;x-min = (x0+x*640)/512, x-max = x0/512, y-max = dy*VSize/2/512
 mdata:
      mentry 9, 16, 7   ;1
      mentry 8, 15, 8   ;2

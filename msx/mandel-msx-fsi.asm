@@ -25,7 +25,6 @@ SA equ $8500  ;start address
 VDP equ 1  ;faster and lesser
 
 HSize equ 512
-VSize equ 212
 
 sqrtab macro
     res 0,l

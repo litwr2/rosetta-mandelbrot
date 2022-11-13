@@ -19,7 +19,6 @@ ODOSA   EQU     1CH
 NCREG   EQU     0BFH  ;color reg
 
 HSize equ 256
-VSize equ 256
 
 org #100
 
