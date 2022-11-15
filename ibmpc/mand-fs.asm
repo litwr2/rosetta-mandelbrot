@@ -1,7 +1,7 @@
 ;for fasm assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
+;The next code was made by litwr in 2022
 ;Thanks to reddie for some help with optimization
 ;
 ;Fullscreen (640x350) Mandelbrot for the IBM PC (only the 8086 code), EGA (write mode 2), 16 colors
@@ -13,7 +13,9 @@ NOCALC = 0
 FASTTIMER = 1  ;200Hz instead of 18.21Hz standard
 debug = 0
 
+VMode = 10h
 HSize = 640
+VSize = 350
 
 sqr = 800h + 1700h
 start:
@@ -25,8 +27,9 @@ start:
 
   if debug = 1
     mov ax,3  ;for debug
+  else
+    mov ax,VMode
   end if
-    mov ax,10h
     int 10h    ;640x350 16 colors
     mov dx,3ceh
     mov ax,205h
@@ -354,8 +357,8 @@ msg     db " ************************************",13,10
         db "Use the Q-key to quit$"
 
 macro mentry dx,dy,ni {
-     db -dx, dy
-     dw dx*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
+     db -dx*639/HSize-1, dy*349/VSize+1
+     dw dx*320-384   ;dx, dy, x0 = dx*HSize, niter
      db ni
 }
 

@@ -14,6 +14,7 @@ KM_WAIT_CHAR		EQU #BB06
 KL_TIME_PLEASE          EQU #BD0D
 
 HMAX equ 192
+VMAX equ 256   ;it is fixed
 
 sqrbase equ $8000 ;must be fixed here!
 
@@ -472,8 +473,8 @@ initvvideocfg
 db &6,32,&7,35
 
 mentry macro dx,dy,ni
-     db -dx, dy
-     dw dx*HMAX/2-384   ;dx, dy, x0 = dx*HMAX/2, niter
+     db -dx*159/HMAX-1, dy*255/VMAX+1
+     dw dx*160-384   ;dx, dy, x0 = dx*HMAX/2, niter
      db ni
 endm
 
@@ -492,11 +493,7 @@ data  ;     dx, dy, x0, niter - to convert to real values divide by 512
      mentry 6,  5, 15  ;9
      mentry 5,  5, 16  ;10
      mentry 5,  5, 25  ;11
-  if HMAX=192
-     mentry 7,  5, 37  ;12
-  else
      mentry 8,  5, 37  ;12
-  endif
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
