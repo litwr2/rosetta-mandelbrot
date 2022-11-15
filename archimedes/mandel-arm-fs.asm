@@ -3,18 +3,91 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2022
 ;
-;Fullscreen Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 colors
+;Fullscreen Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16/256 colors
+;some video modes are not supported on the early Archimedes
 
 ;it uses Screen Mode for WriteC 22
 ;Screen_Mode = 12   ;640x256 16 colors
 ;Screen_Mode = 16   ;1056x256 16 colors
-Screen_Mode = 20    ;640x512 16 colors
+;Screen_Mode = 20    ;640x512 16 colors
 ;Screen_Mode = 27   ;640x480 16 colors
 ;Screen_Mode = 35   ;768x288 16 colors
 ;Screen_Mode = 39   ;896x352 16 colors
+;Screen_Mode = 31   ;800x600 16 colors
+;Screen_Mode = 13   ;320x256 256 colors
+;Screen_Mode = 15   ;640x256 256 colors
+;Screen_Mode = 21   ;640x512 256 colors
+;Screen_Mode = 24   ;1056x256 256 colors
+;Screen_Mode = 28   ;640x480 256 colors
+Screen_Mode = 36   ;768x288 256 colors
+;Screen_Mode = 40   ;896x352 256 colors
+;Screen_Mode = 32   ;800x600 256 colors
+
+  if Screen_Mode = 12
+NColors = 4
+HSize = 640
+VSize = 256
+  else if Screen_Mode = 16
+NColors = 4
+HSize = 1056
+VSize = 256
+  else if Screen_Mode = 20
 NColors = 4
 HSize = 640
 VSize = 512
+  else if Screen_Mode = 27
+NColors = 4
+HSize = 640
+VSize = 480
+  else if Screen_Mode = 35
+NColors = 4
+HSize = 768
+VSize = 288
+  else if Screen_Mode = 39
+NColors = 4
+HSize = 896
+VSize = 352
+  else if Screen_Mode = 31
+NColors = 4
+HSize = 800
+VSize = 600
+  else if Screen_Mode = 13
+NColors = 8
+HSize = 320
+VSize = 256
+  else if Screen_Mode = 15
+NColors = 8
+HSize = 640
+VSize = 256
+  else if Screen_Mode = 21
+NColors = 8
+HSize = 640
+VSize = 512
+  else if Screen_Mode = 24
+NColors = 8
+HSize = 1056
+VSize = 256
+  else if Screen_Mode = 28
+NColors = 8
+HSize = 640
+VSize = 480
+  else if Screen_Mode = 36
+NColors = 8
+HSize = 768
+VSize = 288
+  else if Screen_Mode = 40
+NColors = 8
+HSize = 896
+VSize = 352
+  else if Screen_Mode = 32
+NColors = 8
+HSize = 800
+VSize = 600
+  else
+NColors = 0 ;enter data for this mode
+HSize = 0
+VSize = 0
+  end if
 
 VD_ScreenStart = 148
 
@@ -30,6 +103,7 @@ OS_Word = 7
 OS_Exit = 0x11
 OS_Mouse = 0x1c
 OS_ReadVduVariables = 0x31
+OS_ReadModeVariable = 0x35
 OS_ReadMonotonicTime = 0x42
 
 ;OS_ConvertHex2 = 0xd1
@@ -110,6 +184,7 @@ mandel:
     str r0,[timer]
     mov r7,(HSize*VSize/8*NColors)and 0xfffffc00
     add r7,(HSize*VSize/8*NColors)and 0x3ff
+    ;mov r7,HSize*VSize/8*NColors   ;doesn't work for 800x600
     ldr r12,[screen_addr]
     add r7,r7,r12
     add r12,r12,HSize/8*NColors
@@ -156,11 +231,14 @@ loop2:
     subs r2,#1
     bne .l1
 .l2:
+   if NColors = 4
     and r2,r2,#15
+  end if
     movs r11,r11,lsl NColors
     orr r11,r2
     bcc loop2
 
+;    mov r11,r11,ror 1  ;adds more contrast if 256 colors
     str r11,[r12,#-4]!
     str r11,[r7,#-4]!
     subs r9,r9,#1
@@ -236,12 +314,19 @@ get_screen_addr:
 	add r0, pc, screen_addr_input-$-8
 	add r1, pc, screen_addr-$-8
 	swi OS_ReadVduVariables
+	add r0, pc, screen_attr-$-8
+	add r1, pc, screen_attr-$-8
+    swi OS_ReadModeVariable
 	ldr pc, [sp], #4
 	
 screen_addr_input:
 	dw VD_ScreenStart, -1
 screen_addr:
 	dw 0
+
+screen_attr:
+    dw 9,11,12,-1  ;bpp, hsize-1, ysize-1
+
 dxa:	dw	0xffff0000
 dya:	dw	0
 x0a:    dw  0
@@ -259,9 +344,9 @@ init:
 	SWI OS_WriteC
 	MOV r0,#Screen_Mode
 	SWI OS_WriteC
-
+  if NColors=4
 	bl set_palette
-
+  end if
     add r0, pc, msg-$-8
 	swi OS_WriteO
     bl getkey
@@ -291,6 +376,7 @@ init:
 	bl get_screen_addr
 	ldr pc, [sp], #4
 
+    if NColors=4
 set_palette:
 	str lr, [sp, #-4]!
 	mov r0, #OSWord_WritePal 
@@ -302,6 +388,7 @@ set_palette:
 	cmp r1, r2
 	bne .l1
 	ldr pc, [sp], #4
+   end if
 
 getkey:
 .l3:MOV r0, #OSByte_ReadKey
@@ -340,29 +427,31 @@ text_string: 	rb 12
 dataindex: dw mdata
 
 macro mentry dx,dy,ni {
-     db -dx, dy
-     dh dx*HSize/2-384   ;dx, dy, x0 = dx/160, niter
+     db -dx*319/HSize-1, dy*255/VSize+1
+     dh dx*160-384   ;dx, dy, x0 = dx/160, niter
      db ni
+;display dx*319/HSize+"1", " ",dy*255/VSize+"1",10
 }
 
 ;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
 mdata:    ;dx, dy, iterations
-     mentry 7, 14, 7   ;1
-     mentry 7, 11, 8   ;2
-     mentry 7, 9, 9   ;3
-     mentry 6, 8, 10  ;4
-     mentry 4, 7, 11  ;5
-     mentry 3, 7, 12   ;6
-     mentry 3, 5, 13   ;7
-     mentry 2, 4, 14   ;8
-     mentry 2, 3, 15   ;9
-     mentry 2, 4, 16   ;10
-     mentry 2, 4, 25   ;11
-     mentry 2, 5, 37   ;12
+     mentry 9, 14, 7*(NColors-3)   ;1
+     mentry 8, 11, 8*(NColors-3)   ;2
+     mentry 8, 9, 9*(NColors-3)   ;3
+     mentry 7, 8, 10*(NColors-3)  ;4
+     mentry 6, 7, 11*(NColors-3)  ;5
+     mentry 5, 6, 12*(NColors-3)   ;6
+     mentry 5, 5, 13*(NColors-3)   ;7
+     mentry 4, 4, 14*(NColors-3)   ;8
+     mentry 4, 4, 15*(NColors-3)   ;9
+     mentry 4, 4, 16*(NColors-3)   ;10
+     mentry 3, 3, 25*(NColors-3)   ;11
+     mentry 4, 5, 37*(NColors-3)   ;12
 iter db 0
 
 colors:
-	db 8, 16, 0, 0, 128
+  if NColors=4
+    db 8, 16, 0, 0, 128
 	db 9, 16, 0, 128, 0
 	;db 10, 16, 128, 0, 0
 	db 11, 16, 128, 128, 0
@@ -370,11 +459,29 @@ colors:
 	db 13, 16, 0, 128, 128
 	db 14, 16, 128, 128, 128
 	db 15, 16, 128, 0, 0
-
+  end if
 msg     db " ************************************",13,10
         db " *  Superfast Mandelbrot generator  *",13,10
-        db " *       Fullscreen, 1056x256       *",13,10
-        db " *          16 colors, v1           *",13,10
+        db " *       Fullscreen, "
+  if HSize>999
+        db HSize/1000+"0"
+  end if
+        db (HSize mod 1000)/100+"0", (HSize mod 100)/10+"0"
+        db HSize mod 10 + "0", "x", VSize/100+"0"
+        db (VSize mod 100)/10+"0", VSize mod 10 + "0"
+  if HSize<1000
+        db " "
+  end if
+        db "       *",13,10
+        db " *         "
+  if NColors>6
+        db (1 shl NColors)/100+"0"
+  end if
+        db ((1 shl NColors) mod 100)/10+"0", (1 shl NColors) mod 10+"0"
+  if NColors<7
+        db " "
+  end if
+        db " colors, v1           *",13,10
         db " ************************************",13,10
         db "This Acorn Archimedes code was created",13,10
         db "by Litwr, 2022. It is based on code",13,10
