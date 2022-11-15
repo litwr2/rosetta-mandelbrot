@@ -16,10 +16,10 @@
 ;Screen_Mode = 31   ;800x600 16 colors
 ;Screen_Mode = 13   ;320x256 256 colors
 ;Screen_Mode = 15   ;640x256 256 colors
-;Screen_Mode = 21   ;640x512 256 colors
+Screen_Mode = 21   ;640x512 256 colors
 ;Screen_Mode = 24   ;1056x256 256 colors
 ;Screen_Mode = 28   ;640x480 256 colors
-Screen_Mode = 36   ;768x288 256 colors
+;Screen_Mode = 36   ;768x288 256 colors
 ;Screen_Mode = 40   ;896x352 256 colors
 ;Screen_Mode = 32   ;800x600 256 colors
 
@@ -103,7 +103,6 @@ OS_Word = 7
 OS_Exit = 0x11
 OS_Mouse = 0x1c
 OS_ReadVduVariables = 0x31
-OS_ReadModeVariable = 0x35
 OS_ReadMonotonicTime = 0x42
 
 ;OS_ConvertHex2 = 0xd1
@@ -311,21 +310,13 @@ loop2:
 	
 get_screen_addr:
 	str lr, [sp, #-4]!
-	add r0, pc, screen_addr_input-$-8
+	add r0, pc, screen_addr-$-8
 	add r1, pc, screen_addr-$-8
 	swi OS_ReadVduVariables
-	add r0, pc, screen_attr-$-8
-	add r1, pc, screen_attr-$-8
-    swi OS_ReadModeVariable
 	ldr pc, [sp], #4
 	
-screen_addr_input:
-	dw VD_ScreenStart, -1
 screen_addr:
-	dw 0
-
-screen_attr:
-    dw 9,11,12,-1  ;bpp, hsize-1, ysize-1
+	dw VD_ScreenStart, -1
 
 dxa:	dw	0xffff0000
 dya:	dw	0
