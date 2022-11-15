@@ -194,7 +194,7 @@ icolor dc.w 0,$1<<6,$2<<6,$3<<6,$00<<6,$01<<6,$02<<6,$03<<6,$200<<6,$201<<6
 
   macro mentry
      dc.w -\1, \2
-     dc.w \1*HSize/2-1870/\1   ;dx, dy, x0 = dx*HSize, niter
+     dc.w \1*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
      dc.w \3
   endm
 

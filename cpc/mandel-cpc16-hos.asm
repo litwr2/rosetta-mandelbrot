@@ -473,7 +473,7 @@ db &6,32,&7,35
 
 mentry macro dx,dy,ni
      db -dx, dy
-     dw dx*HMAX/2-2800/dx   ;dx, dy, x0 = dx*HMAX/2, niter
+     dw dx*HMAX/2-384   ;dx, dy, x0 = dx*HMAX/2, niter
      db ni
 endm
 
@@ -492,7 +492,11 @@ data  ;     dx, dy, x0, niter - to convert to real values divide by 512
      mentry 6,  5, 15  ;9
      mentry 5,  5, 16  ;10
      mentry 5,  5, 25  ;11
+  if HMAX=192
+     mentry 7,  5, 37  ;12
+  else
      mentry 8,  5, 37  ;12
+  endif
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10

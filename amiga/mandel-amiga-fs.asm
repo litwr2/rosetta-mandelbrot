@@ -309,7 +309,7 @@ mouseright dc.b 0
 
   macro mentry
      dc.b -\1, \2
-     dc.w \1*HSize/2-1510/\1   ;dx, dy, x0 = dx*HSize, niter
+     dc.w \1*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
      dc.b \3,0
   endm
 

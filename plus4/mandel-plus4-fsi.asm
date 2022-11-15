@@ -352,7 +352,7 @@ mandel:
     lda #0
     sta r4hi  ;mov	#x0, r4
 .mloop2:
-    clc  
+    clc
     lda r4lo
     adc dx
     sta r4lo
@@ -796,7 +796,7 @@ comm1: LDA #<irqe1
 
   macro mentry
      byte -\1, \2
-     word \1*HSize/2-3040/\1   ;dx, dy, x0 = dx*HSize, niter
+     word \1*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
      byte \3
   endm
 

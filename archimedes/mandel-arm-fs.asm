@@ -1,15 +1,20 @@
 ;for fasmarm assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
+;The next code was made by litwr in 2022
 ;
-;128x256 Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 color mode
+;Fullscreen Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 colors
 
-;use Screen Mode for WriteC 22
-Screen_Mode = 12   ;640x256 16 colors
+;it uses Screen Mode for WriteC 22
+;Screen_Mode = 12   ;640x256 16 colors
+;Screen_Mode = 16   ;1056x256 16 colors
+Screen_Mode = 20    ;640x512 16 colors
+;Screen_Mode = 27   ;640x480 16 colors
+;Screen_Mode = 35   ;768x288 16 colors
+;Screen_Mode = 39   ;896x352 16 colors
 NColors = 4
 HSize = 640
-VSize = 256
+VSize = 512
 
 VD_ScreenStart = 148
 
@@ -44,8 +49,6 @@ Start:
     add sp,#stack_base and 0x3fc
     ;add r1, pc, stack_base-$-8
     bl init
-    ;bl getkey
-    ;bl debug_write_32
 
     mov r4,#sqr and 0xfffffc00
     add r4,#sqr and 0x3fc
@@ -105,15 +108,16 @@ mandel:
 
     swi OS_ReadMonotonicTime
     str r0,[timer]
-    mov r7,HSize*VSize/8*NColors
+    mov r7,(HSize*VSize/8*NColors)and 0xfffffc00
+    add r7,(HSize*VSize/8*NColors)and 0x3ff
     ldr r12,[screen_addr]
     add r7,r7,r12
     add r12,r12,HSize/8*NColors
 
     ldr r10,[dxa]
     ldr r5,[dya]
-    mov r5,r5,lsl #7  ;*128
-    ;mov r5,r5,lsl #8  ;*256
+    mov r9,VSize/2
+    mul r5,r9
 loop0:
     mov r9,HSize*NColors/32
     ldr r4,[x0a]
@@ -336,18 +340,18 @@ text_string: 	rb 12
 dataindex: dw mdata
 
 macro mentry dx,dy,ni {
-     db -dx*640/HSize, dy*256/VSize
-     dh dx*320-770/dx   ;dx, dy, x0 = dx/160, niter
+     db -dx, dy
+     dh dx*HSize/2-384   ;dx, dy, x0 = dx/160, niter
      db ni
 }
 
 ;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
 mdata:    ;dx, dy, iterations
-     mentry 7, 16, 7   ;1
-     mentry 7, 15, 8   ;2
-     mentry 7, 14, 9   ;3
-     mentry 6, 13, 10  ;4
-     mentry 4, 12, 11  ;5
+     mentry 7, 14, 7   ;1
+     mentry 7, 11, 8   ;2
+     mentry 7, 9, 9   ;3
+     mentry 6, 8, 10  ;4
+     mentry 4, 7, 11  ;5
      mentry 3, 7, 12   ;6
      mentry 3, 5, 13   ;7
      mentry 2, 4, 14   ;8

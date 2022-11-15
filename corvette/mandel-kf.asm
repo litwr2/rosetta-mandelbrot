@@ -441,7 +441,7 @@ curoff db 27,";$"
 
 mentry macro dx,dy,ni
      db -dx, dy
-     dw dx*HSize/2-777/dx   ;dx, dy, x0 = dx*HSize/2, niter
+     dw dx*HSize/2-384   ;dx, dy, x0 = dx*HSize/2, niter
      db ni
 endm
 
