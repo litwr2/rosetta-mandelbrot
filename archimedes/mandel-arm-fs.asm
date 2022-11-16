@@ -14,9 +14,9 @@
 ;Screen_Mode = 35   ;768x288 16 colors
 ;Screen_Mode = 39   ;896x352 16 colors
 ;Screen_Mode = 31   ;800x600 16 colors
-;Screen_Mode = 13   ;320x256 256 colors
+Screen_Mode = 13   ;320x256 256 colors
 ;Screen_Mode = 15   ;640x256 256 colors
-Screen_Mode = 21   ;640x512 256 colors
+;Screen_Mode = 21   ;640x512 256 colors
 ;Screen_Mode = 24   ;1056x256 256 colors
 ;Screen_Mode = 28   ;640x480 256 colors
 ;Screen_Mode = 36   ;768x288 256 colors
