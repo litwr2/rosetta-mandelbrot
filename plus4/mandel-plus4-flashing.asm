@@ -938,7 +938,7 @@ t4 = r1+1
          inc .m2+1
          bne *+5
          inc .m2+2
-         
+
          ldy t4
          iny
          tya
