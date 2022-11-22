@@ -217,7 +217,6 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld iyl,0   ;line #
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
@@ -282,6 +281,7 @@ endif
     pop hl
     and 15
     ld c,$98
+    ;rlc ixl
     dec ixl
     inc ixl
     jr nz,lx1
@@ -304,13 +304,12 @@ endif
     ld bc,128
     add hl,bc
     push hl
-    inc iyl
-    ld a,iyl
-    cp c
+    ld a,64
+    cp h
     jp nz,loop2
 
     pop hl
-    ld h,0
+    ld h,b   ;b=0
     push hl
     inc ixl
     jp loop0
@@ -329,42 +328,17 @@ lx1
     ld l,e
     mwvmem
     out (c),b
-if 0
-lx1 rlca
-    rlca
-    rlca
-    rlca
-    ld b,a
-    mrvmem
-    in a,($98)
-    or b
-    ld b,a
-    mwvmem
-    out (c),b
-    ld e,l
-    ld a,l
-    xor $7f
-    ld l,a
-    mwvmem  
-    ld a,b
-    rlca
-    rlca
-    rlca
-    rlca
-    out ($98),a
-    ld l,e
-endif
+
     ld bc,128
     add hl,bc
     push hl
-    inc iyl
-    ld a,iyl
-    cp c
+    ld a,64
+    cp h
     jp nz,loop2
 
     pop hl
-    dec ixl
-    ld h,0
+    ld ixl,b  ;b=0
+    ld h,b
     dec l
     push hl
     ld de,(dy)
@@ -609,7 +583,7 @@ ticks db 0,0,0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*        generator         *",13,10
-        db "*       rotated, v1        *",13,10
+        db "*       rotated, v2        *",13,10
         db "****************************",13,10
         db "The original version was",13,10
         db "published for the BK0011 in",13,10
