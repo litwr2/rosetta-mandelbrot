@@ -280,13 +280,12 @@ loc2:
 endif
     pop hl
     and 15
+    ld b,a
     ld c,$98
-    ;rlc ixl
-    dec ixl
-    inc ixl
+    xor a
+    cp ixl
     jr nz,lx1
 
-    ld b,a
     mwvmem
     out (c),b
     ld e,l
@@ -314,7 +313,6 @@ endif
     inc ixl
     jp loop0
 lx1
-    ld b,a
     ld e,l
     ld a,l
     xor $7f
