@@ -93,29 +93,16 @@ l1       call CHGET
          xor a
          ld (BDRCLR),a
          call CHGCLR
-if 0
-         ld a,(RG0SAV)
-         and $f1
-         or 6
-         ld c,$80
-         ld (RG0SAV),a
-         call wrreg
-         ld a,(RG1SAV)
-         and $e7
-         or $20
-         ld c,$81
-         ld (RG1SAV),a
-         call wrreg    ;graphic 4, vertical retrace interrupts
-endif
+
          ;ld a,(RG9SAV)
          ;or $22     ;disable sprites and make color 0 normal
          ;ld c,$88
          ;ld (RG9SAV),a
-         ;call wrreg ;any access to this register break interlaced mode on openMSX 0.15
+         ;call wrreg ;any access to this register breaks interlaced mode on openMSX 0.15
 
          ld a,(RG10SAV)
-         and $73
-         ld c,$89  ;192 lines
+         and $73  ;192 lines
+         ld c,$89
          ld (RG10SAV),a
          call wrreg
          ;ld a,$1f    ;$1f - page 0, $3f - page 1
@@ -273,7 +260,7 @@ if NOCALC=0
     add hl,bc    ;sets C=0
     pop bc   ;r0
     sbc hl,bc    ;2xy+y0
-    dec ixh     
+    dec ixh
     jp nz,loc1   ;sob r2,1$
 loc2:
     ld a,ixh   ;color
@@ -305,12 +292,16 @@ endif
     push hl
     ld a,64
     cp h
-    jp nz,loop2
+    jp nz,loop2  ;sets C=0
 
     pop hl
+    inc ixl
     ld h,b   ;b=0
     push hl
-    inc ixl
+    ld de,(dy)
+    ld hl,(r5)
+    sbc hl,de   ;C=0
+    ld (r5),hl
     jp loop0
 lx1
     ld e,l
@@ -325,25 +316,28 @@ lx1
     out (c),b
     ld l,e
     mwvmem
-    out (c),b
+    ld a,b
+    rlca
+    rlca
+    rlca
+    rlca
+    out ($98),a
 
     ld bc,128
     add hl,bc
     push hl
     ld a,64
     cp h
-    jp nz,loop2
+    jp nz,loop2  ;sets C=0
 
-    pop hl
     ld ixl,b  ;b=0
+    pop hl
     ld h,b
     dec l
     push hl
     ld de,(dy)
     ld hl,(r5)
-    or a   ;sets C=0
-    sbc hl,de
-    sbc hl,de
+    sbc hl,de   ;C=0
     ld (r5),hl
     jp nz,loop0
 
