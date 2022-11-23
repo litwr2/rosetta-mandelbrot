@@ -24,7 +24,7 @@ GRPACY equ #FCB9
 
 NOCALC equ 0
 SA equ $8500  ;start address
-VDP equ 1  ;faster and lesser
+VDP equ 0  ;faster and lesser
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -204,6 +204,7 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
+    ld iyl,127
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
@@ -265,72 +266,21 @@ if NOCALC=0
 loc2:
     ld a,ixh   ;color
 endif
-    pop hl
     and 15
     ld b,a
-    ld c,$98
     xor a
     cp ixl
     jr nz,lx1
 
-    mwvmem
-    out (c),b
-if VDP=0
-    ld e,l
-    ld a,l
-    xor $7f
-    ld l,a
-    mwvmem  
-    ld a,b
-    rlca
-    rlca
-    rlca
-    rlca
-    out ($98),a
-    ld l,e
-endif
-    ld bc,128
-    add hl,bc
-    push hl
-    ld a,64
-    cp h
-    jp nz,loop2  ;sets C=0
-if VDP=1
-    rrca  ;sets a=32
-    ld d,c ;sets d=128
-    ld c,#9B
-    di
-    out (#99),a
-    ld a,17 + 128
-    out (#99),a
-    ld a,l
-    rlca
-    inc a
-    out (#9b),a   ;origin X
-    out (c),b
-    out (c),b   ;origin Y
-    out (c),b
-    xor $ff
-    out (#9b),a   ;destination X
-    out (c),b
-    out (c),b   ;destination Y
-    out (c),b
-    ld a,1
-    out (#9b),a   ;size X
-    out (c),b
-    out (c),d   ;size Y
-    out (c),b
-    out (c),b   ;0
-    ld a,4
-    out (#9b),a   ;dx is negative
-    ld a,$90   ;LMMM
-    ei
-    out ($9b),a
-endif
-    pop hl
+    ld hl,lbuf
+    ld e,iyl
+    ld d,0
+    add hl,de
+    ld (hl),b
+    dec iyl
+    jp p,loop2  ;sets C=0
+
     inc ixl
-    ld h,b   ;b=0
-    push hl
     ld de,(dy)
     ld hl,(r5)
     sbc hl,de   ;C=0
@@ -338,17 +288,26 @@ endif
     jp loop0
 lx1
 if VDP=0
-    ld e,l
+    ld hl,lbuf
+    ld e,iyl
+    dec iyl
+    ld d,0
+    add hl,de
+    ld a,b
+    rlca
+    rlca
+    rlca
+    rlca
+    or (hl)
+    ld b,a
+    pop hl
+    push hl
+    mwvmem
+    ld a,b
+    out ($98),a
     ld a,l
     xor $7f
     ld l,a
-    mrvmem
-    in a,($98)
-    or b
-    ld b,a
-    mwvmem
-    out (c),b
-    ld l,e
     mwvmem
     ld a,b
     rlca
@@ -356,6 +315,7 @@ if VDP=0
     rlca
     rlca
     out ($98),a
+    pop hl
 else
     mrvmem
     ld a,b
@@ -648,6 +608,7 @@ timer:
     ret
 
 ticks db 0,0,0
+lbuf ds 128
 
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
