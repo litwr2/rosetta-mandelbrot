@@ -24,7 +24,7 @@ GRPACY equ #FCB9
 
 NOCALC equ 0
 SA equ $8500  ;start address
-VDP equ 0  ;faster and lesser
+VDP equ 1  ;faster
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -50,19 +50,6 @@ mwvmem macro
     out (#99),a
     ld a,h
     or 64
-    ei
-    out (#99),a
-endm
-
-mrvmem macro
-    xor a
-    di
-    out (#99),a
-    ld a,14 + 128
-    out (#99),a
-    ld a,l
-    out (#99),a
-    ld a,h
     ei
     out (#99),a
 endm
@@ -287,7 +274,6 @@ endif
     ld (r5),hl
     jp loop0
 lx1
-if VDP=0
     ld hl,lbuf
     ld e,iyl
     dec iyl
@@ -301,10 +287,11 @@ if VDP=0
     or (hl)
     ld b,a
     pop hl
-    push hl
     mwvmem
     ld a,b
     out ($98),a
+if VDP=0
+    push hl
     ld a,l
     xor $7f
     ld l,a
@@ -316,19 +303,6 @@ if VDP=0
     rlca
     out ($98),a
     pop hl
-else
-    mrvmem
-    ld a,b
-    rlca
-    rlca
-    rlca
-    rlca
-    ld b,a    
-    in a,($98)
-    or b
-    ld b,a
-    mwvmem
-    out (c),b
 endif
     ld bc,128
     add hl,bc
@@ -337,9 +311,56 @@ endif
     cp h
     jp nz,loop2  ;sets CF=0
 if VDP=1
-    rrca  ;sets a=32
     ld d,c ;sets d=128
     ld c,#9B
+    rrca   ;sets a=32
+    di
+    out (#99),a
+    ld a,17 + 128
+    out (#99),a
+    ld a,l
+    rlca
+    inc a
+    out (#9b),a   ;origin X
+    out (c),b
+    out (c),b   ;origin Y
+    out (c),b
+    xor $ff
+    out (#9b),a   ;destination X
+    out (c),b
+    out (c),b   ;destination Y
+    out (c),b
+    ld a,1
+    out (#9b),a   ;size X
+    out (c),b
+    out (c),d   ;size Y
+    out (c),b
+    out (c),b   ;0
+    ld a,4
+    out (#9b),a   ;dx is negative
+    ld a,$90   ;LMMM
+    ei
+    out ($9b),a
+
+wait:
+    ld a,2
+	di
+	out	(#99),a
+	ld	a,15+128
+	out	(#99),a
+	ld	a,(bc)		;wait 7 t-states
+	in	a,(#99)
+	ex	af,af'
+	xor	a
+	out	(#99),a
+	ld	a,15+128
+	ei
+	out	(#99),a
+	ex	af,af'
+    and 1
+    jr nz,wait
+
+    ld a,32
     di
     out (#99),a
     ld a,17 + 128
@@ -572,10 +593,6 @@ ERROR ERROR2
 
 wvmem:   ;a - bank, hl - addr
     mwvmem
-    ret
-
-rvmem:   ;a - bank, hl - addr
-    mrvmem
     ret
 
 wrreg   ;a - value, c - reg+128
