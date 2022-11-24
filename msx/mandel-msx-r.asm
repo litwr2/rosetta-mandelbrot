@@ -266,7 +266,44 @@ endif
     ld (hl),b
     dec iyl
     jp p,loop2  ;sets C=0
+if VDP=1
+    inc e
+    jp m,noop
 
+    pop hl
+    push hl
+    ld d,128
+    ld bc,#9B
+    ld a,32
+    di
+    out (#99),a
+    ld a,17 + 128
+    out (#99),a
+    ld a,l
+    inc a
+    rlca
+    out (#9b),a   ;origin X
+    out (c),b
+    out (c),b   ;origin Y
+    out (c),b
+    xor $ff
+    out (#9b),a   ;destination X
+    out (c),b
+    out (c),b   ;destination Y
+    out (c),b
+    ld a,1
+    out (#9b),a   ;size X
+    out (c),b
+    out (c),d   ;size Y
+    out (c),b
+    out (c),b   ;0
+    ld a,4
+    out (#9b),a   ;dx is negative
+    ld a,$90   ;LMMM
+    ei
+    out ($9b),a
+noop:
+endif
     inc ixl
     ld de,(dy)
     ld hl,(r5)
@@ -341,7 +378,18 @@ if VDP=1
     ld a,$90   ;LMMM
     ei
     out ($9b),a
-
+endif
+    ld ixl,b  ;b=0
+    pop hl
+    ld h,b
+    dec l
+    push hl
+    ld de,(dy)
+    ld hl,(r5)
+    sbc hl,de   ;C=0
+    ld (r5),hl
+    jp nz,loop0
+if VDP=1
 wait:
     ld a,2
 	di
@@ -356,17 +404,18 @@ wait:
 	ld	a,15+128
 	ei
 	out	(#99),a
-	ex	af,af'
+    ex af,af'
     and 1
     jr nz,wait
 
+    ld d,128
+    ;ld c,#9B
     ld a,32
     di
     out (#99),a
     ld a,17 + 128
     out (#99),a
-    ld a,l
-    rlca
+    ld a,$80
     out (#9b),a   ;origin X
     out (c),b
     out (c),b   ;origin Y
@@ -388,17 +437,6 @@ wait:
     ei
     out ($9b),a
 endif
-    ld ixl,b  ;b=0
-    pop hl
-    ld h,b
-    dec l
-    push hl
-    ld de,(dy)
-    ld hl,(r5)
-    sbc hl,de   ;C=0
-    ld (r5),hl
-    jp nz,loop0
-
 if NOCALC=0
     ld hl,(x0)
     ld de,(mx)
