@@ -3,6 +3,7 @@
 * 128x256 Mandelbrot for the Geneve 9640, 16 colors, interlaced (256x384 raster)
 
 NOCALC equ 0
+VDP equ 0
 
 initer equ 7
 idx	equ -36       *-.0703125
@@ -152,6 +153,8 @@ loop2:
 !:
   .endif
     andi 2,15
+
+  .ifeq VDP,0
 *    mov 4,10   ;save R4
 
     li 0,>e
@@ -173,6 +176,30 @@ loop2:
     xop @six,0   ;putpixel
 
 *    mov 10,4   ;restore R4
+  .else
+    li 0,>2491  *>24 = 36, >91 = >80 + 17
+    movb 0,@f102
+    swpb 0
+    movb 0,@f102
+    swpb 8
+    movb 8,@f106
+    swpb 8
+    movb 8,@f106
+    swpb 9
+    movb 9,@f106
+    swpb 9
+    movb 9,@f106
+    li 0,>2c91  *>2c = 44, >91 = >80 + 17
+    movb 0,@f102
+    swpb 0
+    movb 0,@f102
+    swpb 2
+    movb 2,@f106
+    swpb 2
+    movb 2,@f106   *0
+    li 0,>5000     *PSET
+    movb 2,@f106
+  .endif
 
     inc 9
     ci 9,128
@@ -190,8 +217,7 @@ loop2:
 	; scale the params
 	li 0,3      ;mov	#3, r0
 	li 1,vdx    ;mov	#dxa, r1
-!:
-	mov *1,2         ;mov	(r1), r2
+!:	mov *1,2         ;mov	(r1), r2
 	mov @sqrbase+sf4(2),*1         ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
     s @sqrbase-sf4(2),*1+         ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
     dec 0
@@ -216,6 +242,20 @@ slowcode:
 *!      mov *5+,*0+
 *       dec 2
 *       jne -!
+
+       li 1,space+2    *home
+       li 0,>27     *write
+       li 2,1       *length
+       xop @six,0
+
+       mov @niter,10
+       ai 10,-7
+       bl @PR00
+
+       li 1,space
+       li 0,>27     *write
+       li 2,1       *length
+       xop @six,0
 
        mov @tihi,8
        mov @tilo,9
@@ -245,11 +285,6 @@ slowcode:
 
        dec 7
        joc -!
-
-       li 1,space+2
-       li 0,>27     *write
-       li 2,1       *length
-       xop @six,0
 
        a 3,8
        bl @PR0000
