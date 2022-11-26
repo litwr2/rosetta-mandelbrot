@@ -18,6 +18,37 @@ ix0	equ -62*idx
 imx	equ 10*idx		*x move
 sf4	equ 436/4		*sf/4
 
+   .defm svam0
+       li 0,>8e    ;use 16KB VRAM always
+       limi 0
+       movb 0,@VDP1   ;R0l - >8e, R0h - video page
+       swpb 0
+       movb 0,@VDP1
+       limi 4
+   .endm
+   .defm svam1
+       ori 1,>4000
+       swpb 1
+       limi 0
+       movb 1,@VDP1   ;R3h - hi addr OR >40, R3l - lo addr
+       swpb 1
+       movb 1,@VDP1
+       limi 4
+   .endm
+   .defm svam
+       li 0,>8e    ;use 16KB VRAM always
+       limi 0
+       movb 0,@VDP1   ;R0l - >8e, R0h - video page
+       swpb 0
+       movb 0,@VDP1
+       ori 1,>4000
+       swpb 1
+       movb 1,@VDP1   ;R3h - hi addr OR >40, R3l - lo addr
+       swpb 1
+       movb 1,@VDP1
+       limi 4
+   .endm
+
        DEF MANDEL
 mram   equ >F020
 
@@ -30,22 +61,25 @@ MANDEL: li 1,msg
 
         li 0,0
         li 1,6  ;graphic mode 6, 256x212, 16 colors
-        xop @six,0   ;???
+        xop @six,0
 
-*        li 0,>36
-*        li 1,9      *read reg
-*        xop @six,0
-*        andi 0,>73
-*        ori 0,>c    *256x192, interlaced
-*        mov 2,0
-*        li 0,>35
-*        li 1,9     *write reg
-*        xop @six,0
+        li 0,>d
+        li 1,1
+        li 2,>77
+        xop @six,0   ;set color 1
 
-*        li 0,>35
-*        li 1,2
-*        li 2,>1f  *;$1f - page 0, $3f - page 1
-*        xop @six,0
+        li 0,>c
+        li 1,0
+        xop @six,0  ;border color
+
+        li 0,>36
+        li 1,9      *read reg
+        xop @six,0
+        andi 0,>7f    *256x192
+        mov 0,2
+        li 0,>35
+        li 1,9     *write reg
+        xop @six,0
 
        li 0,1      *allocate memory call
        li 1,7      *size
@@ -211,7 +245,8 @@ lx1:
      src 2,4
      soc 0,2    ;OR
      mov 8,1
-     bl @sva
+;     .svam0
+     .svam
      movb 2,@VDP0
      li 0,>7f
      mov 8,1
@@ -220,7 +255,8 @@ lx1:
      mov 2,0
      swpb 0
      soc 0,2
-     bl @sva
+;     .svam0
+     .svam
      movb 2,@VDP0
      ai 8,128
      ci 9,128
@@ -331,17 +367,7 @@ exit:
        blwp @0
 
 sva:   ;in: R1 - addr, changed: R0,R1
-       li 0,>8e    ;use 16KB VRAM always
-       limi 0
-       movb 0,@VDP1   ;R0l - >8e, R0h - video page
-       swpb 0
-       movb 0,@VDP1
-       ori 1,>4000
-       swpb 1
-       movb 1,@VDP1   ;R3h - hi addr OR >40, R3l - lo addr
-       swpb 1
-       movb 1,@VDP1
-       limi 4
+       .svam
        b *11
 
 waitvdp:    ;use: R0, R1
@@ -449,7 +475,7 @@ msg     text "****************************"
         byte 13,10
         text "*        generator         *"
         byte 13,10
-        text "*     interlaced, v1       *"
+        text "*       rotated, v1        *"
         byte 13,10
         text "****************************"
         byte 13,10
