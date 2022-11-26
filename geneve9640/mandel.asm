@@ -2,8 +2,14 @@
 * General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 * 128x256 Mandelbrot for the Geneve 9640, 16 colors, interlaced (256x384 raster)
 
+VDP0 equ >F100
+VDP1 equ VDP0+2
+VDP2 equ VDP0+4
+VDP3 equ VDP0+6
+
 NOCALC equ 0
-VDP equ 0
+* VDP equ 1
+XOPvideo equ 0
 
 initer equ 7
 idx	equ -36       *-.0703125
@@ -104,6 +110,8 @@ fillsqr:
 	inc 2       ;inc dx      ;inc	r2
 	jmp fillsqr ;br	fsqr
 mdlbrt:
+       bl @waitvdp
+
        limi 0   ;timer
        clr 2
        mov 2,@tihi
@@ -120,12 +128,16 @@ mdlbrt:
        mov @6,@tickn+2
        mov 2,@6
        limi 4
-
+  .ifeq XOPVideo,1
     li 8,255     ;X
+  .else
+    li 8,127 ;byte pos in VRAM
+    li 12,0   ;odd/even part of the byte
+  .endif
 	mov @vdy,5
     sla 5,7      ; r5 = 128*dy
 loop0:
-    li 9,0       ;Y
+    li 9,0       ;Y / byte pos in lbuf
   .ifeq NOCALC,0
 	mov @x0,4   ;mov	#x0, r4
   .endif
@@ -154,7 +166,7 @@ loop2:
   .endif
     andi 2,15
 
-  .ifeq VDP,0
+  .ifeq XOPvideo,1
 *    mov 4,10   ;save R4
 
     li 0,>e
@@ -166,41 +178,12 @@ loop2:
     li 6,0
     xop @six,0   ;putpixel
 
-    ;li 0,>e
-    ;mov 2,3
-    ;swpb 3
     li 1,255   ;X
     s 8,1
-    ;mov 9,2   ;Y
 *   li 4,0
     xop @six,0   ;putpixel
 
 *    mov 10,4   ;restore R4
-  .else
-    li 0,>2491  *>24 = 36, >91 = >80 + 17
-    movb 0,@f102
-    swpb 0
-    movb 0,@f102
-    swpb 8
-    movb 8,@f106
-    swpb 8
-    movb 8,@f106
-    swpb 9
-    movb 9,@f106
-    swpb 9
-    movb 9,@f106
-    li 0,>2c91  *>2c = 44, >91 = >80 + 17
-    movb 0,@f102
-    swpb 0
-    movb 0,@f102
-    swpb 2
-    movb 2,@f106
-    swpb 2
-    movb 2,@f106   *0
-    li 0,>5000     *PSET
-    movb 2,@f106
-  .endif
-
     inc 9
     ci 9,128
     jne loop2
@@ -208,6 +191,47 @@ loop2:
     dec 8
 	s @vdy,5    ;sub	@#dya, r5		; update b
     jne loop0       ;bgt	loop0		; continue while b > 0
+  .else
+     mov 12,12
+     jne lx1
+
+     swpb 2
+     movb 2,@lbuf(9)
+     inc 9
+     ci 9,128
+     jne loop2
+
+     li 12,1
+     s @vdy,5    ;sub	@#dya, r5
+     jmp loop0
+lx1:
+     clr 0
+     movb @lbuf(9),0
+     inc 9
+     src 2,4
+     soc 0,2    ;OR
+     mov 8,1
+     bl @sva
+     movb 2,@VDP0
+     li 0,>7f
+     mov 8,1
+     xor 0,1
+     srl 2,4
+     mov 2,0
+     swpb 0
+     soc 0,2
+     bl @sva
+     movb 2,@VDP0
+     ai 8,128
+     ci 9,128
+     jne loop2
+
+     dec 8
+     clr 12
+     movb 12,8
+     s @vdy,5    ;sub	@#dya, r5
+     jne loop0
+  .endif
 
    mov @tickn+2,@6  ;stop timer
 
@@ -232,7 +256,8 @@ loop2:
    jeq exit
 
    ci 1,>5400  *T
-   jne mdlbrt
+   jeq slowcode
+   b @mdlbrt
 *       b @mram
 
 slowcode:
@@ -305,16 +330,36 @@ exit:
        xop @six,0
        blwp @0
 
-sva:   limi 0
-       movb 0,@>f102   ;R0l - >8e, R0h - video page
+sva:   ;in: R1 - addr, changed: R0,R1
+       li 0,>8e    ;use 16KB VRAM always
+       limi 0
+       movb 0,@VDP1   ;R0l - >8e, R0h - video page
        swpb 0
-       movb 0,@>f102
-       nop
-       movb 1,@>f102   ;R1l - hi addr OR >40, R1h - lo addr
+       movb 0,@VDP1
+       ori 1,>4000
        swpb 1
-       movb 1,@>f102
+       movb 1,@VDP1   ;R3h - hi addr OR >40, R3l - lo addr
+       swpb 1
+       movb 1,@VDP1
        limi 4
        b *11
+
+waitvdp:    ;use: R0, R1
+    li 0,>28f   *>8f = >80 + 15
+    limi 0
+    movb 0,@VDP1
+    swpb 0
+    movb 0,@VDP1
+    nop     *delay
+    movb @VDP1,1
+    li 0,>8f   *>8f = >80 + 15
+    movb 0,@VDP1
+    swpb 0
+    movb 0,@VDP1
+    limi 4
+    andi 1,>100
+    jne waitvdp
+    b *11
 
 PR00: mov 11,@retsav
       b @PRE
@@ -396,7 +441,7 @@ x0  data ix0
 niter data initer
 
 space  data >202e   *space,dot
-       byte 1      *home cursor
+       byte 1,0      *home cursor and word alignment
 
 msg     text "****************************"
         byte 13,10
@@ -427,8 +472,7 @@ merr text 'memory allocation error'
      byte 13,10,0
 
 sqrbase equ msg + >16b0
-*buf equ sqrbase + >1700
-*prompt byte >5f,8
+lbuf equ sqrbase + >1700
 
      END
 
