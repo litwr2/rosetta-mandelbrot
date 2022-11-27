@@ -341,7 +341,6 @@ tick:  mov 2,@tick2
        inc @tihi
 !      mov @tick12,12
        mov @tick2,2
-*       rtwp
 tickn: b @0
 
 prevti equ MANDEL+6
@@ -353,7 +352,7 @@ savef equ MANDEL+16               *its size is 0x60 ??
 
 sfast equ $
 loop0:
-    li 9,0       ;byte pos in lbuf
+    li 9,lbuf       ;byte pos in lbuf
   .ifeq NOCALC,0
 	mov @x0,4   ;mov	#x0, r4
   .endif
@@ -386,36 +385,29 @@ loop2:
      jne lx1
 
      swpb 2
-     movb 2,@lbuf(9)
-     inc 9
-     ci 9,128
+     movb 2,*9+
+     ci 9,lbuf+128
      jne loop2
 
      li 12,1
      s @vdy,5    ;sub	@#dya, r5
      jmp loop0
 lx1:
-     clr 0
-     movb @lbuf(9),0
-     inc 9
-     src 2,4
+     movb *9+,2
+     mov 2,0
+     src 0,4
      soc 0,2    ;OR
      mov 8,1
-;     .svam0
      .svam1
      movb 2,@VDP0
      li 0,>7f
      mov 8,1
      xor 0,1
-     srl 2,4
-     mov 2,0
-     swpb 0
-     soc 0,2
-;     .svam0
      .svam
+     swpb 2
      movb 2,@VDP0
      ai 8,128
-     ci 9,128
+     ci 9,lbuf+128
      jne loop2
 
      dec 8
