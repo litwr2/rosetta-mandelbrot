@@ -166,31 +166,25 @@ mdlbrt:
        mov 2,@6
        limi 4
 
-    li 8,127 ;byte pos in VRAM
-    li 12,0   ;odd/even part of the byte
+     li 8,127 ;byte pos in VRAM
+     li 12,0   ;odd/even part of the byte
 
-	mov @vdy,5
-    sla 5,7      ; r5 = 128*dy
+	 mov @vdy,5
+     sla 5,7      ; r5 = 128*dy
 loop0:
-    li 9,lbuf       ;byte pos in lbuf
-  .ifeq NOCALC,0
-	mov @x0,4   ;mov	#x0, r4
-  .endif
+     li 9,lbuf       ;byte pos in lbuf
+     .ifeq NOCALC,0
+	 mov @x0,4   ;mov	#x0, r4
+     .endif
 loop2:
-  .ifeq NOCALC,0
-	a @vdx,4 ;add	@#dxa, r4
-	mov @niter,2 ;mov	#niter, r2	; max iter. count
-	mov 4,10    ;mov	r4, r0
-	mov 5,1    ;mov	r5, r1
-  .ifeq fastRAM,1
-    b @mram
-  .else
-    b @sfast
-  .endif
-  .endif
+     .ifeq NOCALC,0
+     .ifeq fastRAM,1
+     b @mram
+     .else
+     b @sfast
+     .endif
+     .endif
 slowcode:
-     andi 2,15
-     mov 12,12
      jne lx1
 
      swpb 2
@@ -401,22 +395,28 @@ tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is 0x60 ??
 
 sfast equ $
-!:  mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
-    a 10,1       ;add	r0, r1		; r1 = x+y
-	mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
-	a 3,10       ;add	r3, r0		; r0 = x^2+y^2
-    ci 10,>800    ;cmp	r0, r6		; if r0 >= 4.0 then
-	jhe !         ;bge	2$		; overflow
+     a @vdx,4 ;add	@#dxa, r4
+     mov @niter,2 ;mov	#niter, r2	; max iter. count
+     mov 4,10    ;mov	r4, r0
+     mov 5,1    ;mov	r5, r1
+!:   mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
+     a 10,1       ;add	r0, r1		; r1 = x+y
+	 mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
+	 a 3,10       ;add	r3, r0		; r0 = x^2+y^2
+     ci 10,>800    ;cmp	r0, r6		; if r0 >= 4.0 then
+	 jhe !         ;bge	2$		; overflow
 
-	mov @sqrbase(1),1     ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	s 10,1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-    a 5,1	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	s 3,10       ;sub	r3, r0		; r0 = x^2
-	s 3,10       ;sub	r3, r0		; r0 = x^2-y^2
-	a 4,10       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    dec 2
-	jne -!        ;sob	r2, 1$		; to next iteration
-!:
+	 mov @sqrbase(1),1     ;mov	sqr(r1), r1	; r1 = (x+y)^2
+	 s 10,1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
+     a 5,1	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
+	 s 3,10       ;sub	r3, r0		; r0 = x^2
+	 s 3,10       ;sub	r3, r0		; r0 = x^2-y^2
+	 a 4,10       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
+     dec 2
+     jne -!        ;sob	r2, 1$		; to next iteration
+
+!:   andi 2,15
+     mov 12,12
      b @slowcode
 efast equ $
 
