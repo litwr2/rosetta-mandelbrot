@@ -8,7 +8,9 @@ VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
 NOCALC equ 0
+fastRAM equ 0
 VDP equ 0
+mram   equ >F020
 
 initer equ 7
 idx	equ -36       *-.0703125
@@ -49,9 +51,6 @@ sf4	equ 436/4		*sf/4
    .endm
 
        DEF MANDEL
-mram   equ >F020
-
-
 MANDEL: li 1,msg
         li 0,>27     *write
         clr 2
@@ -131,18 +130,24 @@ fillsqr:
 
 	inc 2       ;inc dx      ;inc	r2
 	jmp fillsqr ;br	fsqr
-mdlbrt:
-*       li 0,mram
-*       li 2,(efast-sfast)/2
-*       li 3,sfast
-*       li 5,savef
-*!      mov *0,*5+
-*       mov *3+,*0+
-*       dec 2
-*       jne -!
 
+merr text 'memory allocation error'
+     byte 13,10,0
+    even
+
+mdlbrt:
+  .svam0
+  .ifeq fastRAM,1
+       li 0,mram
+       li 2,(efast-sfast)/2
+       li 3,sfast
+       li 5,savef
+!:     mov *0,*5+
+       mov *3+,*0+
+       dec 2
+       jne -!
+  .endif
        bl @waitvdp
-       .svam0
 
        limi 0   ;timer
        clr 2
@@ -166,17 +171,21 @@ mdlbrt:
 
 	mov @vdy,5
     sla 5,7      ; r5 = 128*dy
-*       b @mram
+  .ifeq fastRAM,1
+    b @mram
+  .else
     b @sfast
+  .endif
 slowcode:
     mov @tickn+2,@6  ;stop timer
-
-*       li 0,mram
-*       li 2,(efast-sfast)/2
-*       li 5,savef
-*!      mov *5+,*0+
-*       dec 2
-*       jne -!
+  .ifeq fastRAM,1
+       li 0,mram
+       li 2,(efast-sfast)/2
+       li 5,savef
+       mov *5+,*0+
+       dec 2
+       jne -!
+  .endif
 
     a @vmx,@x0       ;add	@#mxa, @#x0a	; shift x0
 
@@ -332,6 +341,7 @@ tick:  mov 2,@tick2
        inc @tihi
 !      mov @tick12,12
        mov @tick2,2
+*       rtwp
 tickn: b @0
 
 prevti equ MANDEL+6
@@ -413,7 +423,7 @@ lx1:
      movb 12,8
      s @vdy,5    ;sub	@#dya, r5
      jne loop0
-       b @slowcode
+     b @slowcode
 efast equ $
 
 getkey: li 0,4
@@ -432,7 +442,9 @@ x0  data ix0
 niter data initer
 
 space  data >202e   *space,dot
-       byte 1,0      *home cursor and word alignment
+       byte 1      *home cursor
+
+   even
 
 msg     text "****************************"
         byte 13,10
@@ -458,9 +470,6 @@ msg     text "****************************"
         byte 13,10
         text "Use the Q-key to quit"
         byte 0
-
-merr text 'memory allocation error'
-     byte 13,10,0
 
 sqrbase equ msg + >16b0
 lbuf equ sqrbase + >1700
