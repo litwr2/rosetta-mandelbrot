@@ -9,7 +9,6 @@ VDP3 equ VDP0+6
 
 NOCALC equ 0
 * VDP equ 1
-XOPvideo equ 0
 
 initer equ 7
 idx	equ -36       *-.0703125
@@ -162,16 +161,14 @@ mdlbrt:
        mov @6,@tickn+2
        mov 2,@6
        limi 4
-  .ifeq XOPVideo,1
-    li 8,255     ;X
-  .else
+
     li 8,127 ;byte pos in VRAM
     li 12,0   ;odd/even part of the byte
-  .endif
+
 	mov @vdy,5
     sla 5,7      ; r5 = 128*dy
 loop0:
-    li 9,0       ;Y / byte pos in lbuf
+    li 9,0       ;byte pos in lbuf
   .ifeq NOCALC,0
 	mov @x0,4   ;mov	#x0, r4
   .endif
@@ -198,34 +195,8 @@ loop2:
 	jne -!        ;sob	r2, 1$		; to next iteration
 !:
   .endif
-    andi 2,15
+     andi 2,15
 
-  .ifeq XOPvideo,1
-*    mov 4,10   ;save R4
-
-    li 0,>e
-    mov 2,3
-    swpb 3
-    mov 8,1   ;X
-    mov 9,2   ;Y
-*    li 4,0
-    li 6,0
-    xop @six,0   ;putpixel
-
-    li 1,255   ;X
-    s 8,1
-*   li 4,0
-    xop @six,0   ;putpixel
-
-*    mov 10,4   ;restore R4
-    inc 9
-    ci 9,128
-    jne loop2
-
-    dec 8
-	s @vdy,5    ;sub	@#dya, r5		; update b
-    jne loop0       ;bgt	loop0		; continue while b > 0
-  .else
      mov 12,12
      jne lx1
 
@@ -256,7 +227,7 @@ lx1:
      swpb 0
      soc 0,2
 ;     .svam0
-     .svam
+     .svam1
      movb 2,@VDP0
      ai 8,128
      ci 9,128
@@ -267,7 +238,6 @@ lx1:
      movb 12,8
      s @vdy,5    ;sub	@#dya, r5
      jne loop0
-  .endif
 
    mov @tickn+2,@6  ;stop timer
 
