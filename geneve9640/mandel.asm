@@ -8,7 +8,7 @@ VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
 NOCALC equ 0
-fastRAM equ 0
+fastRAM equ 1
 VDP equ 0
 mram   equ >F020
 
@@ -171,18 +171,66 @@ mdlbrt:
 
 	mov @vdy,5
     sla 5,7      ; r5 = 128*dy
+loop0:
+    li 9,lbuf       ;byte pos in lbuf
+  .ifeq NOCALC,0
+	mov @x0,4   ;mov	#x0, r4
+  .endif
+loop2:
+  .ifeq NOCALC,0
+	a @vdx,4 ;add	@#dxa, r4
+	mov @niter,2 ;mov	#niter, r2	; max iter. count
+	mov 4,10    ;mov	r4, r0
+	mov 5,1    ;mov	r5, r1
   .ifeq fastRAM,1
     b @mram
   .else
     b @sfast
   .endif
+  .endif
 slowcode:
+     andi 2,15
+     mov 12,12
+     jne lx1
+
+     swpb 2
+     movb 2,*9+
+     ci 9,lbuf+128
+     jne loop2
+
+     li 12,1
+     s @vdy,5    ;sub	@#dya, r5
+     jmp loop0
+lx1:
+     movb *9+,2
+     mov 2,0
+     src 0,4
+     soc 0,2    ;OR
+     mov 8,1
+     .svam1
+     movb 2,@VDP0
+     li 0,>7f
+     mov 8,1
+     xor 0,1
+     .svam
+     swpb 2
+     movb 2,@VDP0
+     ai 8,128
+     ci 9,lbuf+128
+     jne loop2
+
+     dec 8
+     clr 12
+     movb 12,8
+     s @vdy,5    ;sub	@#dya, r5
+     jne loop0
+
     mov @tickn+2,@6  ;stop timer
   .ifeq fastRAM,1
        li 0,mram
        li 2,(efast-sfast)/2
        li 5,savef
-       mov *5+,*0+
+!:     mov *5+,*0+
        dec 2
        jne -!
   .endif
@@ -206,8 +254,10 @@ slowcode:
    jeq exit
 
    ci 1,>5400  *T
-   jne mdlbrt
-
+*   jne mdlbrt
+   jeq !
+   b @mdlbrt
+!:
        li 1,space+2    *home
        li 0,>27     *write
        li 2,1       *length
@@ -351,17 +401,6 @@ tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is 0x60 ??
 
 sfast equ $
-loop0:
-    li 9,lbuf       ;byte pos in lbuf
-  .ifeq NOCALC,0
-	mov @x0,4   ;mov	#x0, r4
-  .endif
-loop2:
-  .ifeq NOCALC,0
-	a @vdx,4 ;add	@#dxa, r4
-	mov @niter,2 ;mov	#niter, r2	; max iter. count
-	mov 4,10    ;mov	r4, r0
-	mov 5,1    ;mov	r5, r1
 !:  mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
     a 10,1       ;add	r0, r1		; r1 = x+y
 	mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
@@ -378,43 +417,6 @@ loop2:
     dec 2
 	jne -!        ;sob	r2, 1$		; to next iteration
 !:
-  .endif
-     andi 2,15
-
-     mov 12,12
-     jne lx1
-
-     swpb 2
-     movb 2,*9+
-     ci 9,lbuf+128
-     jne loop2
-
-     li 12,1
-     s @vdy,5    ;sub	@#dya, r5
-     jmp loop0
-lx1:
-     movb *9+,2
-     mov 2,0
-     src 0,4
-     soc 0,2    ;OR
-     mov 8,1
-     .svam1
-     movb 2,@VDP0
-     li 0,>7f
-     mov 8,1
-     xor 0,1
-     .svam
-     swpb 2
-     movb 2,@VDP0
-     ai 8,128
-     ci 9,lbuf+128
-     jne loop2
-
-     dec 8
-     clr 12
-     movb 12,8
-     s @vdy,5    ;sub	@#dya, r5
-     jne loop0
      b @slowcode
 efast equ $
 
