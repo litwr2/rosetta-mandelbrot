@@ -8,7 +8,7 @@ VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
 NOCALC equ 0
-* VDP equ 1
+VDP equ 0
 
 initer equ 7
 idx	equ -36       *-.0703125
@@ -106,17 +106,6 @@ err:   li 1,merr
        ci 7,8
        jne -!
 
-*       limi 0
-*       li 0,mram
-*       li 2,(efast-sfast)/2
-*       li 3,sfast
-*       li 5,savef
-*!      mov *0,*5+
-*       mov *3+,*0+
-*       dec 2
-*       jne -!
-*       limi 4
-
 	li 0,0   ;cx; clr	r0		; 7 lower bits in high byte
 	li 1,0   ;bx; clr	r1		; higher 11+1 bits
 	li 2,0   ;dx; clr	r2		; operand-index
@@ -143,7 +132,17 @@ fillsqr:
 	inc 2       ;inc dx      ;inc	r2
 	jmp fillsqr ;br	fsqr
 mdlbrt:
+*       li 0,mram
+*       li 2,(efast-sfast)/2
+*       li 3,sfast
+*       li 5,savef
+*!      mov *0,*5+
+*       mov *3+,*0+
+*       dec 2
+*       jne -!
+
        bl @waitvdp
+       .svam0
 
        limi 0   ;timer
        clr 2
@@ -167,81 +166,18 @@ mdlbrt:
 
 	mov @vdy,5
     sla 5,7      ; r5 = 128*dy
-loop0:
-    li 9,0       ;byte pos in lbuf
-  .ifeq NOCALC,0
-	mov @x0,4   ;mov	#x0, r4
-  .endif
-loop2:
-  .ifeq NOCALC,0
-	a @vdx,4 ;add	@#dxa, r4
-	mov @niter,2 ;mov	#niter, r2	; max iter. count
-	mov 4,10    ;mov	r4, r0
-	mov 5,1    ;mov	r5, r1
-!:  mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
-    a 10,1       ;add	r0, r1		; r1 = x+y
-	mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
-	a 3,10       ;add	r3, r0		; r0 = x^2+y^2
-    ci 10,>800    ;cmp	r0, r6		; if r0 >= 4.0 then
-	jhe !         ;bge	2$		; overflow
+*       b @mram
+    b @sfast
+slowcode:
+    mov @tickn+2,@6  ;stop timer
 
-	mov @sqrbase(1),1     ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	s 10,1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-    a 5,1	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	s 3,10       ;sub	r3, r0		; r0 = x^2
-	s 3,10       ;sub	r3, r0		; r0 = x^2-y^2
-	a 4,10       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    dec 2
-	jne -!        ;sob	r2, 1$		; to next iteration
-!:
-  .endif
-     andi 2,15
+*       li 0,mram
+*       li 2,(efast-sfast)/2
+*       li 5,savef
+*!      mov *5+,*0+
+*       dec 2
+*       jne -!
 
-     mov 12,12
-     jne lx1
-
-     swpb 2
-     movb 2,@lbuf(9)
-     inc 9
-     ci 9,128
-     jne loop2
-
-     li 12,1
-     s @vdy,5    ;sub	@#dya, r5
-     jmp loop0
-lx1:
-     clr 0
-     movb @lbuf(9),0
-     inc 9
-     src 2,4
-     soc 0,2    ;OR
-     mov 8,1
-;     .svam0
-     .svam
-     movb 2,@VDP0
-     li 0,>7f
-     mov 8,1
-     xor 0,1
-     srl 2,4
-     mov 2,0
-     swpb 0
-     soc 0,2
-;     .svam0
-     .svam1
-     movb 2,@VDP0
-     ai 8,128
-     ci 9,128
-     jne loop2
-
-     dec 8
-     clr 12
-     movb 12,8
-     s @vdy,5    ;sub	@#dya, r5
-     jne loop0
-
-   mov @tickn+2,@6  ;stop timer
-
-  .ifeq NOCALC,0
     a @vmx,@x0       ;add	@#mxa, @#x0a	; shift x0
 
 	; scale the params
@@ -254,7 +190,6 @@ lx1:
 	jne -!            ;sob	r0, 4$
 
 	inc @niter     ;inc	@#nitera	; increase the iteration count
-  .endif
 
    bl @getkey
    andi 1,>5f00
@@ -262,17 +197,7 @@ lx1:
    jeq exit
 
    ci 1,>5400  *T
-   jeq slowcode
-   b @mdlbrt
-*       b @mram
-
-slowcode:
-*       li 0,mram
-*       li 2,(efast-sfast)/2
-*       li 5,savef
-*!      mov *5+,*0+
-*       dec 2
-*       jne -!
+   jne mdlbrt
 
        li 1,space+2    *home
        li 0,>27     *write
@@ -379,7 +304,6 @@ l12:   mov 5,2
        xop @six,0
        b *11
 
-six    data 6
 retsav equ MANDEL+2
 string equ MANDEL+4
 
@@ -417,10 +341,80 @@ tick2 equ MANDEL+12
 tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is 0x60 ??
 
-sfast: 
+sfast equ $
+loop0:
+    li 9,0       ;byte pos in lbuf
+  .ifeq NOCALC,0
+	mov @x0,4   ;mov	#x0, r4
+  .endif
+loop2:
+  .ifeq NOCALC,0
+	a @vdx,4 ;add	@#dxa, r4
+	mov @niter,2 ;mov	#niter, r2	; max iter. count
+	mov 4,10    ;mov	r4, r0
+	mov 5,1    ;mov	r5, r1
+!:  mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
+    a 10,1       ;add	r0, r1		; r1 = x+y
+	mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
+	a 3,10       ;add	r3, r0		; r0 = x^2+y^2
+    ci 10,>800    ;cmp	r0, r6		; if r0 >= 4.0 then
+	jhe !         ;bge	2$		; overflow
 
+	mov @sqrbase(1),1     ;mov	sqr(r1), r1	; r1 = (x+y)^2
+	s 10,1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
+    a 5,1	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
+	s 3,10       ;sub	r3, r0		; r0 = x^2
+	s 3,10       ;sub	r3, r0		; r0 = x^2-y^2
+	a 4,10       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
+    dec 2
+	jne -!        ;sob	r2, 1$		; to next iteration
+!:
+  .endif
+     andi 2,15
+
+     mov 12,12
+     jne lx1
+
+     swpb 2
+     movb 2,@lbuf(9)
+     inc 9
+     ci 9,128
+     jne loop2
+
+     li 12,1
+     s @vdy,5    ;sub	@#dya, r5
+     jmp loop0
+lx1:
+     clr 0
+     movb @lbuf(9),0
+     inc 9
+     src 2,4
+     soc 0,2    ;OR
+     mov 8,1
+;     .svam0
+     .svam1
+     movb 2,@VDP0
+     li 0,>7f
+     mov 8,1
+     xor 0,1
+     srl 2,4
+     mov 2,0
+     swpb 0
+     soc 0,2
+;     .svam0
+     .svam
+     movb 2,@VDP0
+     ai 8,128
+     ci 9,128
+     jne loop2
+
+     dec 8
+     clr 12
+     movb 12,8
+     s @vdy,5    ;sub	@#dya, r5
+     jne loop0
        b @slowcode
-efast
+efast equ $
 
 getkey: li 0,4
         li 1,>ff00
@@ -429,6 +423,7 @@ getkey: li 0,4
         b *11
 
 five data 5
+six data 6
 seven data 7
 vdx data idx
 vdy data idy
