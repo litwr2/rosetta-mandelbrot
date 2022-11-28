@@ -154,7 +154,31 @@ end if
     ldr r0,[dya]
     subs r5,r5,r0
     bne loop0
+if NOCALC=0
+    ldr r1,[mxa]
+    ldr r2,[x0a]
+    add r2,r1
+    str r2,[x0a]      ;add	@#mxa, @#x0a
 
+    mov r5,#3
+    add r1,pc,dxa-$-8
+.l4:ldr r2,[r1]       ;mov	(r1), r2
+    add r3,r2,#sf4
+    tst r3,#0x20000
+    bic r3,#0x30000
+    ldr r3,[r8,r3,asr 16]
+    movne r3,r3,lsr #16
+    sub r4,r2,#sf4
+    tst r4,#0x20000
+    bic r4,#0x30000
+    ldr r4,[r8,r4,asr 16]
+    movne r4,r4,lsr #16
+    sub r3,r3,r4
+    mov r3,r3,lsl #16
+    str r3,[r1],#4     ;mov	sqr+sf4(r2), (r1) // sub	sqr-sf4(r2), (r1)+
+    subs r5,#1
+    bne .l4
+end if
     add r6,#1   ;inc	@#nitera
     swi OS_ReadMonotonicTime
     ldr r1,[timer]
@@ -166,7 +190,7 @@ end if
     beq exit
 
     cmp r1,#"T"
-    bne .l5
+    bne mandel
 
 	mov r0, #30   ;VDU = Home Cursor
 	swi OS_WriteC
@@ -211,29 +235,6 @@ end if
     add r0, pc, text_string-$-8
 	swi OS_WriteO
     bl getkey
-.l5:ldr r1,[mxa]
-    ldr r2,[x0a]
-    add r2,r1
-    str r2,[x0a]      ;add	@#mxa, @#x0a
-
-    mov r5,#3
-    add r1,pc,dxa-$-8
-.l4:ldr r2,[r1]       ;mov	(r1), r2
-    add r3,r2,#sf4
-    tst r3,#0x20000
-    bic r3,#0x30000
-    ldr r3,[r8,r3,asr 16]
-    movne r3,r3,lsr #16
-    sub r4,r2,#sf4
-    tst r4,#0x20000
-    bic r4,#0x30000
-    ldr r4,[r8,r4,asr 16]
-    movne r4,r4,lsr #16
-    sub r3,r3,r4
-    mov r3,r3,lsl #16
-    str r3,[r1],#4     ;mov	sqr+sf4(r2), (r1) // sub	sqr-sf4(r2), (r1)+
-    subs r5,#1
-    bne .l4
 	b mandel
 	
 get_screen_addr:

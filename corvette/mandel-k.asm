@@ -42,7 +42,7 @@ sqrtab macro
     add a,high(sqrbase)
     ld h,a
 endm
- 
+
 start
     ld de,msg
     ld c,9

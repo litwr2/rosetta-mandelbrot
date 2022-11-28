@@ -7,7 +7,7 @@ VDP1 equ VDP0+2
 VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
-NOCALC equ 0
+NOCALC equ 1
 fastRAM equ 1
 VDP equ 1
 mram   equ >F020
@@ -357,7 +357,6 @@ lx1:
      limi 4
   .endif
 
-    mov @tickn+2,@6  ;stop timer
   .ifeq fastRAM,1
        li 0,mram
        li 2,(efast-sfast)/2
@@ -367,8 +366,8 @@ lx1:
        jne -!
   .endif
 
+  .ifeq NOCALC,0
     a @vmx,@x0       ;add	@#mxa, @#x0a	; shift x0
-
 	; scale the params
 	li 0,3      ;mov	#3, r0
 	li 1,vdx    ;mov	#dxa, r1
@@ -377,9 +376,10 @@ lx1:
     s @sqrbase-sf4(2),*1+         ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
     dec 0
 	jne -!            ;sob	r0, 4$
+  .endif
 
 	inc @niter     ;inc	@#nitera	; increase the iteration count
-
+    mov @tickn+2,@6  ;stop timer
    bl @getkey
    andi 1,>5f00
    ci 1,>5100  *Q
