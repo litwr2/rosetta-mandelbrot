@@ -1,6 +1,6 @@
 * for xas99 assembler
 * General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-* 128x256 Mandelbrot for the Geneve 9640, 16 colors, interlaced (256x384 raster)
+* 256x128 Mandelbrot for the Geneve 9640, 16 colors, rotated image (256x192 raster)
 
 VDP0 equ >F100
 VDP1 equ VDP0+2
@@ -9,7 +9,7 @@ VDP3 equ VDP0+6
 
 NOCALC equ 0
 fastRAM equ 1
-VDP equ 0
+VDP equ 1
 mram   equ >F020
 
 initer equ 7
@@ -166,6 +166,7 @@ mdlbrt:
        mov 2,@6
        limi 4
 
+     li 13,0  ;VDP flag
      li 8,127 ;byte pos in VRAM
      li 12,0   ;odd/even part of the byte
 
@@ -176,13 +177,11 @@ loop0:
      .ifeq NOCALC,0
 	 mov @x0,4   ;mov	#x0, r4
      .endif
-loop2:
-     .ifeq NOCALC,0
+loop2 equ $
      .ifeq fastRAM,1
      b @mram
      .else
      b @sfast
-     .endif
      .endif
 slowcode:
      jne lx1
@@ -191,7 +190,53 @@ slowcode:
      movb 2,*9+
      ci 9,lbuf+128
      jne loop2
+  .ifeq VDP,1
+     mov 13,13
+     jeq noop
 
+     li 0,>2091   ;32, 128+17
+     limi 0
+     movb 0,@VDP1
+     swpb 0
+     movb 0,@VDP1
+     mov 8,1
+     inc 1
+     sla 1,1
+     swpb 1
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;X o
+     li 0,0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;Y o
+     li 0,>ff
+     xor 1,0
+     swpb 0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;X d
+     li 0,0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;Y d
+     li 1,>100
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;X s
+     li 1,>8000
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;Y s
+     swpb 1   ;delay
+     movb 0,@VDP3
+     li 1,>490
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;4 - X neg, 90 - LMMM
+     limi 4
+noop:
+  .endif
      li 12,1
      s @vdy,5    ;sub	@#dya, r5
      jmp loop0
@@ -201,23 +246,116 @@ lx1:
      src 0,4
      soc 0,2    ;OR
      mov 8,1
+  .ifeq VDP,0
      .svam1
+  .else
+     .svam
+  .endif
      movb 2,@VDP0
+  .ifeq VDP,0
      li 0,>7f
      mov 8,1
      xor 0,1
      .svam
      swpb 2
      movb 2,@VDP0
+  .endif
      ai 8,128
      ci 9,lbuf+128
      jne loop2
 
+  .ifeq VDP,1
+     li 13,1
+     li 0,>2091   ;32, 128+17
+     limi 0
+     movb 0,@VDP1
+     swpb 0
+     movb 0,@VDP1
+     mov 8,1
+     sla 1,1
+     inc 1
+     swpb 1
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;X o
+     li 0,0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;Y o
+     li 0,>ff
+     xor 1,0
+     swpb 0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;X d
+     li 0,0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;Y d
+     li 1,>100
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;X s
+     li 1,>8000
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;Y s
+     swpb 1   ;delay
+     movb 0,@VDP3
+     li 1,>490
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;4 - X neg, 90 - LMMM
+     limi 4
+  .endif
      dec 8
      clr 12
      movb 12,8
      s @vdy,5    ;sub	@#dya, r5
+  .ifeq VDP,0
      jne loop0
+  .else
+     jeq !
+     b @loop0
+!:
+     bl @waitvdp
+     li 0,>2091   ;32, 128+17
+     limi 0
+     movb 0,@VDP1
+     swpb 0
+     movb 0,@VDP1
+     li 1,>8000
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;X o
+     li 0,0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;Y o
+     li 0,>7f00
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;X d
+     li 0,0
+     movb 0,@VDP3
+     swpb 0
+     movb 0,@VDP3   ;Y d
+     li 1,>100
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;X s
+     li 1,>8000
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;Y s
+     swpb 1   ;delay
+     movb 0,@VDP3
+     li 1,>490
+     movb 1,@VDP3
+     swpb 1
+     movb 1,@VDP3   ;4 - X neg, 90 - LMMM
+     limi 4
+  .endif
 
     mov @tickn+2,@6  ;stop timer
   .ifeq fastRAM,1
@@ -395,6 +533,7 @@ tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is 0x60 ??
 
 sfast equ $
+     .ifeq NOCALC,0
      a @vdx,4 ;add	@#dxa, r4
      mov @niter,2 ;mov	#niter, r2	; max iter. count
      mov 4,10    ;mov	r4, r0
@@ -416,6 +555,7 @@ sfast equ $
      jne -!        ;sob	r2, 1$		; to next iteration
 
 !:   andi 2,15
+     .endif
      mov 12,12
      b @slowcode
 efast equ $
