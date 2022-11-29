@@ -1,5 +1,5 @@
 PP=/home/micro/retro/ti99-4/tools/xdt99-3.1.0
-F=$1
+F=${1%%.asm}
 D=m-geneve.dsk
 $PP/xas99.py $F.asm -L $F.lst
 $PP/xdm99.py $D -a $F.obj -f DIS/FIX80

@@ -104,7 +104,7 @@ endif
          ld c,$11
          ld hl,0
          call wvmem
-         ld hl,16384
+         ld hl,16384+8192
 l4:      ld a,c
          out ($98),a
          dec hl
@@ -112,41 +112,17 @@ l4:      ld a,c
          or h
          jr nz,l4
 
-         ld a,1
-         ;ld c,$11
-         ld hl,0
-         call wvmem
-         ld hl,8192
-l5:      ld a,c
-         out ($98),a
-         dec hl
-         ld a,l
-         or h
-         jr nz,l5
-
          ld a,2
          ;ld c,$11
          ld hl,0
          call wvmem
-         ld hl,16384
+         ld hl,16384+8192
 l3:      ld a,c
          out ($98),a
          dec hl
          ld a,l
          or h
          jr nz,l3
-
-         ld a,3
-         ;ld c,$11
-         ld hl,0
-         call wvmem
-         ld hl,8192
-l7:      ld a,c
-         out ($98),a
-         dec hl
-         ld a,l
-         or h
-         jr nz,l7
 
     ld hl,sqrbase
     push hl
