@@ -7,6 +7,7 @@ VDP1 equ VDP0+2
 VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
+HSize equ 512
 NOCALC equ 0
 fastRAM equ 0
 VDP equ 0
@@ -116,6 +117,21 @@ merr text 'memory allocation error'
     even
 
 mdlbrt:
+    mov @dataindex,0
+    li 1,mdata
+    a 0,1
+    mov *1+,@vdx
+    mov *1+,@vdy
+    mov *1+,@x0
+    mov *1,@niter
+    inct *1
+    ai 0,8
+    ci 0,8*dataentries
+    jne !
+
+    clr 0
+!:  mov 0,@dataindex
+
   .ifeq fastRAM,1
        li 0,mram
        li 2,(efast-sfast)/2
@@ -258,19 +274,7 @@ lx1:
        jne -!
   .endif
 
-    a @vmx,@x0       ;add	@#mxa, @#x0a	; shift x0
-
-	; scale the params
-	li 0,3      ;mov	#3, r0
-	li 1,vdx    ;mov	#dxa, r1
-!:	mov *1,2         ;mov	(r1), r2
-	mov @sqrbase+sf4(2),*1         ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
-    s @sqrbase-sf4(2),*1+         ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
-    dec 0
-	jne -!            ;sob	r0, 4$
-
-	inc @niter     ;inc	@#nitera	; increase the iteration count
-
+   inc @counter
    bl @getkey
    andi 1,>5f00
    ci 1,>5100  *Q
@@ -286,8 +290,7 @@ lx1:
        li 2,1       *length
        xop @six,0
 
-       mov @niter,10
-       ai 10,-7
+       mov @counter,10
        bl @PR00
 
        li 1,space
@@ -460,11 +463,34 @@ getkey: li 0,4
 five data 5
 six data 6
 seven data 7
-vdx data idx
-vdy data idy
-vmx data imx
-x0  data ix0
-niter data initer
+vdx bss 2
+vdy bss 2
+x0  bss 2
+niter bss 2
+
+  .defm mentry
+     data -#1, #2
+     data #1*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
+     data #3
+  .endm
+
+;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
+dataentries equ 12
+counter data 0
+dataindex data 0
+mdata:
+     .mentry 9, 18, 7  ;1
+     .mentry 7, 15, 8  ;2
+     .mentry 6, 13, 9  ;3
+     .mentry 5, 11, 10  ;4
+     .mentry 4, 10, 11  ;5
+     .mentry 4, 8, 12  ;6
+     .mentry 4, 6, 13  ;7
+     .mentry 3, 5, 14  ;8
+     .mentry 3, 5, 15  ;9
+     .mentry 3, 5, 16  ;10
+     .mentry 3, 5, 25  ;11
+     .mentry 3, 6, 37  ;12
 
 space  data >202e   *space,dot
        byte 1      *home cursor
