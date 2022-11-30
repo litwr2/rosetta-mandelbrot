@@ -263,8 +263,8 @@ loc2:
 rept $100
     outi
 endm
-if VDP=0
     ld a,$d3
+if VDP=0
     sub ixl
     ld h,a
     xor a
@@ -280,7 +280,6 @@ else
     ld e,ixl
     ld l,1
     ld d,0
-    ld a,$d3
     sub e
     ld b,a
 
@@ -290,11 +289,11 @@ else
     out (#99),a
     ld a,17 + 128
     out (#99),a
-    out (c),e   ;start Y
+    out (c),e   ;origin Y
     out (c),d
-    out (c),d   ;start X
+    out (c),d   ;destination X
     out (c),d
-    out (c),b   ;end Y
+    out (c),b   ;destination Y
     out (c),d
     out (c),d   ;size X
     out (c),l
