@@ -8,9 +8,8 @@ VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
 HSize equ 512
-NOCALC equ 0
-fastRAM equ 0
-VDP equ 0
+fastRAM equ 1
+VDP equ 1
 mram   equ >F020
 
    .defm svamx
@@ -92,14 +91,6 @@ err:   li 1,merr
        inc 7
        ci 7,8
        jne -!
-
-         li 0,2   ;clean screen
-         li 1,0
-         bl @svax
-         li 0,16384+8192
-!:       movb 1,@VDP0
-         dec 0
-         jne -!
 
 	li 0,0   ;cx; clr	r0		; 7 lower bits in high byte
 	li 1,0   ;bx; clr	r1		; higher 11+1 bits
@@ -247,29 +238,28 @@ lx1:
      swpb 0
      movb 0,@VDP1
 
-     mov 8,1
-     a 1,1
-     movb 1,@VDP3
+     s 8,1
+     movb 8,@VDP3
      li 0,>e0
      movb 0,@VDP3   ;Y o
 
-     li 2,>7f00
+     li 2,>102
      movb 0,@VDP3
      nop     ;delay??
      movb 0,@VDP3   ;X d
 
-     s 1,2
-     movb 2,@VDP3
-     li 3,>180
-     movb 3,@VDP3   ;Y d
+     nop     ;delay??
+     movb 1,@VDP3
+     nop     ;delay??
+     movb 2,@VDP3   ;Y d
 
-     swpb 3
-     movb 3,@VDP3
      nop      ;delay??
-     movb 0,@VDP3   ;X s
+     movb 0,@VDP3
+     swpb 2
+     movb 2,@VDP3   ;X s
 
-     swpb 3
-     movb 3,@VDP3
+     swpb 2
+     movb 2,@VDP3
      nop     ;delay??
      movb 0,@VDP3   ;Y s
 
@@ -299,8 +289,9 @@ oddli:
      movb *0+,@VDP0
      ci 0,lbuf+256
      jne -!
-  .ifeq VDP,0
+
      li 1,>d300
+  .ifeq VDP,0
      s 8,1
      li 0,0
      bl @svax
@@ -322,30 +313,29 @@ oddli:
      swpb 0
      movb 0,@VDP1
 
-     mov 8,1
-     a 1,1
-     movb 1,@VDP3
-     li 3,>180
-     movb 3,@VDP3   ;Y o
+     s 8,1
+     movb 8,@VDP3
+     li 2,>102
+     movb 2,@VDP3   ;Y o
 
      li 0,>e0
      movb 0,@VDP3
-     li 2,>7f00
+     nop     ;delay??
      movb 0,@VDP3   ;X d
 
-     s 1,2
-     movb 2,@VDP3
-     nop      ;delay??
+     nop     ;delay??
+     movb 1,@VDP3
+     nop     ;delay??
      movb 0,@VDP3   ;Y d
 
-     swpb 3
-     movb 3,@VDP3
      nop      ;delay??
-     movb 0,@VDP3   ;X s
+     movb 0,@VDP3
+     swpb 2
+     movb 2,@VDP3   ;X s
 
-     swpb 3
-     movb 3,@VDP3
-     nop      ;delay??
+     swpb 2
+     movb 2,@VDP3
+     nop     ;delay??
      movb 0,@VDP3   ;Y s
 
      nop      ;delay??

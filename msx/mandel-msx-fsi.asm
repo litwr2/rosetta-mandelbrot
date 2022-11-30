@@ -319,11 +319,11 @@ else
     out (#99),a
     ld a,17 + 128
     out (#99),a
-    out (c),h   ;start Y
+    out (c),h   ;origin Y
     out (c),d
-    out (c),d   ;start X
+    out (c),d   ;destination X
     out (c),d
-    out (c),b   ;end Y
+    out (c),b   ;destination Y
     out (c),l
     out (c),d   ;size X
     inc l
@@ -373,11 +373,11 @@ else
     out (#99),a
     ld a,17 + 128
     out (#99),a
-    out (c),h   ;start Y
+    out (c),h   ;origin Y
     out (c),l
-    out (c),d   ;start X
+    out (c),d   ;destination X
     out (c),d
-    out (c),b   ;end Y
+    out (c),b   ;destination Y
     out (c),d
     out (c),d   ;size X
     inc l
