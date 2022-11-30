@@ -8,17 +8,9 @@ VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
 HSize equ 512
-NOCALC equ 0
-fastRAM equ 0
-VDP equ 0
+fastRAM equ 1
+VDP equ 1
 mram   equ >F020
-
-initer equ 7
-idx	equ -36       *-.0703125
-idy	equ 18        *.03515625
-ix0	equ -62*idx
-imx	equ 10*idx		*x move
-sf4	equ 436/4		*sf/4
 
    .defm svamx
        mov 1,2       ;in: r0 - page, r1 - address; changes: r0, r1, r2
@@ -167,10 +159,8 @@ mdlbrt:
      li 7,106
      mpy 7,4      ;r5 = 106*dy
 loop0:
-    li 9,lbuf+256  ;scridx
-     .ifeq NOCALC,0
-	 mov @x0,4   ;mov	#x0, r4
-     .endif
+     li 9,lbuf+256  ;scridx
+     mov @x0,4   ;mov	#x0, r4
 loop2 equ $
      .ifeq fastRAM,1
      b @mram
@@ -198,16 +188,28 @@ lx1:
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
      ci 0,lbuf+256
      jne -!
 
-  .ifeq VDP,0
      li 1,>d300
+  .ifeq VDP,0
      s 8,1
      li 0,0
      bl @svax
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll??
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
      movb *0+,@VDP0
      ci 0,lbuf+256
      jne -!
@@ -218,26 +220,25 @@ lx1:
      swpb 0
      movb 0,@VDP1
 
-     mov 8,1
-     a 1,1
-     movb 1,@VDP3
+     s 8,1
+     movb 8,@VDP3
      li 0,>e0
      movb 0,@VDP3   ;Y o
 
-     li 2,>7f00
+     nop     ;delay??     
      movb 0,@VDP3
      nop     ;delay??
      movb 0,@VDP3   ;X d
 
-     s 1,2
-     movb 2,@VDP3
-     li 3,>180
-     movb 3,@VDP3   ;Y d
+     nop     ;delay??
+     movb 1,@VDP3
+     nop     ;delay??
+     movb 0,@VDP3   ;Y d
 
-     swpb 3
-     movb 3,@VDP3
+     li 3,>201
+     movb 0,@VDP3
      nop      ;delay??
-     movb 0,@VDP3   ;X s
+     movb 3,@VDP3   ;X s
 
      swpb 3
      movb 3,@VDP3
@@ -427,7 +428,6 @@ tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is up to 0x60
 
 sfast equ $
-     .ifeq NOCALC,0
      a @vdx,4 ;add	@#dxa, r4
      mov @niter,2 ;mov	#niter, r2	; max iter. count
      mov 4,10    ;mov	r4, r0
@@ -449,7 +449,6 @@ sfast equ $
      jne -!        ;sob	r2, 1$		; to next iteration
 
 !:   andi 2,15
-     .endif
      dec 12
      b @slowcode
 efast equ $

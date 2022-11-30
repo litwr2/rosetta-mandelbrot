@@ -195,14 +195,14 @@ lx1:
      jne loop2
 
      ai 13,>8000
-     jne !
-     b @oddli
-!:
+     jeq oddli
+
      li 0,>8e
      mov 8,1
      bl @sva
 
      li 0,lbuf
+!:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
      movb *0+,@VDP0
      movb *0+,@VDP0
@@ -210,63 +210,8 @@ lx1:
      movb *0+,@VDP0
      movb *0+,@VDP0
      movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
+     ci 0,lbuf+64
+     jne -!
 
   .ifeq VDP,0
      li 1,>3f80
@@ -274,6 +219,7 @@ lx1:
      li 0,>28e
      bl @sva
      li 0,lbuf
+!:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
      movb *0+,@VDP0
      movb *0+,@VDP0
@@ -281,63 +227,8 @@ lx1:
      movb *0+,@VDP0
      movb *0+,@VDP0
      movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
+     ci 0,lbuf+64
+     jne -!
   .else
      li 0,>2291   ;34, 128+17
      limi 0
@@ -381,7 +272,7 @@ lx1:
      limi 4
   .endif
      s @vdy,5    ;sub	@#dya, r5
-     b @loop0
+     jmp loop0
 oddli:
      li 0,>28e
      mov 8,1

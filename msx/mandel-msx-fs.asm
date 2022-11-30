@@ -290,9 +290,9 @@ rept $100
 endm
     pop hl
     push hl
-if VDP=0
     ld a,$d3
     sub h
+if VDP=0
     ld h,a
     xor a
     call wvmem
@@ -304,10 +304,7 @@ rept $100
 endm
 else
     ld d,l
-    ld a,$d3
-    sub h
     ld b,a
-
     ld a,34
     inc l
     ld c,#9B
@@ -315,11 +312,11 @@ else
     out (#99),a
     ld a,17 + 128
     out (#99),a
-    out (c),h   ;start Y
+    out (c),h   ;origin Y
     out (c),d
-    out (c),d   ;start X
+    out (c),d   ;destination X
     out (c),d
-    out (c),b   ;end Y
+    out (c),b   ;destination Y
     out (c),d
     out (c),d   ;size X
     inc l
