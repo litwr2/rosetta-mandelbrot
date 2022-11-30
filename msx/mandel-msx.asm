@@ -279,9 +279,7 @@ tcolor equ $+1
     or a
     jp nz,loop2
 
-    ld a,iyl
-    xor 1
-    ld iyl,a
+    dec iyl
     pop hl  ;scrbas
     push hl
     ;ld bc,$4098
@@ -289,6 +287,7 @@ tcolor equ $+1
     ;jr z,oddli
     jp z,oddli
 
+    ld iyl,1
     xor a
     call wvmem
     ld hl,buf

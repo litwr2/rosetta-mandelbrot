@@ -279,15 +279,14 @@ tcolor equ $+1
     or a
     jp nz,loop2
 
-    ld a,iyl
-    xor 1
-    ld iyl,a
+    dec iyl
     pop hl  ;scrbas, l is always 0!!
     push hl
     ld c,$98
     ;jr z,oddli
     jp z,oddli
 
+    ld iyl,1
     xor a
     call wvmem
     ld hl,buf
