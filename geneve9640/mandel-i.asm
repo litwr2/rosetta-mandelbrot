@@ -194,19 +194,79 @@ lx1:
      ci 9,lbuf
      jne loop2
 
-     li 0,1
-     xor 0,13   ;??
-     jeq oddli
-
+     ai 13,>8000
+     jne !
+     b @oddli
+!:
      li 0,>8e
      mov 8,1
      bl @sva
 
      li 0,lbuf
-!:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
-     ci 0,lbuf+64
-     jne -!
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
 
   .ifeq VDP,0
      li 1,>3f80
@@ -214,10 +274,70 @@ lx1:
      li 0,>28e
      bl @sva
      li 0,lbuf
-!:   movb *0+,@VDP0   *unroll?>
      movb *0+,@VDP0
-     ci 0,lbuf+64
-     jne -!
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
   .else
      li 0,>2291   ;34, 128+17
      limi 0
@@ -261,7 +381,7 @@ lx1:
      limi 4
   .endif
      s @vdy,5    ;sub	@#dya, r5
-     jmp loop0
+     b @loop0
 oddli:
      li 0,>28e
      mov 8,1
@@ -325,14 +445,9 @@ oddli:
   .endif
      ai 8,128
      s @vdy,5    ;sub	@#dya, r5
-  .ifeq VDP,0
-     jne loop0
-  .else
      jeq !
      b @loop0
 !:
-  .endif
-
     mov @tickn+2,@6  ;stop timer
   .ifeq fastRAM,1
        li 0,mram
@@ -506,7 +621,7 @@ tihi equ MANDEL+8                  *@tihi@
 tilo equ MANDEL+10
 tick2 equ MANDEL+12
 tick12 equ MANDEL+14
-savef equ MANDEL+16               *its size is 0x60 ??
+savef equ MANDEL+16               *its size is up to 0x60
 
 sfast equ $
      .ifeq NOCALC,0
