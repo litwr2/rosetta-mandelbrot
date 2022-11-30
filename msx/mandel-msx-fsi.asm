@@ -296,9 +296,9 @@ rept $100
 endm
     pop hl
     push hl
-if VDP=0
     ld a,$d3
     sub h
+if VDP=0
     ld h,a
     ld a,1
     call wvmem
@@ -310,8 +310,6 @@ rept $100
 endm
 else
     ld d,l
-    ld a,$d3
-    sub h
     ld b,a
 
     ld a,34
@@ -405,7 +403,6 @@ endli
     jp nz,loop0
 
     pop hl
-
     ld a,$c9   ;opcode for RET
     ld ($fd9a),a   ;stop timer
 

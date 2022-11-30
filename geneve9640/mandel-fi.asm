@@ -1,26 +1,26 @@
 * for xas99 assembler
 * General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-* 128x256 Mandelbrot for the Geneve 9640, 16 colors, interlaced (256x384 raster)
+* Fullscreen (512x424) Mandelbrot for the Geneve 9640, 16 colors, interlaced
 
 VDP0 equ >F100
 VDP1 equ VDP0+2
 VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
+HSize equ 512
 NOCALC equ 0
-fastRAM equ 1
-VDP equ 1
+fastRAM equ 0
+VDP equ 0
 mram   equ >F020
 
-initer equ 7
-idx	equ -36       *-.0703125
-idy	equ 18        *.03515625
-ix0	equ -62*idx
-imx	equ 10*idx		*x move
-sf4	equ 436/4		*sf/4
-
-   .defm svam
-       ;li 0,>8e    ;use 16KB VRAM always
+   .defm svamx
+       mov 1,2       ;in: r0 - page, r1 - address; changes: r0, r1, r2
+       andi 1,>3fff
+       srl 2,14
+       sla 0,2
+       a 2,0
+       ai 0,>8e00
+       swpb 0
        limi 0
        movb 0,@VDP1   ;R0l - >8e, R0h - video page
        swpb 0
@@ -41,7 +41,7 @@ MANDEL: li 1,msg
         bl @getkey
 
         li 0,0
-        li 1,6  ;graphic mode 6, 256x212, 16 colors
+        li 1,8  ;graphic mode 8, 512x212, 16 colors
         xop @six,0
 
         li 0,>d
@@ -56,7 +56,6 @@ MANDEL: li 1,msg
         li 0,>36
         li 1,9       *read reg
         xop @six,0
-        andi 0,>7f    *256x192
         ori 0,>c     *interlaced
         mov 0,2
         li 0,>35
@@ -94,9 +93,9 @@ err:   li 1,merr
        ci 7,8
        jne -!
 
-         li 0,>28e   ;clean screen
+         li 0,2   ;clean screen
          li 1,0
-         bl @sva
+         bl @svax
          li 0,16384+8192
 !:       movb 1,@VDP0
          dec 0
@@ -133,6 +132,21 @@ merr text 'memory allocation error'
     even
 
 mdlbrt:
+    mov @dataindex,0
+    li 1,mdata
+    a 0,1
+    mov *1+,@vdx
+    mov *1+,@vdy
+    mov *1+,@x0
+    mov *1,@niter
+    inct *1
+    ai 0,8
+    ci 0,8*dataentries
+    jne !
+
+    clr 0
+!:  mov 0,@dataindex
+
   .ifeq fastRAM,1
        li 0,mram
        li 2,(efast-sfast)/2
@@ -165,14 +179,12 @@ mdlbrt:
      li 12,1   ;dot even/odd
      li 13,0   ;line even/odd
      li 8,0  ;scrbase
-
-	 mov @vdy,5
-     sla 5,7      ;r5 = 128*dy
+	 mov @vdy,4
+     li 7,212
+     mpy 7,4      ;r5 = 212*dy
 loop0:
-    li 9,lbuf+64  ;scridx
-     .ifeq NOCALC,0
-	 mov @x0,4   ;mov	#x0, r4
-     .endif
+     li 9,lbuf+256  ;scridx
+     mov @x0,4   ;mov	#x0, r4
 loop2 equ $
      .ifeq fastRAM,1
      b @mram
@@ -198,9 +210,8 @@ lx1:
      ai 13,>8000
      jeq oddli
 
-     li 0,>8e
-     bl @sva
-
+     li 0,0
+     bl @svax
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
@@ -210,14 +221,14 @@ lx1:
      movb *0+,@VDP0
      movb *0+,@VDP0
      movb *0+,@VDP0
-     ci 0,lbuf+64
+     ci 0,lbuf+256
      jne -!
 
+     li 1,>d300
   .ifeq VDP,0
-     li 1,>3f80
-     xor 8,1
-     li 0,>28e
-     bl @sva
+     s 8,1
+     li 0,1
+     bl @svax
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
@@ -227,7 +238,7 @@ lx1:
      movb *0+,@VDP0
      movb *0+,@VDP0
      movb *0+,@VDP0
-     ci 0,lbuf+64
+     ci 0,lbuf+256
      jne -!
   .else
      li 0,>2291   ;34, 128+17
@@ -271,25 +282,38 @@ lx1:
      movb 0,@VDP3   ;E0 - YMMM
      limi 4
   .endif
+
      s @vdy,5    ;sub	@#dya, r5
-     jmp loop0
+     b @loop0
 oddli:
-     li 0,>28e
-     bl @sva
+     li 0,1
+     bl @svax
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll??
      movb *0+,@VDP0
-     ci 0,lbuf+64
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     ci 0,lbuf+256
      jne -!
   .ifeq VDP,0
-     li 1,>3f80
-     xor 8,1
-     li 0,>8e
-     bl @sva
+     li 1,>d300
+     s 8,1
+     li 0,0
+     bl @svax
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll?>
      movb *0+,@VDP0
-     ci 0,lbuf+64
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     movb *0+,@VDP0
+     ci 0,lbuf+256
      jne -!
   .else
      li 0,>2291   ;34, 128+17
@@ -333,7 +357,7 @@ oddli:
      movb 0,@VDP3   ;E0 - YMMM
      limi 4
   .endif
-     ai 8,128
+     ai 8,256
      s @vdy,5    ;sub	@#dya, r5
      jeq !
      b @loop0
@@ -348,19 +372,7 @@ oddli:
        jne -!
   .endif
 
-    a @vmx,@x0       ;add	@#mxa, @#x0a	; shift x0
-
-	; scale the params
-	li 0,3      ;mov	#3, r0
-	li 1,vdx    ;mov	#dxa, r1
-!:	mov *1,2         ;mov	(r1), r2
-	mov @sqrbase+sf4(2),*1         ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
-    s @sqrbase-sf4(2),*1+         ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
-    dec 0
-	jne -!            ;sob	r0, 4$
-
-	inc @niter     ;inc	@#nitera	; increase the iteration count
-
+   inc @counter
    bl @getkey
    andi 1,>5f00
    ci 1,>5100  *Q
@@ -376,8 +388,7 @@ oddli:
        li 2,1       *length
        xop @six,0
 
-       mov @niter,10
-       ai 10,-7
+       mov @counter,10
        bl @PR00
 
        li 1,space
@@ -433,8 +444,8 @@ exit:
        xop @six,0
        blwp @0
 
-sva:   ;in: R1 - addr, changed: R0,R1
-       .svam
+svax:   ;in: R0 - page, R1 - addr; changed: R0, R1, R2
+       .svamx
        b *11
 
 waitvdp:    ;use: R0, R1
@@ -514,7 +525,6 @@ tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is up to 0x60
 
 sfast equ $
-     .ifeq NOCALC,0
      a @vdx,4 ;add	@#dxa, r4
      mov @niter,2 ;mov	#niter, r2	; max iter. count
      mov 4,10    ;mov	r4, r0
@@ -536,7 +546,6 @@ sfast equ $
      jne -!        ;sob	r2, 1$		; to next iteration
 
 !:   andi 2,15
-     .endif
      dec 12
      b @slowcode
 efast equ $
@@ -550,11 +559,34 @@ getkey: li 0,4
 five data 5
 six data 6
 seven data 7
-vdx data idx
-vdy data idy
-vmx data imx
-x0  data ix0
-niter data initer
+vdx bss 2
+vdy bss 2
+x0  bss 2
+niter bss 2
+
+  .defm mentry
+     data -#1, #2
+     data #1*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
+     data #3
+  .endm
+
+;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
+dataentries equ 12
+counter data 0
+dataindex data 0
+mdata:
+     .mentry 9, 18, 7  ;1
+     .mentry 7, 13, 8  ;2
+     .mentry 6, 11, 9  ;3
+     .mentry 5, 9, 10  ;4
+     .mentry 4, 8, 11  ;5
+     .mentry 4, 6, 12  ;6
+     .mentry 4, 4, 13  ;7
+     .mentry 3, 3, 14  ;8
+     .mentry 3, 3, 15  ;9
+     .mentry 3, 3, 16  ;10
+     .mentry 3, 3, 25  ;11
+     .mentry 3, 3, 37  ;12
 
 space  data >202e   *space,dot
        byte 1      *home cursor
@@ -565,21 +597,21 @@ msg     text "****************************"
         byte 13,10
         text "*   Superfast Mandelbrot   *"
         byte 13,10
-        text "*        generator         *"
+        text "*   fullscreen generator   *"
         byte 13,10
-        text "*     interlaced, v1       *"
+        text "* interlaced, 512x424, v1  *"
         byte 13,10
         text "****************************"
         byte 13,10
-        text "The original version was"
+        text "This Geneve 9640 code was"
         byte 13,10
-        text "published for the BK0011 in"
+        text "created by Litwr, 2022. It"
         byte 13,10
-        text "2021 by Stanislav Maslovski."
+        text "is based on code published"
         byte 13,10
-        text "This Geneve 9650 port was"
+        text "for the BK0011 in 2021 by"
         byte 13,10
-        text "created by Litwr, 2022."
+        text "Stanislav Maslovski."
         byte 13,10
         text "The T-key gives us timings."
         byte 13,10

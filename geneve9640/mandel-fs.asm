@@ -257,15 +257,9 @@ lx1:
 
      ai 8,256
      s @vdy,5    ;sub	@#dya, r5
-  .ifeq VDP,0
      jne loop0
-  .else
-     jeq !
-     b @loop0
-!:
-  .endif
 
-    mov @tickn+2,@6  ;stop timer
+     mov @tickn+2,@6  ;stop timer
   .ifeq fastRAM,1
        li 0,mram
        li 2,(efast-sfast)/2
