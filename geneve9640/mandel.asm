@@ -7,7 +7,7 @@ VDP1 equ VDP0+2
 VDP2 equ VDP0+4
 VDP3 equ VDP0+6
 
-NOCALC equ 1
+NOCALC equ 0
 fastRAM equ 1
 VDP equ 1
 mram   equ >F020
