@@ -39,7 +39,7 @@ MANDEL: li 1,msg
         xop @six,0
         bl @getkey
 
-        li 0,0
+        clr 0
         li 1,9  ;graphic mode 8, 256x212, 16 colors
         xop @six,0
 
@@ -49,7 +49,7 @@ MANDEL: li 1,msg
         xop @six,0   ;set color 1
 
         li 0,>c
-        li 1,0
+        clr 1
         xop @six,0  ;border color
 
        li 0,1      *allocate memory call
@@ -78,9 +78,9 @@ err:   li 1,merr
        ci 7,8
        jne -!
 
-	li 0,0   ;cx; clr	r0		; 7 lower bits in high byte
-	li 1,0   ;bx; clr	r1		; higher 11+1 bits
-	li 2,0   ;dx; clr	r2		; operand-index
+	clr 0   ;cx; clr	r0		; 7 lower bits in high byte
+	clr 1   ;bx; clr	r1		; higher 11+1 bits
+	clr 2   ;dx; clr	r2		; operand-index
 	li 4,sqrbase  ;si; mov	#sqr, r4	; for lower half-table
 	mov 4,5  ;di; mov r4, r5		; for upper half-table
 fillsqr:
@@ -153,7 +153,7 @@ mdlbrt:
        mov 2,@6
        limi 4
 
-     li 8,0  ;scrbase
+     clr 8  ;scrbase
 	 mov @vdy,4
      li 7,106
      mpy 7,4      ;r5 = 106*dy
@@ -173,7 +173,7 @@ slowcode:
      ci 9,lbuf
      jne loop2
 
-     li 0,0
+     clr 0
      mov 8,1
      bl @svax
      li 0,lbuf
@@ -191,7 +191,7 @@ slowcode:
      li 1,>d300
   .ifeq VDP,0
      s 8,1
-     li 0,0
+     clr 0
      bl @svax
      li 0,lbuf
 !:   movb *0+,@VDP0   *unroll??
@@ -216,29 +216,20 @@ slowcode:
      li 0,>e0
      movb 0,@VDP3   ;Y o
 
-     nop     ;delay??     
      movb 0,@VDP3
-     nop     ;delay??
      movb 0,@VDP3   ;X d
 
-     nop     ;delay??
      movb 1,@VDP3
-     nop     ;delay??
      movb 0,@VDP3   ;Y d
 
      li 2,>100
      movb 0,@VDP3
-     nop      ;delay??
      movb 2,@VDP3   ;X s
 
-     nop      ;delay??
      movb 2,@VDP3
-     nop     ;delay??
      movb 0,@VDP3   ;Y s
 
-     nop      ;delay??
      movb 0,@VDP3
-     nop      ;delay??
      movb 0,@VDP3
 
      swpb 0  
@@ -327,7 +318,7 @@ slowcode:
        bl @getkey
        b @mdlbrt
 exit:
-       li 0,0
+       clr 0
        li 1,1  ;text mode 2
        xop @six,0
        blwp @0
@@ -342,7 +333,7 @@ waitvdp:    ;use: R0, R1
     movb 0,@VDP1
     swpb 0
     movb 0,@VDP1
-    nop     *delay
+    nop     *delay??
     movb @VDP1,1
     li 0,>8f   *>8f = >80 + 15
     movb 0,@VDP1

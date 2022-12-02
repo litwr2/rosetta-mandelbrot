@@ -1,0 +1,18 @@
+echo off
+:start
+echo Super Fast Mandelbrot Generator
+echo A. 256x128, 16 colors, rotated (benchmark)
+echo B. 128x256, 16 colors interlaced (benchmark)
+echo C. 512x212, 16 colors (fullscreen)
+echo D. 512x424, 16 colors, interlaced (fullscreen)
+echo E. 256x212, 256 colors (fullscreen)
+echo F. exit to MDOS
+getkey
+if %1==A mandel
+if %1==B mandel-i
+if %1==C mandel-fs
+if %1==D mandel-fi
+if %1==E mandel-fc
+if %1==F goto end
+goto start
+:end

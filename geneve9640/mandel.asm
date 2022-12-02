@@ -57,7 +57,7 @@ MANDEL: li 1,msg
         xop @six,0
         bl @getkey
 
-        li 0,0
+        clr 0
         li 1,6  ;graphic mode 6, 256x212, 16 colors
         xop @six,0
 
@@ -67,7 +67,7 @@ MANDEL: li 1,msg
         xop @six,0   ;set color 1
 
         li 0,>c
-        li 1,0
+        clr 1
         xop @six,0  ;border color
 
         li 0,>36
@@ -105,9 +105,9 @@ err:   li 1,merr
        ci 7,8
        jne -!
 
-	li 0,0   ;cx; clr	r0		; 7 lower bits in high byte
-	li 1,0   ;bx; clr	r1		; higher 11+1 bits
-	li 2,0   ;dx; clr	r2		; operand-index
+	clr 0   ;cx; clr	r0		; 7 lower bits in high byte
+	clr 1   ;bx; clr	r1		; higher 11+1 bits
+	clr 2   ;dx; clr	r2		; operand-index
 	li 4,sqrbase  ;si; mov	#sqr, r4	; for lower half-table
 	mov 4,5  ;di; mov r4, r5		; for upper half-table
 fillsqr:
@@ -166,9 +166,9 @@ mdlbrt:
        mov 2,@6
        limi 4
 
-     li 13,0  ;VDP flag
+     clr 13  ;VDP flag
      li 8,127 ;byte pos in VRAM
-     li 12,0   ;odd/even part of the byte
+     clr 12   ;odd/even part of the byte
 
 	 mov @vdy,5
      sla 5,7      ; r5 = 128*dy
@@ -199,6 +199,7 @@ slowcode:
      movb 0,@VDP1
      swpb 0
      movb 0,@VDP1
+
      mov 8,1
      inc 1
      sla 1,1
@@ -206,29 +207,29 @@ slowcode:
      movb 1,@VDP3
      swpb 1
      movb 1,@VDP3   ;X o
-     li 0,0
-     movb 0,@VDP3
-     swpb 0
-     movb 0,@VDP3   ;Y o
+
      li 0,>ff
+     movb 0,@VDP3
+     movb 0,@VDP3   ;Y o
+
      xor 1,0
      swpb 0
      movb 0,@VDP3
      swpb 0
      movb 0,@VDP3   ;X d
-     li 0,0
+
+     clr 0
      movb 0,@VDP3
-     swpb 0
      movb 0,@VDP3   ;Y d
-     li 1,>100
+
+     li 1,>180
      movb 1,@VDP3
+     movb 0,@VDP3   ;X s
+
      swpb 1
-     movb 1,@VDP3   ;X s
-     li 1,>8000
      movb 1,@VDP3
-     swpb 1
-     movb 1,@VDP3   ;Y s
-     swpb 1   ;delay
+     movb 0,@VDP3   ;Y s
+
      movb 0,@VDP3
      li 1,>490
      movb 1,@VDP3
@@ -271,6 +272,7 @@ lx1:
      movb 0,@VDP1
      swpb 0
      movb 0,@VDP1
+
      mov 8,1
      sla 1,1
      inc 1
@@ -278,29 +280,29 @@ lx1:
      movb 1,@VDP3
      swpb 1
      movb 1,@VDP3   ;X o
-     li 0,0
-     movb 0,@VDP3
-     swpb 0
-     movb 0,@VDP3   ;Y o
+
      li 0,>ff
+     movb 0,@VDP3
+     movb 0,@VDP3   ;Y o
+
      xor 1,0
      swpb 0
      movb 0,@VDP3
      swpb 0
      movb 0,@VDP3   ;X d
-     li 0,0
+
+     clr 0
      movb 0,@VDP3
-     swpb 0
      movb 0,@VDP3   ;Y d
-     li 1,>100
+
+     li 1,>180
      movb 1,@VDP3
+     movb 0,@VDP3   ;X s
+
      swpb 1
-     movb 1,@VDP3   ;X s
-     li 1,>8000
      movb 1,@VDP3
-     swpb 1
-     movb 1,@VDP3   ;Y s
-     swpb 1   ;delay
+     movb 0,@VDP3   ;Y s
+
      movb 0,@VDP3
      li 1,>490
      movb 1,@VDP3
@@ -324,31 +326,31 @@ lx1:
      movb 0,@VDP1
      swpb 0
      movb 0,@VDP1
-     li 1,>8000
-     movb 1,@VDP3
-     swpb 1
-     movb 1,@VDP3   ;X o
-     li 0,0
+
+     li 0,>8000
      movb 0,@VDP3
      swpb 0
+     movb 0,@VDP3   ;X o
+
+     movb 0,@VDP3
      movb 0,@VDP3   ;Y o
-     li 0,>7f00
-     movb 0,@VDP3
-     swpb 0
+
+     li 1,>7f01
+     movb 1,@VDP3
      movb 0,@VDP3   ;X d
-     li 0,0
+
+     movb 0,@VDP3
+     movb 0,@VDP3   ;Y d
+
+     swpb 1
+     movb 1,@VDP3
+     movb 0,@VDP3   ;X s
+
+     swpb 0
      movb 0,@VDP3
      swpb 0
-     movb 0,@VDP3   ;Y d
-     li 1,>100
-     movb 1,@VDP3
-     swpb 1
-     movb 1,@VDP3   ;X s
-     li 1,>8000
-     movb 1,@VDP3
-     swpb 1
-     movb 1,@VDP3   ;Y s
-     swpb 1   ;delay
+     movb 0,@VDP3   ;Y s
+
      movb 0,@VDP3
      li 1,>490
      movb 1,@VDP3
@@ -447,7 +449,7 @@ lx1:
        bl @getkey
        b @mdlbrt
 exit:
-       li 0,0
+       clr 0
        li 1,1  ;text mode 2
        xop @six,0
        blwp @0
@@ -462,7 +464,7 @@ waitvdp:    ;use: R0, R1
     movb 0,@VDP1
     swpb 0
     movb 0,@VDP1
-    nop     *delay
+    nop     *delay??
     movb @VDP1,1
     li 0,>8f   *>8f = >80 + 15
     movb 0,@VDP1

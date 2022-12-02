@@ -40,7 +40,7 @@ MANDEL: li 1,msg
         xop @six,0
         bl @getkey
 
-        li 0,0
+        clr 0
         li 1,6  ;graphic mode 6, 256x212, 16 colors
         xop @six,0
 
@@ -50,7 +50,7 @@ MANDEL: li 1,msg
         xop @six,0   ;set color 1
 
         li 0,>c
-        li 1,0
+        clr 1
         xop @six,0  ;border color
 
         li 0,>36
@@ -95,16 +95,16 @@ err:   li 1,merr
        jne -!
 
          li 0,>28e   ;clean screen
-         li 1,0
+         clr 1
          bl @sva
          li 0,16384+8192
 !:       movb 1,@VDP0
          dec 0
          jne -!
 
-	li 0,0   ;cx; clr	r0		; 7 lower bits in high byte
-	li 1,0   ;bx; clr	r1		; higher 11+1 bits
-	li 2,0   ;dx; clr	r2		; operand-index
+	clr 0   ;cx; clr	r0		; 7 lower bits in high byte
+	clr 1   ;bx; clr	r1		; higher 11+1 bits
+	clr 2   ;dx; clr	r2		; operand-index
 	li 4,sqrbase  ;si; mov	#sqr, r4	; for lower half-table
 	mov 4,5  ;di; mov r4, r5		; for upper half-table
 fillsqr:
@@ -163,8 +163,8 @@ mdlbrt:
        limi 4
 
      li 12,1   ;dot even/odd
-     li 13,0   ;line even/odd
-     li 8,0  ;scrbase
+     clr 13   ;line even/odd
+     clr 8  ;scrbase
 
 	 mov @vdy,5
      sla 5,7      ;r5 = 128*dy
@@ -244,7 +244,6 @@ lx1:
 
      li 2,>7f00
      movb 0,@VDP3
-     nop     ;delay??
      movb 0,@VDP3   ;X d
 
      s 1,2
@@ -254,17 +253,13 @@ lx1:
 
      swpb 3
      movb 3,@VDP3
-     nop      ;delay??
      movb 0,@VDP3   ;X s
 
      swpb 3
      movb 3,@VDP3
-     nop     ;delay??
      movb 0,@VDP3   ;Y s
 
-     nop      ;delay??
      movb 0,@VDP3
-     nop      ;delay??
      movb 0,@VDP3
 
      swpb 0  
@@ -311,22 +306,17 @@ oddli:
 
      s 1,2
      movb 2,@VDP3
-     nop      ;delay??
      movb 0,@VDP3   ;Y d
 
      swpb 3
      movb 3,@VDP3
-     nop      ;delay??
      movb 0,@VDP3   ;X s
 
      swpb 3
      movb 3,@VDP3
-     nop      ;delay??
      movb 0,@VDP3   ;Y s
 
-     nop      ;delay??
      movb 0,@VDP3
-     nop      ;delay??
      movb 0,@VDP3
 
      swpb 0  
@@ -428,7 +418,7 @@ oddli:
        bl @getkey
        b @mdlbrt
 exit:
-       li 0,0
+       clr 0
        li 1,1  ;text mode 2
        xop @six,0
        blwp @0
@@ -443,7 +433,7 @@ waitvdp:    ;use: R0, R1
     movb 0,@VDP1
     swpb 0
     movb 0,@VDP1
-    nop     *delay
+    nop     *delay??
     movb @VDP1,1
     li 0,>8f   *>8f = >80 + 15
     movb 0,@VDP1
