@@ -134,6 +134,8 @@ mdlbrt:
        dec 2
        jne -!
   .endif
+       li 15,VDP3
+       li 14,VDP0
        bl @waitvdp
 
        limi 0   ;timer
@@ -177,14 +179,22 @@ slowcode:
      mov 8,1
      bl @svax
      li 0,lbuf
-!:   movb *0+,@VDP0   *unroll??
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
+!:   movb *0+,*14   *unroll??
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
      ci 0,lbuf+256
      jne -!
 
@@ -194,14 +204,22 @@ slowcode:
      clr 0
      bl @svax
      li 0,lbuf
-!:   movb *0+,@VDP0   *unroll??
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
+!:   movb *0+,*14   *unroll??
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
+     movb *0+,*14
      ci 0,lbuf+256
      jne -!
   .else
@@ -212,28 +230,28 @@ slowcode:
      movb 0,@VDP1
 
      s 8,1
-     movb 8,@VDP3
+     movb 8,*15
      li 0,>e0
-     movb 0,@VDP3   ;Y o
+     movb 0,*15   ;Y o
 
-     movb 0,@VDP3
-     movb 0,@VDP3   ;X d
+     movb 0,*15
+     movb 0,*15   ;X d
 
-     movb 1,@VDP3
-     movb 0,@VDP3   ;Y d
+     movb 1,*15
+     movb 0,*15   ;Y d
 
      li 2,>100
-     movb 0,@VDP3
-     movb 2,@VDP3   ;X s
+     movb 0,*15
+     movb 2,*15   ;X s
 
-     movb 2,@VDP3
-     movb 0,@VDP3   ;Y s
+     movb 2,*15
+     movb 0,*15   ;Y s
 
-     movb 0,@VDP3
-     movb 0,@VDP3
+     movb 0,*15
+     movb 0,*15
 
      swpb 0  
-     movb 0,@VDP3   ;E0 - YMMM
+     movb 0,*15   ;E0 - YMMM
      limi 4
   .endif
 

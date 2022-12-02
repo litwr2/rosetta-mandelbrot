@@ -147,7 +147,9 @@ mdlbrt:
        dec 2
        jne -!
   .endif
+       li 15,VDP3
        bl @waitvdp
+       li 11,VDP0
 
        limi 0   ;timer
        clr 2
@@ -204,37 +206,37 @@ slowcode:
      inc 1
      sla 1,1
      swpb 1
-     movb 1,@VDP3
+     movb 1,*15
      swpb 1
-     movb 1,@VDP3   ;X o
+     movb 1,*15   ;X o
 
      li 0,>ff
-     movb 0,@VDP3
-     movb 0,@VDP3   ;Y o
+     movb 0,*15
+     movb 0,*15   ;Y o
 
      xor 1,0
      swpb 0
-     movb 0,@VDP3
+     movb 0,*15
      swpb 0
-     movb 0,@VDP3   ;X d
+     movb 0,*15   ;X d
 
      clr 0
-     movb 0,@VDP3
-     movb 0,@VDP3   ;Y d
+     movb 0,*15
+     movb 0,*15   ;Y d
 
      li 1,>180
-     movb 1,@VDP3
-     movb 0,@VDP3   ;X s
+     movb 1,*15
+     movb 0,*15   ;X s
 
      swpb 1
-     movb 1,@VDP3
-     movb 0,@VDP3   ;Y s
+     movb 1,*15
+     movb 0,*15   ;Y s
 
-     movb 0,@VDP3
+     movb 0,*15
      li 1,>490
-     movb 1,@VDP3
+     movb 1,*15
      swpb 1
-     movb 1,@VDP3   ;4 - X neg, 90 - LMMM
+     movb 1,*15   ;4 - X neg, 90 - LMMM
      limi 4
 noop:
   .endif
@@ -252,14 +254,14 @@ lx1:
   .else
      .svam
   .endif
-     movb 2,@VDP0
+     movb 2,*11
   .ifeq VDP,0
      li 0,>7f
      mov 8,1
      xor 0,1
      .svam
      swpb 2
-     movb 2,@VDP0
+     movb 2,*11
   .endif
      ai 8,128
      ci 9,lbuf+128
@@ -277,37 +279,37 @@ lx1:
      sla 1,1
      inc 1
      swpb 1
-     movb 1,@VDP3
+     movb 1,*15
      swpb 1
-     movb 1,@VDP3   ;X o
+     movb 1,*15   ;X o
 
      li 0,>ff
-     movb 0,@VDP3
-     movb 0,@VDP3   ;Y o
+     movb 0,*15
+     movb 0,*15   ;Y o
 
      xor 1,0
      swpb 0
-     movb 0,@VDP3
+     movb 0,*15
      swpb 0
-     movb 0,@VDP3   ;X d
+     movb 0,*15   ;X d
 
      clr 0
-     movb 0,@VDP3
-     movb 0,@VDP3   ;Y d
+     movb 0,*15
+     movb 0,*15   ;Y d
 
      li 1,>180
-     movb 1,@VDP3
-     movb 0,@VDP3   ;X s
+     movb 1,*15
+     movb 0,*15   ;X s
 
      swpb 1
-     movb 1,@VDP3
-     movb 0,@VDP3   ;Y s
+     movb 1,*15
+     movb 0,*15   ;Y s
 
-     movb 0,@VDP3
+     movb 0,*15
      li 1,>490
-     movb 1,@VDP3
+     movb 1,*15
      swpb 1
-     movb 1,@VDP3   ;4 - X neg, 90 - LMMM
+     movb 1,*15   ;4 - X neg, 90 - LMMM
      limi 4
   .endif
      dec 8
@@ -328,34 +330,34 @@ lx1:
      movb 0,@VDP1
 
      li 0,>8000
-     movb 0,@VDP3
+     movb 0,*15
      swpb 0
-     movb 0,@VDP3   ;X o
+     movb 0,*15   ;X o
 
-     movb 0,@VDP3
-     movb 0,@VDP3   ;Y o
+     movb 0,*15
+     movb 0,*15   ;Y o
 
      li 1,>7f01
-     movb 1,@VDP3
-     movb 0,@VDP3   ;X d
+     movb 1,*15
+     movb 0,*15   ;X d
 
-     movb 0,@VDP3
-     movb 0,@VDP3   ;Y d
+     movb 0,*15
+     movb 0,*15   ;Y d
 
      swpb 1
-     movb 1,@VDP3
-     movb 0,@VDP3   ;X s
+     movb 1,*15
+     movb 0,*15   ;X s
 
      swpb 0
-     movb 0,@VDP3
+     movb 0,*15
      swpb 0
-     movb 0,@VDP3   ;Y s
+     movb 0,*15   ;Y s
 
-     movb 0,@VDP3
+     movb 0,*15
      li 1,>490
-     movb 1,@VDP3
+     movb 1,*15
      swpb 1
-     movb 1,@VDP3   ;4 - X neg, 90 - LMMM
+     movb 1,*15   ;4 - X neg, 90 - LMMM
      limi 4
   .endif
 

@@ -134,7 +134,9 @@ mdlbrt:
        dec 2
        jne -!
   .endif
+       li 15,VDP3
        bl @waitvdp
+       li 11,VDP0
 
        limi 0   ;timer
        clr 2
@@ -184,16 +186,16 @@ lx1:
 
      clr 0
      mov 8,1
-     bl @svax
+     .svamx
      li 0,lbuf
-!:   movb *0+,@VDP0   *unroll??
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
+!:   movb *0+,*11   *unroll??
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
      ci 0,lbuf+256
      jne -!
 
@@ -201,16 +203,16 @@ lx1:
   .ifeq VDP,0
      s 8,1
      clr 0
-     bl @svax
+     .svamx
      li 0,lbuf
-!:   movb *0+,@VDP0   *unroll??
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
-     movb *0+,@VDP0
+!:   movb *0+,*11   *unroll??
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
+     movb *0+,*11
      ci 0,lbuf+256
      jne -!
   .else
@@ -221,29 +223,29 @@ lx1:
      movb 0,@VDP1
 
      s 8,1
-     movb 8,@VDP3
+     movb 8,*15
      li 0,>e0
-     movb 0,@VDP3   ;Y o
+     movb 0,*15   ;Y o
 
-     movb 0,@VDP3
-     movb 0,@VDP3   ;X d
+     movb 0,*15
+     movb 0,*15   ;X d
 
-     movb 1,@VDP3
-     movb 0,@VDP3   ;Y d
+     movb 1,*15
+     movb 0,*15   ;Y d
 
      li 3,>201
-     movb 0,@VDP3
-     movb 3,@VDP3   ;X s
+     movb 0,*15
+     movb 3,*15   ;X s
 
      swpb 3
-     movb 3,@VDP3
-     movb 0,@VDP3   ;Y s
+     movb 3,*15
+     movb 0,*15   ;Y s
 
-     movb 0,@VDP3
-     movb 0,@VDP3
+     movb 0,*15
+     movb 0,*15
 
      swpb 0  
-     movb 0,@VDP3   ;E0 - YMMM
+     movb 0,*15   ;E0 - YMMM
      limi 4
   .endif
 
