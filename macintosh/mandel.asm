@@ -385,7 +385,6 @@ cpat0 ds.l 1
 cpat1 ds.l 1
 
 EventRecord ds.b 16
-penLoc     ds.l 1     ;??
 msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1,msg9-msg1
 
 msg1     dc.b '**********************************'
