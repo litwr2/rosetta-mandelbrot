@@ -4,7 +4,7 @@
 ;The next code was made by litwr in 2022
 ;
 ;512x256 Mandelbrot for the Macintosh (only the 68000 code), 512x342 2 colors, 4x1 texture bricks
-;it doesn't work for the color Macs
+;it doesn't work on the color Macintosh
 
 NOCALC equ 0
 
@@ -32,18 +32,16 @@ start    PEA -4(A5)
 
          ;movea.l GrafGlobals(a5),a0
          ;move.l ScreenBits+bounds+4(a0),d0
-         ;move.l ScreenBits+rowBytes(a0),d0  ;bytes per row
          lea WindowSize(pc),a0
-         ;move.l d0,4(a0)
          SUBQ #4,SP
-         CLR.L -(SP)
+         CLR.L -(SP)     ;storage
          move.l a0,-(sp)
          PEA WindowName(pc)
-         ST -(SP)
-         CLR.W -(SP)
-         MOVE.L #-1,-(SP)
-         SF -(SP)
-         CLR.L -(SP)
+         ST -(SP)        ;visible
+         CLR.W -(SP)     ;window type
+         MOVE.L #-1,-(SP);behind window
+         SF -(SP)        ;has close box - no
+         CLR.L -(SP)     ;refcon
          _NewWindow
          lea WindPtr(pc),a6
          move.l (sp),(a6)
@@ -113,14 +111,32 @@ mandel:
 
     moveq #-2,d6   ;-2=$fe
     move #$800,a2
-    move.l Scrnbase,a3
-    lea.l (voff+256)*64(a3),a6  ;screen bottom
-    lea.l (vOff+1)*64(a3),a3	;screen top  ??fix for Mac II
+    move.l WindPtr(pc),a3
+    move 6(a3),d1   ;BytesInRow
+    movea.l 2(a3),a3  ;bitmap pointer
+    move #vOff+255,d0
+    mulu d1,d0
+    lea.l 64(a3,d0.l),a6  ;screen bottom
+    move #vOff,d0
+    mulu d1,d0
+    lea.l 64(a3,d0.w),a3  ;screen top
+   
+    ;move.l Scrnbase,a3
+    ;move #voff+255,d0
+    ;move 6(a3),d1  ;BytesInRow
+    ;mulu d1,d0
+    ;lea.l 64(a3,d0.l),a6  ;screen bottom
+    ;move #voff,d0
+    ;mulu d1,d0
+    ;lea.l 64(a3,d0.l),a3  ;screen top
+
          movea.l MemPtr(pc),a4   ;sqrbase
          lea.l $16b0(a4),a4
 	move dy(pc),d5
 	asl #7,d5		; r5 = 128*dy
 loop0:
+  lea.l dotcnt(pc),a0
+  move #64,(a0)
   if NOCALC=0 then
 	move x0(pc),d4
   endif
@@ -169,8 +185,7 @@ loc2:
     roxr.l #1,d0
     lsr.b #1,d2
     roxr.l #1,d0
-    lea.l tcolor1(pc),a1
-    move.l (a1),d3
+    move.l 4(a0),d3   ;tcolor1
     lsr.b #1,d1
     roxr.l #1,d3
     lsr.b #1,d1
@@ -181,22 +196,26 @@ loc2:
     roxr.l #1,d3
     bcs.s @l18
 
-    move.l d0,(a0)
-    move.l d3,(a1)
+    move.l d0,(a0)+
+    move.l d3,(a0)
     bra loop2
 @l18
     move.l d3,-(a6)
     move.l d0,-(a3)
-    move.l #$80000000,(a1)
-    move a3,d0
-    andi.b #$3f,d0
+    move.l #$80000000,4(a0)
+    lea.l dotcnt(pc),a0
+    subq.w #4,(a0)
     bne loop2
 
     lea.l cpat0(pc),a0
     move.l (a0),d1
     move.l 4(a0),(a0)
     move.l d1,4(a0)
-    lea.l 128(a3),a3
+    move.l WindPtr(pc),a0
+    move 6(a0),d0   ;BytesInRow
+    lea.l 64(a3,d0.w),a3
+    neg d0
+    lea.l 64(a6,d0.w),a6
 	sub dy(pc),d5          ;sub	@#dya, r5
 	bne loop0
 
@@ -336,9 +355,10 @@ print1 lea.l txtpos(pc),a6
        rts
 
 stime  dc.l 0
+dotcnt ds.w 1
 WindPtr    DS.L 1
 txtpos    DS.l 1
-WindowSize DC.W vOff,0,vOff+256,511
+WindowSize DC.W vOff,0,vOff+256,512
 TextFrame DC.w 0,2,12,92
 MemPtr     ds.l 1
 
@@ -380,17 +400,17 @@ mx	dc.w	imx
 x0     dc.w  ix0
 niter  dc.w  initer
 tcolor0 ds.l 1
-tcolor1 dc.l $80000000
+tcolor1 dc.l $80000000    ;must be after tcolor0
 cpat0 ds.l 1
 cpat1 ds.l 1
 
 EventRecord ds.b 16
 msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1,msg9-msg1
 
-msg1     dc.b '**********************************'
-msg2     dc.b '* Superfast Mandelbrot generator *'
-msg3     dc.b '*         2 colors, v1           *'
-msg4     dc.b '**********************************'
+msg1     dc.b '  **********************************'
+msg2     dc.b '  * Superfast Mandelbrot generator *'
+msg3     dc.b '  *         2 colors, v1           *'
+msg4     dc.b '  **********************************'
 msg5     dc.b 'The original version was published for'
 msg6     dc.b 'the BK0011 in 2021 by Stanislav Maslovski.'
 msg7     dc.b 'This Apple Macintosh port was created by Litwr, 2022.'
@@ -399,7 +419,7 @@ msg9     dc.b 'Use the Q-key to quit'
 
 WindowName DC.B 'Superfast Mandelbrot Generator v1'
 
-pat0 dc.b	15,1,2, 3, 5,10,4,0
-pat1 dc.b	15,4,9,12,14, 5,1,0
+pat0 dc.b	15,1,2, 3, 5,10,14,0
+pat1 dc.b	15,4,9,12,14, 5, 1,0
         END
 
