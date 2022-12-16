@@ -7,6 +7,7 @@
 
 QCOLORS = 32 ;16
 HSize = 320
+BLITTER=1    ;it seems the blitter can only do a slight accelleration and the blitter code is larger
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -55,6 +56,26 @@ SCREENQUIET	= 	$0100
 ;console.device
 RawKeyConvert =	-$30
 IECLASS_RAWKEY = $01
+
+dmaconr = 2 ;blitter
+bltcon0 = $40
+bltafwm = $44
+bltamod	= $64
+bltdmod	= $66
+bltdpt = $54
+bltapt = $50
+bltsize	= $58
+bltcon = $96
+intena = $9a
+intenar = $1c
+ports = $dff000
+
+BlitWait macro
+	;tst dmaconr(a6)			;for the A1000 compatibility
+.\@
+	btst #6,dmaconr(a6)
+	bne.s .\@
+endm
 
 movepenq macro
      ;move.l GRAPHICS_BASE(a3),a6
@@ -119,7 +140,9 @@ mandel:
     moveq #-2,d6   ;-2=$fe
     movea.l #ScreenWidth/8,a2
     movea.l a2,a5	;screen top
+  if BLITTER=0
     movea.l #ScreenWidth/8*ScreenHeight,a6 ;screen bottom
+  endif
     lea.l sqrbase(a3),a4
 	move dy(a3),d5
 	asl #7,d5		; r5 = 128*dy
@@ -180,25 +203,37 @@ loc2:
   endif
     bra loop2
 loc3:
+  if BLITTER=0
     subq.l #4,a6   ;?? .w
+  endif
     subq.l #4,a5
     lea.l BITPLANE1_PTR(a3),a0
     move.l (a0)+,d2
     move.l d1,(a5,d2.l)
+  if BLITTER=0
     move.l d1,(a6,d2.l)
+  endif
     move.l (a0)+,d2
     move.l d0,(a5,d2.l)
+  if BLITTER=0
     move.l d0,(a6,d2.l)
+  endif
     move.l (a0)+,d2
     move.l d3,(a5,d2.l)
+  if BLITTER=0
     move.l d3,(a6,d2.l)
+  endif
     move.l (a0)+,d2
     move.l d7,(a5,d2.l)
+  if BLITTER=0
     move.l d7,(a6,d2.l)
+  endif
   if QCOLORS=32
     move.l (a0),d2
     move.l d6,(a5,d2.l)
+  if BLITTER=0
     move.l d6,(a6,d2.l)
+  endif
     moveq #-2,d6
     move.l #$80000000,tcolor5(a3)
   else
@@ -208,6 +243,55 @@ loc3:
     move.l a2,d0
 	bne	loop2		; if not first word in line
 
+  if BLITTER=1
+    move.l BITPLANE1_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    move.l #ScreenWidth*(ScreenHeight-1)/8,d2
+    sub.l a5,d2
+    lea.l (a0,d2.l),a0
+    lea.l $dff000,a6
+    move.w #$8400,bltcon(a6)        ;set the highest priority for the blitter
+	move.l #$9f00000,bltcon0(a6)	;A->D copy, no shifts, ascending mode
+	move.l #$ffffffff,bltafwm(a6)	;no masking of first/last word
+	clr bltamod(a6)		;A modulo=bytes to skip between lines
+	clr bltdmod(a6)	;D modulo
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+
+    move.l BITPLANE2_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+
+    move.l BITPLANE3_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+  if QCOLORS=32
+    move.l BITPLANE5_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+  endif
+    move.l BITPLANE4_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+    move.w #$400,bltcon(a6) ;set the normal priority for the blitter
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+  endif
     movea.l #ScreenWidth/8,a2
     adda.l #ScreenWidth/4,a5
 	sub dy(a3),d5          ;sub	@#dya, r5
@@ -448,7 +532,7 @@ msg     dc.b "  **********************************",10
   else
         dc.b "16"
   endif
-        dc.b" colors, v3     *",10
+        dc.b" colors, v4     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
         dc.b "Litwr in 2022. It is based on code",10

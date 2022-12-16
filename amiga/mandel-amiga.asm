@@ -3,10 +3,11 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
 ;
-;128x256 Mandelbrot for the Amiga (only the 68000 code), 16/32 colors
+;128x256 Mandelbrot for the Amiga (only the 68000 code), 16 colors
 
-QCOLORS=16
+QCOLORS=16   ;do not change this!
 NOCALC=0
+BLITTER=1    ;it seems the blitter can't accellerate this and the blitter code is larger
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -55,6 +56,26 @@ SCREENQUIET	= 	$0100
 ;console.device
 RawKeyConvert =	-$30
 IECLASS_RAWKEY = $01
+
+dmaconr = 2 ;blitter
+bltcon0 = $40
+bltafwm = $44
+bltamod	= $64
+bltdmod	= $66
+bltdpt = $54
+bltapt = $50
+bltsize	= $58
+bltcon = $96
+intena = $9a
+intenar = $1c
+ports = $dff000
+
+BlitWait macro
+	;tst dmaconr(a6)			;for the A1000 compatibility
+.\@
+	btst #6,dmaconr(a6)
+	bne.s .\@
+endm
 
 movepenq macro
      ;move.l GRAPHICS_BASE(a3),a6
@@ -119,7 +140,6 @@ mandel:
     moveq #-2,d6   ;-2=$fe
     move #$800,a2
     movea.w #16,a5	;screen top
-    movea.w #4096,a6 ;screen bottom
     lea.l sqrbase(a3),a4
 	move dy(a3),d5
 	asl #7,d5		; r5 = 128*dy
@@ -173,27 +193,79 @@ loc2:
     movem.l d0/d1/d3/d7,-(a0)
     bra loop2
 loc3:
-    subq.l #4,a6   ;?? .w
     subq.l #4,a5
+  if BLITTER=0
+    move.l a5,d2
+    eori.w #$ff0,d2
+    movea.l d2,a6
+  endif
     lea.l BITPLANE1_PTR(a3),a0
     move.l (a0)+,d2
     move.l d1,(a5,d2.l)
+  if BLITTER=0
     move.l d1,(a6,d2.l)
+  endif
     move.l (a0)+,d2
     move.l d0,(a5,d2.l)
+  if BLITTER=0
     move.l d0,(a6,d2.l)
+  endif
     move.l (a0)+,d2
     move.l d3,(a5,d2.l)
+  if BLITTER=0
     move.l d3,(a6,d2.l)
+  endif
     move.l (a0),d2
     move.l d7,(a5,d2.l)
+  if BLITTER=0
     move.l d7,(a6,d2.l)
+  endif
     move.l #$80000000,tcolor4(a3)
     move a5,d0
     and.b #$f,d0
 	bne	loop2		; if not first word in line
+  if BLITTER=1
+    move.l BITPLANE1_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    move.l #ScreenWidth*(ScreenHeight-1)/8,d2
+    sub.l a5,d2
+    lea.l (a0,d2.l),a0
+    lea.l $dff000,a6
+    move.w #$8400,bltcon(a6)        ;set the highest priority for the blitter
+	move.l #$9f00000,bltcon0(a6)	;A->D copy, no shifts, ascending mode
+	move.l #$ffffffff,bltafwm(a6)	;no masking of first/last word
+	clr bltamod(a6)		;A modulo=bytes to skip between lines
+	clr bltdmod(a6)	;D modulo
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
 
-    adda #32,a5
+    move.l BITPLANE2_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+
+    move.l BITPLANE3_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+
+    move.l BITPLANE4_PTR(a3),a0
+    lea.l (a0,a5.l),a1
+    lea.l (a0,d2.l),a0
+    BlitWait
+    move.w #$400,bltcon(a6) ;set the normal priority for the blitter
+	move.l a1,bltapt(a6)	;source graphic top left corner
+	move.l a0,bltdpt(a6)	;destination top left corner
+	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
+  endif
+    adda #ScreenWidth/4,a5
 	sub dy(a3),d5          ;sub	@#dya, r5
 	bne loop0
   if NOCALC=0
@@ -395,7 +467,7 @@ CONHANDLE   DC.L 0
 data = CONHANDLE
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v4         *",13,10
+        dc.b "  *          16 colors, v5         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
