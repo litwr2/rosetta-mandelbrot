@@ -5,7 +5,9 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;Horizontal Overscan Version
-;HMAXx256 Mandelbrot for the Amstrad CPC, 16 color mode, HMAX = 160, 176, 192
+;HMAXxVMAX Mandelbrot for the Amstrad CPC, 16 color mode
+;HMAX = 160, 176, 192
+;VMAX = range 192-280 was tested, it must be a multiple of 8
 
 SCR_SET_MODE            EQU #BC0E
 SCR_SET_INK             EQU #BC32
@@ -14,9 +16,9 @@ KM_WAIT_CHAR		EQU #BB06
 KL_TIME_PLEASE          EQU #BD0D
 
 HMAX equ 192
-VMAX equ 256   ;it is fixed
+VMAX equ 280
 
-sqrbase equ $8000 ;must be fixed here!
+sqrbase equ $8000 ;do not change!
 
 org #9700
 
@@ -109,19 +111,16 @@ mandel:
     ld (ti),hl
     ld (ti+2),de
     ld ixl,0
-    ld iyh,128
-    ld hl,HMAX/2+$40  ;scrtop
+    ld iyh,VMAX/2
+    ld hl,HMAX/2+$40  ;scrtop, $40 - offset on zp
     push hl
-    ld hl,HMAX/2*$20+$3840
+    ld hl,HMAX/2*VMAX/8+$3840
     push hl    ;scrbot
 dy equ $+1
     ld hl,0
-    ld a,h
-    ld h,l
-    srl h
-    rra
-    ld l,a       ;dy*128
-    ld (r5),hl
+    ld a,VMAX/2
+    call mul16
+    ld (r5),de
 loop0:
 x0 equ $+1
     ld hl,0
@@ -204,10 +203,10 @@ tcolor equ $+1
     dec hl
     push hl
     ld a,iyh
-    cp ($7C0*2/HMAX)*8-127
+    cp ($7C0*2/HMAX)*8-VMAX/2+1
     jr c,lv1
 
-    cp ($7C0*2/HMAX)*8-119
+    cp ($7C0*2/HMAX)*8-VMAX/2+9
     jr nc,lv2
 
     bit 2,h
@@ -231,7 +230,10 @@ lv1 ld (hl),c
     add hl,bc
     push hl
     ld a,iyh
-    and 7      ;sets C=0
+if (VMAX & 8) != 0
+    xor 4
+endif
+    and 7      ;sets C=0 
     jr nz,lv3
 
     pop de  ;scrbot
@@ -319,7 +321,10 @@ noq:cp 'T'
         ex de,hl
 	call PR0000
     call KM_WAIT_CHAR
-    jp mandel
+    and 0dfh
+    cp 'Q'
+    jp nz,mandel
+    rst 0
 
 lx1:ld a,c
     rrca
@@ -395,6 +400,22 @@ PR0	ld A,$FF
 	ld L,C
 	JR PRD
 
+mul16 proc   ;multiply HL by A -> DE
+    local t3,t4
+
+    ld de,0
+t3  srl a
+    jr nc,t4
+
+    ex de,hl
+    add hl,de
+    ex de,hl
+t4  add hl,hl
+    or a
+    jr nz,t3
+    ret
+    endp
+
 setvmode
     xor a
     call SCR_SET_MODE
@@ -402,6 +423,7 @@ setvmode
     ld c,11
     ld b,c
     call SCR_SET_INK
+if VMAX>239
 if HMAX=160
     ld a,$41  ;$29;$21;$1c;$19;$11;9;1;$39;$41;$42
 endif
@@ -410,6 +432,9 @@ if HMAX=176
 endif
 if HMAX=192
     ld a,$42  ;$42;$44
+endif
+else
+    ld a,1
 endif
     ld ($b7c6),a    ;screen base for system text output
 
@@ -461,20 +486,20 @@ jr nz,writeCRTCloop
 ret
 
 inithvideocfg
-db &1,HMAX/4,&2
+db 1,HMAX/4,2
 if HMAX=160 or HMAX=176
 db HMAX/4+(64-14-HMAX/4)/2+1,&3,&8e
 endif
 if HMAX=192
-db HMAX/4+2,&3,&8a
+db HMAX/4+2,3,&8a
 endif
 db 12,&c,13,&20
 initvvideocfg
-db &6,32,&7,35
+db 6,VMAX/8,7,35
 
 mentry macro dx,dy,ni
-     db -dx*159/HMAX-1, dy*255/VMAX+1
-     dw dx*160-384   ;dx, dy, x0 = dx*HMAX/2, niter
+     db -dx*176/HMAX, dy*256/VMAX
+     dw (dx*176/HMAX)*HMAX/2-384   ;dx, dy, x0 = dx*HMAX/2, niter
      db ni
 endm
 
@@ -501,7 +526,11 @@ msg     db "**********************************",13,10
         db HMAX/100+48
         db (HMAX-(HMAX/100)*100)/10+48
         db HMAX % 10+48
-        db "x256, 16 colors, v3     *",13,10
+        db "x"
+        db VMAX/100+48
+        db (VMAX-(VMAX/100)*100)/10+48
+        db VMAX % 10+48
+        db ", 16 colors, v4     *",13,10
         db "**********************************",13,10
         db "This Amstrad CPC code was created by",13,10
         db "Litwr in 2022. It is based on code",13,10
