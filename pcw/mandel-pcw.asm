@@ -3,15 +3,15 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the Amstrad CPC, 16 color mode
+;128x256 Mandelbrot for the Amstrad PCW8xxx/9xxx/10 under CP/M, monochrome
+;it builds 512x256 pictures using 4x1 texture bricks to simulate 8 colors
 
-SCR_SET_MODE            EQU #BC0E
-SCR_SET_INK             EQU #BC32
-TXT_OUTPUT              EQU #BB5A
-KM_WAIT_CHAR		EQU #BB06
-KL_TIME_PLEASE          EQU #BD0D
+ROLLPAGE equ 2
+ROLLBASE equ $7600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
 
-sqrbase equ $8000 ;must be fixed here!
+sqrstart equ $1250
+sqrbase equ sqrstart + $16b0   ;must be a multiple of $100
+
 initer	equ	7
 idx	equ	-36       ;-.0703125
 idy	equ	18        ;.03515625
@@ -19,23 +19,26 @@ ix0	equ	-62*idx
 imx	equ	10*idx		; x move
 sf4	equ	436/4		; sf/4
 
+sqrtab macro
+    res 0,l
+    ld a,h
+    add a,high(sqrbase)
+    ld h,a
+endm
+
+CPM3TIMER equ 0
 NOCALC equ 0
 
-org #9700
+BDOS equ 5
+
+org #100
 
 start
-    ld hl,msg
-char:
-    ld a,(hl)
-    or a
-    jr z,ni
+    ld de,msg
+    ld c,9
+    call BDOS
+    call wait_char
 
-    call TXT_OUTPUT
-    inc hl
-    jr char
-
-ni: call KM_WAIT_CHAR
-    call setvmode
     ld hl,sqrbase
     push hl
     ld bc,0
@@ -66,7 +69,7 @@ r0l:
     adc a,b
     ld b,a
 r4l:
-    ld hl,0   ;the sqrbase top part
+    ld hl,sqrbase   ;the sqrbase lower/minus part
     dec hl
     ld (hl),b
     dec l
@@ -78,14 +81,18 @@ r4l:
     inc de
     jr sqrloop
 
-mandel0: 
+mandel0:
     pop hl
 mandel:
-    call KL_TIME_PLEASE
-    ld (ti),hl
-    ld (ti+2),de
+	;LD	HL,(MSX_INTR_VECTOR + 1)    ;interrupt mode 1
+	;LD	(msx_intr_save + 1),hl
+	;LD	HL,msx_timer_intr
+	;LD	(MSX_INTR_VECTOR + 1),HL
+
     ld ixl,2
-    ld hl,$4040  ;scrtop
+    ld hl,0     ;scrtop, y*2
+    push hl
+    ld hl,63*8  ;scrtop, x*8
     push hl
     ld hl,(dy)
     ld a,h
@@ -115,16 +122,14 @@ if NOCALC=0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
-    res 0,l
-    set 7,h
+    sqrtab
     ld c,(hl)
     inc l
     ld b,(hl)   ;mov	sqr(r1), r3
     pop hl
     add hl,de   ;add	r0, r1
     ex de,hl    ;de - r1, hl - r0, bc - r3
-    res 0,l
-    set 7,h
+    sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
@@ -141,8 +146,7 @@ r4 equ $+1
     ld bc,0
     add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
-    set 7,h
-    res 0,l
+    sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
@@ -158,54 +162,164 @@ if NOCALC=0
     jr nz,loc1   ;sob r2,1$
 endif
 loc2:
-    ld a,ixh   ;color
-    and 15   ;16 colors
-    ld hl,c8t
+    ld a,ixh
+    and 7
+patx equ $+1
+    ld hl,pat0
     add a,l
     ld l,a
     ld c,(hl)
+  xor 8
+  ld l,a
+  ld b,(hl)
     dec ixl
-    jp z,lx1
+    jr z,lx1
 
     ld a,c
-    rrca
-    ld (tcolor),a
+    ld (tcolort),a
+    ld a,b
+    ld (tcolorb),a
     jp loop2
 lx1
     ld ixl,2
-tcolor equ $+1
-    ld a,0
-    or c
-    pop hl  ;scrtop
-    dec hl
-    ld (hl),a
-    push hl
-    ld c,a
-    ld a,$3f
-    xor h
-    ld h,a
-    ld a,$c0
-    xor l
-    ld l,a
-    ld (hl),c
-    ld a,l
-    and $3f
-    jp nz,loop2
+    ld a,c
+    rla
+    rla
+    rla
+    rla
+tcolort equ $+1
+    or 0
+    ld iyh,a
+    ld a,b
+    rla
+    rla
+    rla
+    rla
+tcolorb equ $+1
+    or 0
+    ld iyl,a
 
-    ld de,$840
-    pop hl  ;scrtop
-    add hl,de
-    ld a,h
-    rlca
-    jr nc,lx10
+   ld hl,ROLLBASE
+   pop bc    ;scrtop X
+   pop de    ;scrtop Y
+   push de
+   add hl,de
+   ld a,$80+ROLLPAGE
+   di
+   out ($f1),a
+   ld d,(hl)
+   inc l
+   ld h,(hl)
+   ei
+   ld l,d
+   ex de,hl
+   ld a,d
+   and $e0
+   rlca
+   rlca
+   rlca
+   or $80
+   ld h,a  ;bank
+   ld a,d
+   and $1f
+   or $40  ;page 2
+   ld d,a
+   ld a,e
+   and 7
+   ld l,a
+   ld a,e
+   and $f8
+   rla
+   rl d
+   or l
+   ld e,a
+   ex de,hl   ;d - bank, hl - addr
+   add hl,bc   ;sets C=0
+   bit 6,h
+   jr z,lz2
 
-    ld de,$c040
-    add hl,de
-lx10:
-    push hl
+   res 6,h
+   inc d
+lz2
+   ld a,d
+   ld d,iyh
+   di
+   out ($f2),a
+   ld (hl),d
+   ei
+   pop de
+   push de
+   ld hl,510+ROLLBASE
+   ;xor a  ;C=0
+   sbc hl,de
+   ld a,$80+ROLLPAGE
+   di
+   out ($f1),a
+   ld d,(hl)
+   inc l
+   ld h,(hl)
+   ei
+   ld l,d
+   ex de,hl
+   ld a,d
+   and $e0
+   rlca
+   rlca
+   rlca
+   or $80
+   ld h,a  ;bank
+   ld a,d
+   and $1f
+   or $40  ;page 2
+   ld d,a
+   ld a,e
+   and 7
+   ld l,a
+   ld a,e
+   and $f8
+   rla
+   rl d
+   or l
+   ld e,a
+   ex de,hl   ;d - bank, hl - addr
+   add hl,bc   ;sets C=0
+   bit 6,h
+   jr z,lz1
+
+   res 6,h
+   inc d
+lz1
+   ld a,d
+   ld d,iyl
+   di
+   out ($f2),a
+   ld (hl),d
+   ei
+   ld hl,-8
+   adc hl,bc
+   push hl
+   jp p,loop2
+
+   pop bc
+   ld bc,63*8
+   pop hl
+   inc l
+   inc hl
+   push hl
+   push bc
+
+    ld c,low(pat0)
+    ld a,(patx)
+    cp c    ;sets C=0
+    jr nz,lx8
+
+    ld c,low(pat1)
+lx8:
+    ld a,c
+    ld (patx),a
     ld de,(dy)
     ld hl,(r5)
-    or a   ;sets C=0
+    ;or a   ;C=0 is already set
     sbc hl,de
     ld (r5),hl
     jp nz,loop0
@@ -234,16 +348,14 @@ dx1p equ $+1
     ld hl,(dx)
     push hl
     add hl,de
-    res 0,l
-    set 7,h
+    sqrtab
     ld c,(hl)
     inc l
     ld b,(hl)
     ld de,sf4
     pop hl
     add hl,de
-    res 0,l
-    set 7,h
+    sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
@@ -255,33 +367,40 @@ dx2p equ $+1
     jr lx5
 
 lx2:pop hl
+    pop hl
 endif
-    call KL_TIME_PLEASE
-    xor a
-    ld bc,(ti)
-    sbc hl,bc
-    ld (ti),hl
-    ex de,hl
-    ld bc,(ti+2)
-    sbc hl,bc
-    ld (ti+2),hl
-    call KM_WAIT_CHAR
+    ;LD	hl,(msx_intr_save + 1)
+	;LD	(MSX_INTR_VECTOR + 1),HL
+    ;ld bc,0
+    ;ld hl,(time)
+    ;ld de,(time+2)
+    ;ld (time+2),bc
+    ;ld (time),bc
+    ;;xor a
+    ;;ld bc,(ti)
+    ;;sbc hl,bc
+    ;;ld (ti),hl
+    ;;ex de,hl
+    ;;ld bc,(ti+2)
+    ;;sbc hl,bc
+    ;;ld (ti+2),hl
+    call wait_char
     and 0dfh
     cp 'Q'
     jr nz,noq
     rst 0
 noq:cp 'T'
     jp nz,mandel
-
+if 0
     ld a,30  ;home cursor
-    call TXT_OUTPUT
+    ;call TXT_OUTPUT
     ld a,(niter)
     sub 7
     ld l,a
     ld h,0
     call PR000
     ld a," "
-    call TXT_OUTPUT
+    ;call TXT_OUTPUT
     ld hl,(ti+2)
     ld de,(ti)
     ld bc,300
@@ -290,7 +409,7 @@ noq:cp 'T'
 	EX DE,HL
 	call PR000
 	LD a,'.'
-    call TXT_OUTPUT
+    ;call TXT_OUTPUT
 	POP hl
         push hl     ;*100/3
         add hl,hl
@@ -314,15 +433,23 @@ noq:cp 'T'
         inc de
         ex de,hl
 	call PR0000
-    call KM_WAIT_CHAR
+endif
+    call wait_char
     jp mandel
 
 ti:     dw 0,0
 dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
-c8t:    db 0, 8, $22, $88, $2a, $28, 2, $8a
-        db $80, $20, $a0, $a8, $82, $a2, $aa, $a
+  if (dx and $ff00) != ((mx+2) and $ff00)
+ERROR ERROR2
+  endif
+
+        org ($ + 15)&$fff0    ;??remove
+;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
+;pat1 db	15,4,9,12,14, 5, 1,0
+pat0 db	0,14,13,12,10, 5, 1,15
+pat1 db	0,11, 6, 3, 1,10,14,15
 
 div0 macro
      local t1,t2
@@ -376,7 +503,7 @@ PR000
 	CALL PR0
 	ld A,L
 PRD	add a,$30
-    jp TXT_OUTPUT
+    ;jp TXT_OUTPUT
 
 PR0	ld A,$FF
 	ld B,H
@@ -389,78 +516,46 @@ PR0	ld A,$FF
 	ld L,C
 	JR PRD
 
-setvmode
-    xor a
-    call SCR_SET_MODE
-    ld a,15
-    ld c,11
-    ld b,c
-    call SCR_SET_INK
-    ld a,$40
-    ld ($b7c6),a    ;screen base for system text output
+wait_char
+        ld c,6   ;direct console i/o
+        ld e,0ffh
+        call BDOS
+        or a
+        jr z,wait_char
+        ret
 
-; Wait for THE BEGINNING of a VSYNC signal
-wait_vbl_safe
-ld b,&f5
-wait_vbl_end
-in a,(c)
-rra
-jp c,wait_vbl_end
-; Wait for VSYNC signal (don't care if we're already
-; there)
-wait_vbl
-ld b,&f5
-in a,(c)
-rra
-jp nc,wait_vbl
+msx_timer_intr
+      push af
+      ld a,(time)
+      inc a
+      ld (time),a
+      jp nz,exit_intr
 
-; Wait for first interrupt (~2 scanlines later)
-halt
+      ld a,(time+1)
+      inc a
+      ld (time+1),a
+      jp nz,exit_intr
 
-; Write "horizontal" CRTC registers
-ld hl,inithvideocfg
-ld c,2
-call write_CRTC
+      ld a,(time+2)
+      inc a
+      ld (time+2),a
+exit_intr
+      pop af
+msx_intr_save
+      jp 0
 
-; Wait for the third interrupt
-halt
-halt
-
-; Write vertical CRTC registers for a smooth transition
-ld hl,initvvideocfg
-ld c,4
-jp write_CRTC
-
-; Write register/value pairs to CRTC
-; INPUT
-; HL - Point to the list of register/value pairs
-; C  - Number of pairs in the list
-write_CRTC
-ld b,&bd
-writeCRTCloop
-outi
-inc b
-inc b
-outi
-dec c
-jr nz,writeCRTCloop
-ret
-
-inithvideocfg
-db &1,32,&2,42
-initvvideocfg
-db &6,32,&7,35,&c,16,&d,0
+time dw 0,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         16 colors, v5          *",13,10
+        db "*    monochrome + textures, v1   *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
-        db "This Amstrad CPC port was created by",13,10
-        db "Litwr, 2021-22.",13,10
+        db "This Amstrad PCW port was created by",13,10
+        db "Litwr, 2022.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit",0
+        db "Use the Q-key to quit$"
    end start
 

@@ -84,7 +84,7 @@ mandel:
     call KL_TIME_PLEASE
     ld (ti),hl
     ld (ti+2),de
-    ld ixl,0
+    ld ixl,2
     ld hl,$4040  ;scrtop
     push hl
     ld hl,(dy)
@@ -168,11 +168,20 @@ patx equ $+1
   xor 8
   ld l,a
   ld b,(hl)
-    ld a,ixl
-    xor 1
-    ld ixl,a
-    jp nz,lx1
+    dec ixl
+    jr z,lx1
 
+    ld a,c
+    rrca
+    rrca
+    ld (tcolort),a
+    ld a,b
+    rrca
+    rrca
+    ld (tcolorb),a
+    jp loop2
+lx1
+    ld ixl,2
 tcolort equ $+1
     ld a,0
     or c
@@ -329,16 +338,6 @@ noq:cp 'T'
     call KM_WAIT_CHAR
     jp mandel
 
-lx1:ld a,c
-    rrca
-    rrca
-    ld (tcolort),a
-    ld a,b
-    rrca
-    rrca
-    ld (tcolorb),a
-    jp loop2
-
 ti:     dw 0,0
 dx:  	dw idx
 dy:	    dw idy
@@ -479,7 +478,7 @@ db &6,32,&7,35,&c,16,&d,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v5    *",13,10
+        db "*     4 colors + textures, v6    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10

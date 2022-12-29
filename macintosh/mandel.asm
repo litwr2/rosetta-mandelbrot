@@ -3,7 +3,8 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2022
 ;
-;512x256 Mandelbrot for the Macintosh (only the 68000 code), 512x342 2 colors, 4x1 texture bricks
+;512x256 Mandelbrot for the Macintosh (only the 68000 code)
+;512x342 2 colors, 4x1 texture bricks to simulate 8 colors
 ;it doesn't work on the color Macintosh
 
 NOCALC equ 0

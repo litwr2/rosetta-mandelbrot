@@ -110,7 +110,7 @@ mandel:
     call KL_TIME_PLEASE
     ld (ti),hl
     ld (ti+2),de
-    ld ixl,0
+    ld ixl,2
     ld iyh,VMAX/2
     ld hl,HMAX/2+$40  ;scrtop, $40 - offset on zp
     push hl
@@ -185,11 +185,15 @@ loc2:
     add a,l
     ld l,a
     ld c,(hl)
-    ld a,ixl
-    xor 1
-    ld ixl,a
-    jp nz,lx1
+    dec ixl
+    jp z,lx1
 
+    ld a,c
+    rrca
+    ld (tcolor),a
+    jp loop2
+lx1
+    ld ixl,2
 tcolor equ $+1
     ld a,0
     or c
@@ -325,11 +329,6 @@ noq:cp 'T'
     cp 'Q'
     jp nz,mandel
     rst 0
-
-lx1:ld a,c
-    rrca
-    ld (tcolor),a
-    jp loop2
 
 ti     dw 0,0
 
@@ -530,7 +529,7 @@ msg     db "**********************************",13,10
         db VMAX/100+48
         db (VMAX-(VMAX/100)*100)/10+48
         db VMAX % 10+48
-        db ", 16 colors, v4     *",13,10
+        db ", 16 colors, v5     *",13,10
         db "**********************************",13,10
         db "This Amstrad CPC code was created by",13,10
         db "Litwr in 2022. It is based on code",13,10
