@@ -315,7 +315,10 @@ noq:cp 'T'
         ex de,hl
 	call PR0000
     call KM_WAIT_CHAR
-    jp mandel
+    and 0dfh
+    cp 'Q'
+    jp nz,mandel
+    rst 0
 
 ti:     dw 0,0
 dx:  	dw idx

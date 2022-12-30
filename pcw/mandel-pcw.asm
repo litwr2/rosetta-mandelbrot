@@ -26,10 +26,10 @@ sqrtab macro
     ld h,a
 endm
 
-CPM3TIMER equ 0
 NOCALC equ 0
 
 BDOS equ 5
+INTR_VECTOR equ $38
 
 org #100
 
@@ -84,10 +84,13 @@ r4l:
 mandel0:
     pop hl
 mandel:
-	;LD	HL,(MSX_INTR_VECTOR + 1)    ;interrupt mode 1
-	;LD	(msx_intr_save + 1),hl
-	;LD	HL,msx_timer_intr
-	;LD	(MSX_INTR_VECTOR + 1),HL
+	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
+	LD	(intr_save + 1),hl
+	LD	HL,timer_intr
+	LD	(INTR_VECTOR + 1),HL
+    ld hl,0
+    ld (time),hl
+    ld (time+2),hl
 
     ld ixl,2
     ld hl,0     ;scrtop, y*2
@@ -369,21 +372,8 @@ dx2p equ $+1
 lx2:pop hl
     pop hl
 endif
-    ;LD	hl,(msx_intr_save + 1)
-	;LD	(MSX_INTR_VECTOR + 1),HL
-    ;ld bc,0
-    ;ld hl,(time)
-    ;ld de,(time+2)
-    ;ld (time+2),bc
-    ;ld (time),bc
-    ;;xor a
-    ;;ld bc,(ti)
-    ;;sbc hl,bc
-    ;;ld (ti),hl
-    ;;ex de,hl
-    ;;ld bc,(ti+2)
-    ;;sbc hl,bc
-    ;;ld (ti+2),hl
+    LD	hl,(intr_save + 1)
+	LD	(INTR_VECTOR + 1),HL
     call wait_char
     and 0dfh
     cp 'Q'
@@ -391,25 +381,28 @@ endif
     rst 0
 noq:cp 'T'
     jp nz,mandel
-if 0
-    ld a,30  ;home cursor
-    ;call TXT_OUTPUT
+
+    ld de,home  ;home cursor
+    ld c,9
+    call BDOS
     ld a,(niter)
     sub 7
     ld l,a
     ld h,0
     call PR000
-    ld a," "
-    ;call TXT_OUTPUT
-    ld hl,(ti+2)
-    ld de,(ti)
+    ld e," "
+    ld c,2
+    call BDOS
+    ld hl,(time+2)
+    ld de,(time)
     ld bc,300
     call div32x16r
 	PUSH HL
 	EX DE,HL
 	call PR000
-	LD a,'.'
-    ;call TXT_OUTPUT
+	LD e,'.'
+    ld c,2
+    call BDOS
 	POP hl
         push hl     ;*100/3
         add hl,hl
@@ -433,9 +426,11 @@ if 0
         inc de
         ex de,hl
 	call PR0000
-endif
     call wait_char
-    jp mandel
+    and 0dfh
+    cp 'Q'
+    jp nz,mandel
+    rst 0
 
 ti:     dw 0,0
 dx:  	dw idx
@@ -503,7 +498,12 @@ PR000
 	CALL PR0
 	ld A,L
 PRD	add a,$30
-    ;jp TXT_OUTPUT
+        push hl
+        ld e,a
+        ld c,2
+        call BDOS
+        pop hl
+        ret
 
 PR0	ld A,$FF
 	ld B,H
@@ -524,7 +524,7 @@ wait_char
         jr z,wait_char
         ret
 
-msx_timer_intr
+timer_intr
       push af
       ld a,(time)
       inc a
@@ -541,14 +541,15 @@ msx_timer_intr
       ld (time+2),a
 exit_intr
       pop af
-msx_intr_save
+intr_save
       jp 0
 
 time dw 0,0
 
+home db 27,"H$"
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*    monochrome + textures, v1   *",13,10
+        db "*         4x1 textures, v1       *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
