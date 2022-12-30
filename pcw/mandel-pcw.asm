@@ -286,12 +286,12 @@ lz2
    ld e,a
    ex de,hl   ;d - bank, hl - addr
    add hl,bc   ;sets C=0
-   bit 6,h
-   jr z,lz1
+   ;bit 6,h
+   ;jr z,lz1
 
-   res 6,h
-   inc d
-lz1
+   ;res 6,h
+   ;inc d
+;lz1
    ld a,d
    ld d,iyl
    di
