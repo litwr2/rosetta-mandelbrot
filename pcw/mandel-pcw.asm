@@ -5,12 +5,18 @@
 ;
 ;128x256 Mandelbrot for the Amstrad PCW8xxx/9xxx/10 under CP/M, monochrome
 ;it builds 512x256 pictures using 4x1 texture bricks to simulate 8 colors
+;it works only for PAL machines
+
+NOCALC equ 0
 
 ROLLPAGE equ 2
-ROLLBASE equ $7600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
+ROLLBASE equ $B600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
+                     ;page 2 is used to access ROLLBASE memory
 
 sqrstart equ $1250
 sqrbase equ sqrstart + $16b0   ;must be a multiple of $100
+linebuft equ $1180
+linebufb equ $1100
 
 initer	equ	7
 idx	equ	-36       ;-.0703125
@@ -25,8 +31,6 @@ sqrtab macro
     add a,high(sqrbase)
     ld h,a
 endm
-
-NOCALC equ 0
 
 BDOS equ 5
 INTR_VECTOR equ $38
@@ -92,10 +96,7 @@ mandel:
     ld (time),hl
     ld (time+2),hl
 
-    ld ixl,2
     ld hl,0     ;scrtop, y*2
-    push hl
-    ld hl,63*8  ;scrtop, x*8
     push hl
     ld hl,(dy)
     ld a,h
@@ -105,11 +106,15 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
+    ld hl,63  ;scrtop, x
+    push hl
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
 endif
+loop1:
+    ld ixl,2
 loop2:
 if NOCALC=0
     ld hl,(r4)
@@ -174,17 +179,25 @@ patx equ $+1
     ld c,(hl)
   xor 8
   ld l,a
-  ld b,(hl)
+  ld a,(hl)
     dec ixl
     jr z,lx1
 
+    ld (tcolorb),a
     ld a,c
     ld (tcolort),a
-    ld a,b
-    ld (tcolorb),a
     jp loop2
 lx1
-    ld ixl,2
+    pop de
+    rla
+    rla
+    rla
+    rla
+tcolorb equ $+1
+    or 0
+    ld hl,linebufb
+    add hl,de
+    ld (hl),a
     ld a,c
     rla
     rla
@@ -192,37 +205,39 @@ lx1
     rla
 tcolort equ $+1
     or 0
-    ld iyh,a
-    ld a,b
-    rla
-    rla
-    rla
-    rla
-tcolorb equ $+1
-    or 0
-    ld iyl,a
+    ld bc,$80
+    add hl,bc  ;linebuft
+    ld (hl),a  
+    dec e
+    push de
+    jp p,loop1
 
+   pop de
    ld hl,ROLLBASE
-   pop bc    ;scrtop X
    pop de    ;scrtop Y
-   push de
-   add hl,de
+   add hl,de   ;sets C=0
    ld a,$80+ROLLPAGE
    di
-   out ($f1),a
-   ld d,(hl)
+   out ($f2),a
+   ld c,(hl)
    inc l
-   ld h,(hl)
+   ld b,(hl)
+   ld hl,510+ROLLBASE
+   sbc hl,de
+   inc e
+   inc de
+   push de
+   ld e,(hl)
+   inc l
+   ld d,(hl)  
    ei
-   ld l,d
-   ex de,hl
    ld a,d
    and $e0
    rlca
    rlca
    rlca
    or $80
-   ld h,a  ;bank
+   ld iyl,a  ;bank bottom
    ld a,d
    and $1f
    or $40  ;page 2
@@ -235,81 +250,106 @@ tcolorb equ $+1
    rla
    rl d
    or l
-   ld e,a
-   ex de,hl   ;d - bank, hl - addr
-   add hl,bc   ;sets C=0
+   ld e,a   ;de - addr bottom
+   push de
+
+   ld a,b
+   and $e0
+   rlca
+   rlca
+   rlca
+   or $80
+   ld iyh,a  ;bank top
+   ld a,b
+   and $1f
+   or $40  ;page 2
+   ld h,a
+   ld a,c
+   and 7
+   ld l,a
+   ld a,c
+   and $f8
+   rla
+   rl h
+   or l
+   ld l,a    ;hl - addr top
+
+   ld de,linebuft
+   ld bc,8
+
+   rept 7,ll
+   ld a,iyh
+   di
+   out ($f2),a
+   ld a,(de)
+   ld (hl),a
+
+   rept 7
+   inc e
+   add hl,bc
+   ld a,(de)
+   ld (hl),a
+   endm
+
+   ei
    bit 6,h
-   jr z,lz2
+   jr z,l##ll
 
    res 6,h
-   inc d
-lz2
-   ld a,d
-   ld d,iyh
+   inc iyh
+l##ll
+   inc e
+   add hl,bc
+   endm
+
+   ld a,iyh
    di
    out ($f2),a
-   ld (hl),d
-   ei
-   pop de
-   push de
-   ld hl,510+ROLLBASE
-   ;xor a  ;C=0
-   sbc hl,de
-   ld a,$80+ROLLPAGE
-   di
-   out ($f1),a
-   ld d,(hl)
-   inc l
-   ld h,(hl)
-   ei
-   ld l,d
-   ex de,hl
-   ld a,d
-   and $e0
-   rlca
-   rlca
-   rlca
-   or $80
-   ld h,a  ;bank
-   ld a,d
-   and $1f
-   or $40  ;page 2
-   ld d,a
-   ld a,e
-   and 7
-   ld l,a
-   ld a,e
-   and $f8
-   rla
-   rl d
-   or l
-   ld e,a
-   ex de,hl   ;d - bank, hl - addr
-   add hl,bc   ;sets C=0
-   ;bit 6,h
-   ;jr z,lz1
+   ld a,(de)
+   ld (hl),a
 
-   ;res 6,h
-   ;inc d
-;lz1
-   ld a,d
-   ld d,iyl
-   di
-   out ($f2),a
-   ld (hl),d
+   rept 7
+   inc e
+   add hl,bc
+   ld a,(de)
+   ld (hl),a
+   endm
    ei
-   ld hl,-8
-   adc hl,bc
-   push hl
-   jp p,loop2
 
-   pop bc
-   ld bc,63*8
    pop hl
-   inc l
-   inc hl
-   push hl
-   push bc
+   ld de,linebufb
+   rept 7
+   ld a,iyl
+   di
+   out ($f2),a
+   ld a,(de)
+   ld (hl),a
+
+   rept 7
+   inc e
+   add hl,bc
+   ld a,(de)
+   ld (hl),a
+   endm
+
+   ei
+   inc e
+   add hl,bc
+   endm
+
+   ld a,iyl
+   di
+   out ($f2),a
+   ld a,(de)
+   ld (hl),a
+
+   rept 7
+   inc e
+   add hl,bc
+   ld a,(de)
+   ld (hl),a
+   endm
+   ei
 
     ld c,low(pat0)
     ld a,(patx)
@@ -370,7 +410,6 @@ dx2p equ $+1
     jr lx5
 
 lx2:pop hl
-    pop hl
 endif
     LD	hl,(intr_save + 1)
 	LD	(INTR_VECTOR + 1),HL
@@ -431,20 +470,6 @@ noq:cp 'T'
     cp 'Q'
     jp nz,mandel
     rst 0
-
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
-  endif
-
-        org ($ + 15)&$fff0    ;??remove
-;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
-;pat1 db	15,4,9,12,14, 5, 1,0
-pat0 db	0,14,13,12,10, 5, 1,15
-pat1 db	0,11, 6, 3, 1,10,14,15
 
 div0 macro
      local t1,t2
@@ -545,8 +570,21 @@ intr_save
       jp 0
 
 time dw 0,0
-
 home db 27,"H$"
+
+        org ($ + 15)&$fff0
+;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
+;pat1 db	15,4,9,12,14, 5, 1,0
+pat0 db	0,14,13,12,10, 5, 1,15
+pat1 db	0,11, 6, 3, 1,10,14,15
+
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+  if (dx and $ff00) != ((mx+2) and $ff00)
+ERROR ERROR2
+  endif
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*         4x1 textures, v1       *",13,10
