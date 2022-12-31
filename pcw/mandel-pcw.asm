@@ -292,12 +292,11 @@ tcolort equ $+1
    endm
 
    ei
-   bit 6,h
-   jr z,l##ll
-
-   res 6,h
-   inc iyh
-l##ll
+;   bit 6,h   ;BECAUSE WE USE ONLY THE FIRST 512 PIXELS!
+;   jr z,l##ll
+;   res 6,h
+;   inc iyh
+;l##ll
    inc e
    add hl,bc
    endm
