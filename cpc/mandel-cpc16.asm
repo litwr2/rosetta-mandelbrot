@@ -163,19 +163,16 @@ loc2:
     ld hl,c8t
     add a,l
     ld l,a
-    ld c,(hl)
+    ld a,(hl)
     dec ixl
     jp z,lx1
 
-    ld a,c
     rrca
-    ld (tcolor),a
+    ld iyl,a
     jp loop2
 lx1
     ld ixl,2
-tcolor equ $+1
-    ld a,0
-    or c
+    or iyl
     pop hl  ;scrtop
     dec hl
     ld (hl),a
@@ -456,13 +453,13 @@ db &6,32,&7,35,&c,16,&d,0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         16 colors, v5          *",13,10
+        db "*         16 colors, v6          *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Amstrad CPC port was created by",13,10
-        db "Litwr, 2021-22.",13,10
+        db "Litwr, 2021-23.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",0
    end start

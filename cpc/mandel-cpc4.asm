@@ -164,41 +164,36 @@ patx equ $+1
     ld hl,pat0
     add a,l
     ld l,a
-    ld c,(hl)
+    ld c,(hl) ;bottom
   xor 8
   ld l,a
-  ld b,(hl)
+  ld a,(hl)  ;top
     dec ixl
     jr z,lx1
 
+    rrca
+    rrca
+    ld iyl,a
     ld a,c
     rrca
     rrca
-    ld (tcolort),a
-    ld a,b
-    rrca
-    rrca
-    ld (tcolorb),a
+    ld iyh,a
     jp loop2
 lx1
     ld ixl,2
-tcolort equ $+1
-    ld a,0
-    or c
+    or iyl
     pop hl  ;scrtop
     dec hl
     ld (hl),a
     push hl
-    ld c,a
     ld a,$3f
     xor h
     ld h,a
     ld a,$c0
     xor l
     ld l,a
-tcolorb equ $+1
-    ld a,0
-    or b
+    ld a,iyh
+    or c
     ld (hl),a
     ld a,l
     and $3f
@@ -341,17 +336,6 @@ noq:cp 'T'
     jp nz,mandel
     rst 0
 
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-
-        org ($ + 15)&$fff0
-pat0:	db 0, 0x8, 0x80, 0x88, 0xc4, 0xc, 0xc0, 0xcc
-pat1:	db 0, 0x4, 0x40, 0x44, 0x4, 0xc, 0xc0, 0xcc
-; 0 - black, 1 - blue-black, 2 - green-black, 3 - red-black, 14 - green-red, 5 - blue, 10 - green, 15 - red
-; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
-
 div0 macro
      local t1,t2
      sla e
@@ -479,15 +463,31 @@ db &1,32,&2,42
 initvvideocfg
 db &6,32,&7,35,&c,16,&d,0
 
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+  if (dx and $ff00) != ((mx+2) and $ff00)
+ERROR ERROR2
+  endif
+        org ($ + 15)&$fff0
+pat0:	db 0, 0x8, 0x80, 0x88, 0xc4, 0xc, 0xc0, 0xcc
+pat1:	db 0, 0x4, 0x40, 0x44, 0x4, 0xc, 0xc0, 0xcc
+; 0 - black, 1 - blue-black, 2 - green-black, 3 - red-black, 14 - green-red, 5 - blue, 10 - green, 15 - red
+; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
+
+ti:     dw 0,0
+
+
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v6    *",13,10
+        db "*     4 colors + textures, v7    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Amstrad CPC port was created by",13,10
-        db "Litwr, 2021-22.",13,10
+        db "Litwr, 2021-23.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",0
    end start
