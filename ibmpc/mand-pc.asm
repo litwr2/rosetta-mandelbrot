@@ -133,7 +133,7 @@ if NOCALC=0
 	jnz .l1        ;sob	r2, 1$		; to next iteration
 .l2:
 end if
-    and cl,15
+    ;and cl,15
     ;mov bx,cx
     ;mov al,[pat+bx]
     mov al,cl
@@ -254,8 +254,9 @@ end if
     int 16h   ;wait a kbd event
     and al,0dfh
     cmp al,'Q'
-    jne noquit
+    jne .noquit
 
+.exit:
 if FASTTIMER
                 PUSH    DS
                 MOV     DX,[SAVE8LO]     ;RESTORE INTR8 VECTOR
@@ -274,11 +275,11 @@ end if
     mov ax,3
     int 10h    ;std video
     int 20h
-noquit:
+.noquit:
     cmp al,'T'
-    je showtime
+    je .showtime
     jmp mandel
-showtime:
+.showtime:
     shr dx,1
     adc dx,0
     push dx
@@ -302,6 +303,10 @@ showtime:
     call PR00
          xor ah,ah
          int 16h   ;wait a kbd event
+    and al,0dfh
+    cmp al,'Q'
+    je .exit
+
 .l11:    jmp mandel
 
 PR0000:     ;prints ax
@@ -369,11 +374,11 @@ time dw 0 ;,0
 pe:
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *        EGA 16 colors, v3       *",13,10
+        db "  *        EGA 16 colors, v4       *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        db "This IBM PC EGA port was created by Litwr, 2021.",13,10
+        db "This IBM PC EGA port was created by Litwr, 2021-23.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
 
