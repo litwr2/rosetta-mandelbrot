@@ -176,7 +176,7 @@ loc1:
     subi #1,d2
 	bne loc1        ;sob	r2, 1$		; to next iteration  ??dbra
 loc2:
-	and #QCOLORS-1,d2      ; get bits of color
+	;and #QCOLORS-1,d2      ; get bits of color
     lea.l tcolor1(a3),a0
   if QCOLORS=16
     movem.l (a0)+,d0/d1/d3/d7
@@ -344,7 +344,10 @@ noquit:
     addq #1,d0
     jsr Text(a6)
     bsr getkey
-	bra mandel
+    andi.b #$df,d0
+    cmpi.b #"Q",d0
+    bne mandel
+    rts
 
 getkey:
 	move KEYB_OUTBUFFER(A3),D0
@@ -520,10 +523,9 @@ IEADDR:		DC.L	0	; IAddress
 WINDOW_HANDLE:	DC.L	0
 time dc.l 0
 fmt     dc.b "%d %02d",0   ;even number of bytes!
-
-   align 1
 CONHANDLE   DC.L 0
-datae = CONHANDLE
+datae = CONWINDOW
+CONWINDOW	DC.B	'CON:10/10/400/110/Superfast Fullscreen Mandelbrot',0
 msg     dc.b "  **********************************",10
         dc.b "  * Superfast Mandelbrot generator *",10
         dc.b "  *     320x256, "
@@ -532,7 +534,7 @@ msg     dc.b "  **********************************",10
   else
         dc.b "16"
   endif
-        dc.b" colors, v4     *",10
+        dc.b" colors, v5     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
         dc.b "Litwr in 2022. It is based on code",10
@@ -542,9 +544,6 @@ msg     dc.b "  **********************************",10
         dc.b "Use the Q-key to quit.",10
         dc.b "Press Enter now"
 endmsg
-
-         align 1
-CONWINDOW	DC.B	'CON:10/10/400/110/Superfast Fullscreen Mandelbrot',0
 
          align 1
 t1:

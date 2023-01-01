@@ -7,7 +7,7 @@
 
 QCOLORS=16   ;do not change this!
 NOCALC=0
-BLITTER=1    ;it seems the blitter can't accellerate this and the blitter code is larger
+BLITTER=0    ;it seems the blitter can't accellerate this and the blitter code is larger
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -177,7 +177,7 @@ loc1:
 	bne loc1        ;sob	r2, 1$		; to next iteration  ??dbra
 loc2:
   endif
-	and #15,d2      ;bic	#177770, r2	; get bits of color
+	;and #15,d2      ;bic	#177770, r2	; get bits of color
     lea.l tcolor1(a3),a0
     movem.l (a0)+,d0/d1/d3/d7
     lsr d2
@@ -329,7 +329,10 @@ noquit:
     ;movea.l RASTER_PORT(a3),a1
     jsr Text(a6)
     bsr getkey
-	bra mandel
+    andi.b #$df,d0
+    cmpi.b #"Q",d0
+    bne mandel
+    rts
 
 getkey:
 	move KEYB_OUTBUFFER(A3),D0
@@ -464,10 +467,11 @@ WINDOW_HANDLE:	DC.L	0
 time dc.l 0
 fmt     dc.b "%d %02d",0   ;even number of bytes
 CONHANDLE   DC.L 0
-data = CONHANDLE
+CONWINDOW	DC.B	'CON:10/10/400/100/Superfast Mandelbrot',0
+data = CONWINDOW
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v5         *",13,10
+        dc.b "  *          16 colors, v6         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
@@ -476,9 +480,6 @@ msg     dc.b "  **********************************",13,10
         dc.b "Use the Q-key to quit.",13,10
         dc.b "Press Enter now"
 endmsg
-         ;align 1
-CONWINDOW	DC.B	'CON:10/10/400/100/Superfast Mandelbrot',0
-
          align 1
 t1:
 sz = $1530
