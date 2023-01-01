@@ -3,11 +3,11 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the Amstrad PCW8xxx/9xxx/10 under CP/M, monochrome
-;it builds 512x256 pictures using 4x1 texture bricks to simulate 8 colors
+;720x256 Mandelbrot for the Amstrad PCW8xxx/9xxx/10 under CP/M, 2 colors
 ;it works only for PAL machines
 
-NOCALC equ 0
+HSize equ 720
+VSize equ 256
 
 ROLLPAGE equ 2
 ROLLBASE equ $B600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
@@ -15,15 +15,7 @@ ROLLBASE equ $B600   ;these values correspond to value $5b in port $f5, I suppos
 
 sqrstart equ $1250
 sqrbase equ sqrstart + $16b0   ;must be a multiple of $100
-linebuft equ $1180
-linebufb equ $1100
-
-initer	equ	7
-idx	equ	-36       ;-.0703125
-idy	equ	18        ;.03515625
-ix0	equ	-62*idx
-imx	equ	10*idx		; x move
-sf4	equ	436/4		; sf/4
+linebuf equ $1180
 
 sqrtab macro
     res 0,l
@@ -90,6 +82,33 @@ mandel0:
 	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
 	LD	(intr_save + 1),hl
 mandel:
+    ld a,(dataindex)
+    ld l,a
+    ld h,0
+    push hl
+    add hl,hl
+    add hl,hl
+    pop de
+    add hl,de
+    ld de,data
+    add hl,de
+    ld a,(hl)
+    ld (dx),a
+    inc hl
+    ld a,(hl)
+    ld (dy),a
+    inc hl
+    ld a,(hl)
+    ld (x0),a
+    inc hl
+    ld a,(hl)
+    ld (x0+1),a
+    inc hl
+    ld a,(hl)
+    ld (niter),a
+    add a,2
+    ld (hl),a
+
 	LD	HL,timer_intr
 	LD	(INTR_VECTOR + 1),HL
     ld hl,0
@@ -98,7 +117,8 @@ mandel:
 
     ld hl,0     ;scrtop, y*2
     push hl
-    ld hl,(dy)
+dy equ $+1
+    ld hl,0
     ld a,h
     ld h,l
     srl h
@@ -106,27 +126,23 @@ mandel:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld hl,63  ;scrtop, x
+    ld hl,89  ;scrtop, x
     push hl
-if NOCALC=0
 x0 equ $+1
-    ld hl,ix0
+    ld hl,0
     ld (r4),hl
-endif
 loop1:
-    ld ixl,2
+   ld ixl,$80
 loop2:
-if NOCALC=0
     ld hl,(r4)
-    ld de,(dx)
+dx equ $+1
+    ld de,$ff00
     add hl,de
     ld (r4),hl
     ld d,h
     ld e,l      ;mov	r4, r0
-endif
 niter equ $+2
-    ld ixh,initer
-if NOCALC=0
+    ld ixh,0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -159,51 +175,24 @@ r4 equ $+1
     inc l
     ld h,(hl)
     ld l,a       ;(x+y)^2
-endif
 r5 equ $+1
     ld bc,0
-if NOCALC=0
     add hl,bc    ;sets C=0
     pop bc   ;r0
     sbc hl,bc    ;2xy+y0
     dec ixh
     jr nz,loc1   ;sob r2,1$
-endif
 loc2:
     ld a,ixh
-    and 7
-patx equ $+1
-    ld hl,pat0
-    add a,l
-    ld l,a
-    ld c,(hl)
-  xor 8
-  ld l,a
-  ld a,(hl)
-    dec ixl
-    jr z,lx1
-
-    ld iyl,a  ;bottom
-    ld iyh,c  ;top
-    jp loop2
-lx1
+    rrca
+    ld a,ixl
+    rra
+    ld ixl,a
+    jr nc,loop2
+    
     pop de
-    rla
-    rla
-    rla
-    rla
-    or iyl
-    ld hl,linebufb
+    ld hl,linebuf
     add hl,de
-    ld (hl),a
-    ld a,c
-    rla
-    rla
-    rla
-    rla
-    or iyh
-    ld bc,$80
-    add hl,bc  ;linebuft
     ld (hl),a
     dec e
     push de
@@ -271,10 +260,10 @@ lx1
    or l
    ld l,a    ;hl - addr top
 
-   ld de,linebuft
+   ld de,linebuf
    ld bc,8
 
-   rept 7,ll
+   rept 8
    ld a,iyh
    di
    out ($f2),a
@@ -289,11 +278,6 @@ lx1
    endm
 
    ei
-;   bit 6,h   ;BECAUSE WE USE ONLY THE FIRST 512 PIXELS!
-;   jr z,l##ll
-;   res 6,h
-;   inc iyh
-;l##ll
    inc e
    add hl,bc
    endm
@@ -310,11 +294,55 @@ lx1
    ld a,(de)
    ld (hl),a
    endm
+
+   ei
+   inc e
+   add hl,bc
+   bit 6,h    ;this position depends on ROLLER-RAM values
+   jr z,lm0
+   res 6,h
+   inc iyh
+lm0
+
+   rept 2,ll
+   ld a,iyh
+   di
+   out ($f2),a
+   ld a,(de)
+   ld (hl),a
+
+   rept 7
+   inc e
+   add hl,bc
+   ld a,(de)
+   ld (hl),a
+   endm
+
+   ei
+   inc e
+   add hl,bc
+   bit 6,h
+   jr z,l##ll
+   res 6,h
+   inc iyh
+l##ll
+   endm
+
+   ld a,iyh
+   di
+   out ($f2),a
+   ld a,(de)
+   ld (hl),a
+
+   inc e
+   add hl,bc
+   ld a,(de)
+   ld (hl),a
    ei
 
    pop hl
-   ld de,linebufb
-   rept 7
+   ld de,linebuf
+   rept 11
    ld a,iyl
    di
    out ($f2),a
@@ -339,75 +367,30 @@ lx1
    ld a,(de)
    ld (hl),a
 
-   rept 7
    inc e
-   add hl,bc
+   add hl,bc   ;sets C=0
    ld a,(de)
    ld (hl),a
-   endm
    ei
 
-    ld c,low(pat0)
-    ld a,(patx)
-    cp c    ;sets C=0
-    jr nz,lx8
-
-    ld c,low(pat1)
-lx8:
-    ld a,c
-    ld (patx),a
     ld de,(dy)
     ld hl,(r5)
     sbc hl,de  ;C=0 here
     ld (r5),hl
     jp nz,loop0
-if NOCALC=0
-    ld hl,(x0)
-    ld de,(mx)
-    add hl,de
-    ld (x0),hl   ;x0 += mx
-    ld hl,niter
-    inc (hl)     ;iter++
-    ld hl,dx
-    push hl
-lx5:
-    pop hl
-    ld a,l
-    cp low(mx)+2
-    jp z,lx2
 
-    ld (dx1p),a
-    ld (dx2p),a
-    inc l
-    inc l
-    push hl
-    ld de,-sf4
-dx1p equ $+1
-    ld hl,(dx)
-    push hl
-    add hl,de
-    sqrtab
-    ld c,(hl)
-    inc l
-    ld b,(hl)
-    ld de,sf4
     pop hl
-    add hl,de
-    sqrtab
-    ld a,(hl)
-    inc l
-    ld h,(hl)
-    ld l,a
-    or a ;sets C=0
-    sbc hl,bc  ;C=0
-dx2p equ $+1
-    ld (dx),hl
-    jr lx5
+    ld hl,counter
+    inc (hl)
+    ld a,(dataindex)
+    inc a
+    cp dataentries
+    jr nz,lx2
 
-lx2:pop hl
-endif
+    xor a
+lx2 ld (dataindex),a
     LD	hl,(intr_save + 1)
-	LD	(INTR_VECTOR + 1),HL
+    LD	(INTR_VECTOR + 1),HL
     call wait_char
     and 0dfh
     cp 'Q'
@@ -419,8 +402,7 @@ noq:cp 'T'
     ld de,home  ;home cursor
     ld c,9
     call BDOS
-    ld a,(niter)
-    sub 7
+    ld a,(counter)
     ld l,a
     ld h,0
     call PR000
@@ -564,31 +546,40 @@ exit_intr
 intr_save
       jp 0
 
+time dw 0,0
 home db 27,"H$"
 
-        org ($ + 15)&$fff0
-;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
-;pat1 db	15,4,9,12,14, 5, 1,0
-pat0 db	0,14,13,12,10, 5, 1,15
-pat1 db	0,11, 6, 3, 1,10,14,15
+mentry macro dx,dy,ni
+     db -dx, dy
+     dw dx*HSize/2-384   ;dx, dy, x0 = dx*HMAX/2, niter
+     db ni
+endm
 
-time dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
-  endif
+dataentries equ 12
+counter db 0
+dataindex db 0
+data  ;     dx, dy, x0, niter - to convert to real values divide by 512
+     mentry 5, 18, 7   ;1
+     mentry 4, 15, 8   ;2
+     mentry 4, 13, 9   ;3
+     mentry 3, 11, 10  ;4
+     mentry 3, 10, 11  ;5
+     mentry 3,  8, 12  ;6
+     mentry 3,  6, 13  ;7
+     mentry 3,  5, 14  ;8
+     mentry 2,  5, 15  ;9
+     mentry 2,  5, 16  ;10
+     mentry 1,  5, 25  ;11
+     mentry 2,  5, 37  ;12
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         4x1 textures, v1       *",13,10
+        db "*     720x256, 2 colors, v1      *",13,10
         db "**********************************",13,10
-        db "The original version was published for",13,10
-        db "the BK0011 in 2021 by Stanislav",13,10
-        db "Maslovski.",13,10
-        db "This Amstrad PCW port was created by",13,10
-        db "Litwr, 2022-23.",13,10
+        db "This Amstrad PCW code was created by",13,10
+        db "Litwr in 2023. It is based on code",13,10
+        db "published for the BK0011 in 2021 by",13,10
+        db "Stanislav Maslovski.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
    end start

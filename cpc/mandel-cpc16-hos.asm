@@ -1,7 +1,6 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2022
 ;Thanks to reddie for some help with optimization
 ;
 ;Horizontal Overscan Version
