@@ -302,7 +302,7 @@ loc3:
     add #6,d0
     cmpi #12*6,d0
     bne loc7
-    
+
     moveq #0,d0
 loc7:
     move d0,dataindex(a3)
@@ -537,7 +537,7 @@ msg     dc.b "  **********************************",10
         dc.b" colors, v5     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
-        dc.b "Litwr in 2022. It is based on code",10
+        dc.b "Litwr in 2022-23. It is based on code",10
         dc.b "published for the BK0011 in 2021 by",10
         dc.b "Stanislav Maslovski.",10
         dc.b "The T-key gives us timings.",10

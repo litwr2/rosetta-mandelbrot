@@ -1,7 +1,6 @@
 ;for VASM assembler, Motorola syntax
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;
 ;128x256 Mandelbrot for the Amiga (only the 68000 code), 16 colors
 
@@ -475,7 +474,7 @@ msg     dc.b "  **********************************",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        dc.b "This Amiga port was created by Litwr, 2021-22.",13,10
+        dc.b "This Amiga port was created by Litwr, 2021-23.",13,10
         dc.b "The T-key gives us timings.",13,10
         dc.b "Use the Q-key to quit.",13,10
         dc.b "Press Enter now"
