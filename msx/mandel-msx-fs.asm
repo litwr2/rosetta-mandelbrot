@@ -257,7 +257,7 @@ loc2:
     dec ixl
     jp nz,lx1
 
-    ld (tcolor),a
+    ld iyl,a
     jp loop2
 lx1
     ld ixl,1
@@ -265,9 +265,7 @@ lx1
     rlca
     rlca
     rlca
-tcolor equ $+1
-    ld b,0
-    or b
+    or iyl
     dec iyh
 
     ld b,high(buf)
@@ -359,7 +357,7 @@ lx2 ld (dataindex),a
     and 0dfh
     cp 'Q'
     jr nz,noq
-
+exit:
     xor a
     jp CHGMOD
 
@@ -421,7 +419,10 @@ ntsc
 lminus
 	call PR00
     call CHGET
-    jp mandel
+    and 0dfh
+    cp 'Q'
+    jp nz,mandel
+    jr exit
 
 div0 macro
      local t1,t2
@@ -562,10 +563,10 @@ ticks db 0,0,0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*        512x212, v2       *",13,10
+        db "*        512x212, v3       *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
-        db "by Litwr, 2022. It is based",13,10
+        db "by Litwr, 2022-23. It is based",13,10
         db "on code published for the",13,10
         db "BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
