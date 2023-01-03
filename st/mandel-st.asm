@@ -89,7 +89,7 @@ mandel0:
     pea palette(pc)
     move #6,-(sp)   ;set palette
     trap #14
-    addq.l #22,sp
+    adda #22,sp
 mandel:
          clr.l -(sp)
 	     move #32,-(sp)    ;super
@@ -97,7 +97,7 @@ mandel:
 	     addq.l #6,sp
 	     move.l d0,ssp(a3)
     move.l timer,time(a3)
-;    move #$800,a6
+    movea #$800,a1
     moveq #-2,d6   ;-2=$fe
     movea.l screenbase(pc),a5
     lea.l 160*127+8(a5),a6	;screen bottom - actually the bottom left edge
@@ -126,8 +126,8 @@ loc1:
     and.b d6,d7
 	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
 	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	;cmp a6,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
-    cmp #$800,d0
+	cmp a1,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
+    ;cmp #$800,d0
 	bcc	loc2		; overflow
 
     move d1,d7
