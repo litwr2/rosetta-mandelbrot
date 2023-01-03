@@ -6,7 +6,7 @@
 ;128x256 Mandelbrot for the Sinclair Ql (the 68000 code)
 ;pseudo 16 colors = 4 bits per pixel but flashing is almost unusable on the QL :(
 
-NOCALC = 1
+NOCALC = 0
 
 initer	= 7
 idx	=	-36       ;-.0703125

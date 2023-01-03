@@ -1,0 +1,2 @@
+F=$1
+vasmm68k_mot -m68000 -Ftos -align -o ${F%.*}.tos -L ${F%.*}.lst -nosym $F
