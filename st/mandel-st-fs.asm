@@ -2,19 +2,9 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;256x128 Mandelbrot for the Atari ST (the 68000 code), 16 colors, rotated
-;on the 320x256 16 colors screen
-
-NOCALC = 0
+;320x200 Fullscreen Mandelbrot for the Atari ST (the 68000 code), 16 colors
 
 timer = $4ba
-
-initer	= 7
-idx	=	-36       ;-.0703125
-idy	=	18        ;.03515625, 1 = 1/512
-ix0	=	-62*idx
-imx	=	10*idx		; x move
-sf4	=	436/4		; sf/4
 
 div32x16 macro    ;D7=D6/D4, D6=D6%D4
      moveq.l #0,d7
@@ -37,10 +27,6 @@ endm
     basereg SOD,a3
 start:
     lea.l SOD(pc),a3
-    movea.l a3,a4
-    move.l #idx*65536+idy,(a4)+
-    move.l #imx*65536+ix0,(a4)+
-    move #initer,(a4)
 
          move.l #msg,-(sp)
          move #9,-(sp)    ;print line
@@ -91,6 +77,14 @@ mandel0:
     trap #14
     adda #22,sp
 mandel:
+    move dataindex(pc),d0
+    lea.l data(pc),a0
+    move.b (a0,d0.w),dx+1(a3)
+    move.b 1(a0,d0.w),dy+1(a3)
+    move 2(a0,d0.w),x0(a3)
+    move.b 4(a0,d0.w),niter+1(a3)
+    addq.b #2,4(a0,d0.w)
+
          clr.l -(sp)
 	     move #32,-(sp)    ;super
 	     trap #1
@@ -100,19 +94,15 @@ mandel:
     movea #$800,a1
     moveq #-2,d6   ;-2=$fe
     movea.l screenbase(pc),a5
-    lea.l 160*127+8(a5),a6	;screen bottom - actually the bottom left edge
-    lea.l 160*127+128(a5),a5	;screen top - actually the bottom right edge
+    lea.l 160*199+160(a5),a6	;screen bottom
+    lea.l 160(a5),a5	;screen top
     lea.l sqr0+$16b0(pc),a4
 	move dy(pc),d5
-	asl #7,d5		; r5 = 128*dy
-    suba.l a2,a2   ;the color shift
+    mulu #100,d5
 loop0:
     suba.l a0,a0      ;line counter
-  if NOCALC=0
 	move x0(pc),d4
-  endif
 loop2:
-  if NOCALC=0
 	add dx(pc),d4   ;add	@#dxa, r4		; update a
 	move niter(pc),d2	; max iter. count
 	move d4,d0		; r0 = x = a
@@ -141,72 +131,51 @@ loc1:
     subi #1,d2
 	bne loc1        ;sob	r2, 1$		; to the next iteration  ??dbra
 loc2:
-  endif
-    move a2,d0
-    bne.s lx2
+    lea tcolor1(a3),a2
+    movem (a2)+,d0/d1/d3/d7
+    lsr d2
+    roxr d1
+    lsr d2
+    roxr d0
+    lsr d2
+    roxr d3
+    lsr d2
+    roxr d7
+    bcs.s loc3
 
-    clr d3
-  rept 4
-    lsr d2
-    roxl d3
+    movem d0/d1/d3/d7,-(a2)
+    bra loop2
+loc3:
+    move d1,-(a5)   ;??movem
+    move d1,-(a6)
+    move d0,-(a5)
+    move d0,-(a6)
     move d3,-(a5)
-    ror d3
     move d3,-(a6)
-  endr
-    bra lx3
-lx2
-  rept 4
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    lsr d0,d1
-    lsl d0,d3
-    or d3,-(a5)
-    or d1,-(a6)
-  endr
-lx3
-    lea.l -152(a5),a5
-    lea.l -152(a6),a6
+    move d7,-(a5)
+    move d7,-(a6)
+    move #$8000,tcolor4(a3)
     addq #1,a0
-    cmpa #128,a0
+    cmpa #20,a0
     bne loop2
 
-    lea.l 160*128(a5),a5
-    lea.l 160*128(a6),a6
-    addq #1,a2
-    cmpa #16,a2
-    bne .lx1
-
-    suba a2,a2
-    lea.l -8(a5),a5
-    lea.l 8(a6),a6
-.lx1
+    lea.l 320(a5),a5
 	sub dy(pc),d5          ;sub	@#dya, r5
 	bne loop0
-  if NOCALC=0
-	move mx(pc),d0
-    add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
 
-	; scale the params
-	move #2,d0         ;mov	#3, r0
-	lea.l dx(pc),a1     ;mov	#dxa, r1
-loc4:
-	move (a1),d2        ;mov	(r1), r2		; x
-    move d2,d3
-    add #sf4,d2
-    and.b #$fe,d2
-	move (a4,d2.w),(a1) ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
-    sub #sf4,d3
-    and.b #$fe,d3
-    move (a4,d3.w),d1
-	sub d1,(a1)+          ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
-	dbra d0,loc4          ;sob	r0, 4$
-  endif
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
 
     move.l timer,d6
+	addq #1,iter(a3)      ;increase the iteration count
+    move dataindex(pc),d0
+    add #6,d0
+    cmpi #12*6,d0
+    bne loc7
+
+    moveq #0,d0
+loc7:
+    move d0,dataindex(a3)
+
          move.l	ssp(pc),-(sp)
          move.w	#32,-(sp)     ;super
 	     trap #1
@@ -227,8 +196,8 @@ loc4:
          trap #1
          addq.l #8,sp
 
-    move niter(pc),d5
-    subq #7,d5
+    clr.l d5
+    move iter(pc),d5
     bsr PR000
 
          move #32,-(sp)  ;space
@@ -315,11 +284,10 @@ getchar:move #7,-(sp)  ;return char in D0
         beq.s getchar
         rts
 SOD:
-dx	dc.w	idx
-dy	dc.w	idy
-mx	dc.w	imx
-x0     dc.w   ix0
-niter  dc.w    initer
+dx	dc.w	-1
+dy	dc.w	0
+x0     dc.w   0
+niter  dc.w   0
 
 ssp dc.l 0
 time dc.l 0
@@ -333,13 +301,40 @@ palette
 ;    dc.w $777,$700,$070,$000,$007,$707,$077,$555  ;original
 ;    dc.w $333,$733,$373,$773,$337,$737,$377,$000
 
+tcolor1 dc.w 0
+tcolor2 dc.w 0
+tcolor3 dc.w 0
+tcolor4 dc.w $8000
+
+  macro mentry
+     dc.b -\1, \2
+     dc.w \1*320/2-384   ;dx, dy, x0 = dx*HSize, niter
+     dc.b \3,0
+  endm
+
+dataindex dc.w 0
+iter dc.w 0
+data mentry 9, 14, 15 ;1
+     mentry 7, 11, 16 ;2
+     mentry 6,  9, 18 ;3
+     mentry 5,  8, 20 ;4
+     mentry 4,  7, 21 ;5
+     mentry 4,  6, 22 ;6
+     mentry 4,  5, 23 ;7
+     mentry 3,  4, 24 ;8
+     mentry 3,  4, 25 ;9
+     mentry 3,  4, 26 ;10
+     mentry 3,  4, 27 ;11
+     mentry 4,  6, 37 ;12
+
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v1         *",13,10
+        dc.b "  *    fullscreen, 16 colors, v1   *",13,10
         dc.b "  **********************************",13,10
-        dc.b "The original version was published for",13,10
-        dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        dc.b "This Atari ST port was created by Litwr, 2023.",13,10
+        dc.b "This code for the Atari ST was created by",13,10
+        dc.b "Litwr in 2023. It is based on code",13,10
+        dc.b "published for the BK0011 in 2021 by",13,10
+        dc.b "Stanislav Maslovski.",13,10
         dc.b "The T-key gives us timings.",13,10
         dc.b "Use the Q-key to quit.",13,10
         dc.b "Press a "

@@ -582,7 +582,7 @@ mdata:    ;dx, dy, iterations
 
 iter word 0
 dataindex word mdata
-         
+
 digifont db $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          db $18,$18,$38,$18,$18,$18,$7e,0  ;1
          db $3c,$66,6,$c,$30,$60,$7e,0     ;2
