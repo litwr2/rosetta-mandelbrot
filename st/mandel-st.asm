@@ -73,9 +73,11 @@ fillsqr:
 mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
 
+    move #4,-(sp)
+    trap #14
+    move d0,screenres(a3)
     move #2,-(sp)   ;get the screen base
     trap #14
-    addq.l #2,sp
     move.l d0,screenbase(a3)   ;graph base
 
     move #0,-(sp)   ;320x200 16 colors mode
@@ -83,15 +85,18 @@ mandel0:
     move.l d0,-(sp)
     move #5,-(sp)   ;setscreen
     trap #14
-    add.l #12,sp
 
+    pea palette(pc)
+    move #6,-(sp)   ;set palette
+    trap #14
+    addq.l #22,sp
 mandel:
          clr.l -(sp)
 	     move #32,-(sp)    ;super
 	     trap #1
 	     addq.l #6,sp
 	     move.l d0,ssp(a3)
-    move.l timer,time
+    move.l timer,time(a3)
 ;    move #$800,a6
     moveq #-2,d6   ;-2=$fe
     movea.l screenbase(pc),a5
@@ -141,39 +146,16 @@ loc2:
     bne.s lx2
 
     clr d3
+  rept 4
     lsr d2
     roxl d3
-    move d3,d1
-    ror d1
     move d3,-(a5)
-    move d1,-(a6)
-
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    move d3,-(a5)
-    move d1,-(a6)
-
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    move d3,-(a5)
-    move d1,-(a6)
-
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    move d3,-(a5)
-    move d1,-(a6)
+    ror d3
+    move d3,-(a6)
+  endr
     bra lx3
-
 lx2
+  rept 4
     clr d3
     lsr d2
     roxl d3
@@ -183,36 +165,7 @@ lx2
     lsl d0,d3
     or d3,-(a5)
     or d1,-(a6)
-
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    lsr d0,d1
-    lsl d0,d3
-    or d3,-(a5)
-    or d1,-(a6)
-
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    lsr d0,d1
-    lsl d0,d3
-    or d3,-(a5)
-    or d1,-(a6)
-
-    clr d3
-    lsr d2
-    roxl d3
-    move d3,d1
-    ror d1
-    lsr d0,d1
-    lsl d0,d3
-    or d3,-(a5)
-    or d1,-(a6)
+  endr
 lx3
     lea.l -152(a5),a5
     lea.l -152(a6),a6
@@ -322,7 +275,15 @@ loc4:
     cmpi.b #"Q",d0
     bne mandel
 
-exit:    clr -(sp)     ;term
+exit
+    move screenres(pc),-(sp)
+    move.l screenbase(pc),d0
+    move.l d0,-(sp)
+    move.l d0,-(sp)
+    move #5,-(sp)   ;setscreen
+    trap #14
+    add.l #12,sp
+         clr -(sp)     ;term
          trap #1
 
 PR000     ;prints d5
@@ -363,6 +324,14 @@ niter  dc.w    initer
 ssp dc.l 0
 time dc.l 0
 screenbase dc.l 0
+screenres dc.w 0
+palette
+	DC.W	$000,$770,$070,$777  ;black, green, yellow, white
+	DC.W	$700,$707,$077,$007  ;red, magenta, cyan, blue
+	DC.W	$400,$404,$044,$004  ;red, magenta, cyan, blue
+	DC.W	$040,$440,$333,$555  ;darkgreen, yellow, darkgray, gray
+;    dc.w $777,$700,$070,$000,$007,$707,$077,$555  ;original
+;    dc.w $333,$733,$373,$773,$337,$737,$377,$000
 
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
