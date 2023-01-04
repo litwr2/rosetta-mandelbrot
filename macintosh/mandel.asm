@@ -100,10 +100,8 @@ fillsqr:
 
 mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
-    lea.l cpat0(pc),a1
+    lea.l cpat(pc),a1
     lea.l pat0(pc),a0
-    move.l a0,(a1)+
-    lea.l pat1(pc),a0
     move.l a0,(a1)
 mandel:
     _HideCursor
@@ -176,10 +174,9 @@ loc2:
     movem (a0),d1/d3
     swap d1
     swap d3
-    move.l cpat0(pc),a1
+    move.l cpat(pc),a1
     move.b (a1,d2.w),d1
-    move.l cpat1(pc),a1
-    move.b (a1,d2.w),d3
+    move.b 8(a1,d2.w),d3
     swap d1
     swap d3
     lsr.l #4,d1
@@ -196,10 +193,16 @@ loc2:
     subq.w #1,(a0)
     bne.s loop2
 
-    lea.l cpat0(pc),a0
-    move.l (a0),d1
-    move.l 4(a0),(a0)
-    move.l d1,4(a0)
+    lea pat0(pc),a0
+    move.l a0,d0
+    lea cpat(pc),a0
+    cmp.l (a0),d0
+    bne.s @l19
+
+    addq.l #8,d0   ;pat1
+@l19
+    move.l d0,(a0)
+
     move.l WindPtr(pc),a0
     move 6(a0),d0   ;BytesInRow
     lea.l 64(a3,d0.w),a3
@@ -392,8 +395,7 @@ x0     dc.w  ix0
 niter  dc.w  initer
 tcolor0 ds.w 1
 tcolor1 dc.w $8000    ;must be after tcolor0
-cpat0 ds.l 1
-cpat1 ds.l 1
+cpat ds.l 1
 
 EventRecord ds.b 16
 msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1,msg9-msg1
@@ -412,5 +414,6 @@ WindowName DC.B 'Superfast Mandelbrot Generator'
 
 pat0 dc.b	15,1,2, 3, 5,10,14,0
 pat1 dc.b	15,4,9,12,14, 5, 1,0
+     dc.b	15,1,2, 3, 5,10,14,0   ;copy of pat0
         END
 

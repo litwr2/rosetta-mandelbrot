@@ -73,6 +73,8 @@ fillsqr:
 mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
 
+    move.l #pat0,cpat(a3)
+
     move #2,-(sp)   ;get the screen base
     trap #14
     move.l d0,screenbase(a3)   ;graph base
@@ -98,7 +100,7 @@ mandel:
 	move dy(pc),d5
 	asl #7,d5		; r5 = 128*dy
 loop0:
-    suba.l a0,a0      ;line counter
+    move.b #32,linecount(a3)      ;line counter
   if NOCALC=0
 	move x0(pc),d4
   endif
@@ -134,47 +136,36 @@ loc1:
 loc2:
   endif
 	andi #7,d2
-    move.l cpat0(pc),a2
-    move.b (a2,d2.w),d1
-    move.l cpat1(pc),a2
-    move.b (a2,d2.w),d2
+    lea tcolor0(pc),a2
+    movem (a2),d1/d3
+    swap d1
+    swap d3
 
-    lea.l tcolor0(pc),a2
-    move.l (a2),d0   ;movem??
-    lsr.b #1,d2
-    roxr.l #1,d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    move.l 4(a2),d3   ;tcolor1
-    lsr.b #1,d1
-    roxr.l #1,d3
-    lsr.b #1,d1
-    roxr.l #1,d3
-    lsr.b #1,d1
-    roxr.l #1,d3
-    lsr.b #1,d1
-    roxr.l #1,d3
-    bcs.s loc3
+    movea.l cpat(pc),a0
+    move.b (a0,d2.w),d1
+    move.b 8(a0,d2.w),d3
+    swap d1
+    swap d3
+    lsr.l #4,d1
+    lsr.l #4,d3
+    bcs.s loc8
 
-    move.l d0,(a2)+  ;??movem
-    move.l d3,(a2)
-    bra loop2
-loc3
-    move.l d3,-(a6)
-    move.l d0,-(a5)
-    move.l #$80000000,4(a2)
-    addq #1,a0
-    cmpa #16,a0
-    bne loop2
+    movem d1/d3,(a2)
+    bra.s loop2
+loc8
+    move d3,-(a6)
+    move d1,-(a5)
+    move #$8000,2(a2)
+    subq.b #1,linecount(a3)
+    bne.s loop2
 
-    lea.l cpat0(pc),a2
-    move.l (a2),d1
-    move.l 4(a2),(a2)
-    move.l d1,4(a2)
+    lea pat0(pc),a2
+    cmpa.l cpat(pc),a2
+    bne loc9
+
+    lea pat1(pc),a2
+loc9
+    move.l a2,cpat(a3)
 
     lea 144(a5),a5
     lea -16(a6),a6
@@ -200,11 +191,6 @@ loc4:
 	dbra d0,loc4          ;sob	r0, 4$
   endif
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
-    lea.l cpat0(pc),a1
-    lea.l pat0(pc),a0
-    move.l a0,(a1)+
-    lea.l pat1(pc),a0
-    move.l a0,(a1)
 
     move.l timer,d6
          move.l	ssp(pc),-(sp)
@@ -318,13 +304,15 @@ niter  dc.w    initer
 ssp dc.l 0
 time dc.l 0
 screenbase dc.l 0
-tcolor0 ds.l 1
-tcolor1 dc.l $80000000    ;must be after tcolor0
-cpat0 dc.l pat0
-cpat1 dc.l pat1
+tcolor0 ds.w 1
+tcolor1 dc.w $8000    ;must be after tcolor0
+cpat ds.l 1
 
 pat0 dc.b	15,1,2, 3, 5,10,14,0
 pat1 dc.b	15,4,9,12,14, 5, 1,0
+     dc.b	15,1,2, 3, 5,10,14,0  ;copy of pat0
+
+linecount dc.b 0
 
 home    dc.b 27,"H",0
 discursor dc.b 27,"f",0
