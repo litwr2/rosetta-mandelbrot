@@ -134,27 +134,21 @@ loc2:
     lea tcolor1(a3),a2
     movem (a2)+,d0/d1/d3/d7
     lsr d2
-    roxr d1
-    lsr d2
-    roxr d0
+    roxr d7
     lsr d2
     roxr d3
     lsr d2
-    roxr d7
+    roxr d1
+    lsr d2
+    roxr d0
     bcs.s loc3
 
     movem d0/d1/d3/d7,-(a2)
     bra loop2
 loc3:
-    move d1,-(a5)   ;??movem
-    move d1,-(a6)
-    move d0,-(a5)
-    move d0,-(a6)
-    move d3,-(a5)
-    move d3,-(a6)
-    move d7,-(a5)
-    move d7,-(a6)
-    move #$8000,tcolor4(a3)
+    movem d0/d1/d3/d7,-(a5)
+    movem d0/d1/d3/d7,-(a6)
+    move #$8000,tcolor1(a3)
     addq #1,a0
     cmpa #20,a0
     bne loop2
@@ -301,10 +295,10 @@ palette
 ;    dc.w $777,$700,$070,$000,$007,$707,$077,$555  ;original
 ;    dc.w $333,$733,$373,$773,$337,$737,$377,$000
 
-tcolor1 dc.w 0
+tcolor1 dc.w $8000
 tcolor2 dc.w 0
 tcolor3 dc.w 0
-tcolor4 dc.w $8000
+tcolor4 dc.w 0
 
   macro mentry
      dc.b -\1, \2
