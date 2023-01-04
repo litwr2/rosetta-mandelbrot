@@ -137,7 +137,7 @@ mandel:
 	asl #7,d5		; r5 = 128*dy
 loop0:
   lea.l dotcnt(pc),a0
-  move #64,(a0)
+  move #32,(a0)
   if NOCALC=0 then
 	move x0(pc),d4
   endif
@@ -172,41 +172,29 @@ loc1:
 loc2:
   endif
 	andi #7,d2      ;bic	#177770, r2	; get bits of color
-    move.l cpat0(pc),a0
-    move.b (a0,d2.w),d1
-    move.l cpat1(pc),a0
-    move.b (a0,d2.w),d2
     lea.l tcolor0(pc),a0
-    move.l (a0),d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    lsr.b #1,d2
-    roxr.l #1,d0
-    move.l 4(a0),d3   ;tcolor1
-    lsr.b #1,d1
-    roxr.l #1,d3
-    lsr.b #1,d1
-    roxr.l #1,d3
-    lsr.b #1,d1
-    roxr.l #1,d3
-    lsr.b #1,d1
-    roxr.l #1,d3
+    movem (a0),d1/d3
+    swap d1
+    swap d3
+    move.l cpat0(pc),a1
+    move.b (a1,d2.w),d1
+    move.l cpat1(pc),a1
+    move.b (a1,d2.w),d3
+    swap d1
+    swap d3
+    lsr.l #4,d1
+    lsr.l #4,d3
     bcs.s @l18
 
-    move.l d0,(a0)+
-    move.l d3,(a0)
-    bra loop2
+    movem d1/d3,(a0)
+    bra.s loop2
 @l18
-    move.l d3,-(a6)
-    move.l d0,-(a3)
-    move.l #$80000000,4(a0)
+    move d1,-(a6)
+    move d3,-(a3)
+    move #$8000,2(a0)
     lea.l dotcnt(pc),a0
-    subq.w #4,(a0)
-    bne loop2
+    subq.w #1,(a0)
+    bne.s loop2
 
     lea.l cpat0(pc),a0
     move.l (a0),d1
@@ -265,7 +253,7 @@ loc4:
     clr.l d5
     move niter(pc),d5
     subq #7,d5
-    bsr.s PR000
+    bsr PR000
 
          move.b #32,d1  ;space
          bsr print1
@@ -314,7 +302,9 @@ loc4:
          MOVE.L #$FFFF,d0
          _FlushEvents
          bsr.s getkey
-         bra mandel
+    andi.b #$df,d0
+    cmpi.b #'Q',d0
+         bne mandel
 ExitOk
          movea.l MemPtr(pc),a0
          _DisposPtr
@@ -400,8 +390,8 @@ dy	dc.w	idy
 mx	dc.w	imx
 x0     dc.w  ix0
 niter  dc.w  initer
-tcolor0 ds.l 1
-tcolor1 dc.l $80000000    ;must be after tcolor0
+tcolor0 ds.w 1
+tcolor1 dc.w $8000    ;must be after tcolor0
 cpat0 ds.l 1
 cpat1 ds.l 1
 
@@ -410,15 +400,15 @@ msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1
 
 msg1     dc.b '  **********************************'
 msg2     dc.b '  * Superfast Mandelbrot generator *'
-msg3     dc.b '  *         2 colors, v1           *'
+msg3     dc.b '  *         2 colors, v2           *'
 msg4     dc.b '  **********************************'
 msg5     dc.b 'The original version was published for'
 msg6     dc.b 'the BK0011 in 2021 by Stanislav Maslovski.'
-msg7     dc.b 'This Apple Macintosh port was created by Litwr, 2022.'
+msg7     dc.b 'This Apple Macintosh port was created by Litwr, 2022-23.'
 msg8     dc.b 'The T-key gives us timings.'
 msg9     dc.b 'Use the Q-key to quit'
 
-WindowName DC.B 'Superfast Mandelbrot Generator v1'
+WindowName DC.B 'Superfast Mandelbrot Generator'
 
 pat0 dc.b	15,1,2, 3, 5,10,14,0
 pat1 dc.b	15,4,9,12,14, 5, 1,0
