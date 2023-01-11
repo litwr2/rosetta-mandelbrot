@@ -30,8 +30,6 @@ start    PEA -4(A5)
          _InitWindows
          _InitCursor
 
-         ;movea.l GrafGlobals(a5),a0
-         ;move.l ScreenBits+bounds+4(a0),d0
          lea WindowSize(pc),a0
          SUBQ #4,SP
          CLR.L -(SP)     ;storage
@@ -73,6 +71,9 @@ start    PEA -4(A5)
          bne.s @l2
 
          bsr getkey
+    lea benchmark(pc),a0
+    andi.b #$df,d0
+    move.b d0,(a0)
 
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
@@ -104,11 +105,14 @@ mandel0:
     move.l a0,(a1)
 mandel:
     _HideCursor
+    lea bcount(pc),a6
+    move.b #16,(a6)
          lea stime(pc),a6
          move.l Ticks,(a6)
 
     moveq #-2,d6   ;-2=$fe
     move #$800,a2
+mandel1:
     move.l WindPtr(pc),a3
     move 6(a3),d1   ;BytesInRow
     movea.l 2(a3),a3  ;bitmap pointer
@@ -119,15 +123,6 @@ mandel:
     mulu d1,d0
     lea.l 64(a3,d0.w),a3  ;screen top
    
-    ;move.l Scrnbase,a3
-    ;move #voff+255,d0
-    ;move 6(a3),d1  ;BytesInRow
-    ;mulu d1,d0
-    ;lea.l 64(a3,d0.l),a6  ;screen bottom
-    ;move #voff,d0
-    ;mulu d1,d0
-    ;lea.l 64(a3,d0.l),a3  ;screen top
-
          movea.l MemPtr(pc),a4   ;sqrbase
          lea.l $16b0(a4),a4
 	move dy(pc),d5
@@ -234,10 +229,20 @@ loc4:
 	addq #1,(a1)     ;inc	@#nitera	; increase the iteration count
   endif
 
-         lea.l stime(pc),a6
+    lea benchmark(pc),a1
+    cmpi.b #'B',(a1)+
+    bne.s @l10
+
+    subq.b #1,(a1)
+    bne mandel1
+
+@l10     lea.l stime(pc),a6
          move.l Ticks,d6
          sub.l (a6),d6
          _ShowCursor
+    cmpi.b #'B',-(a1)
+    beq.s @l14
+
          bsr getkey
     andi.b #$df,d0
     cmpi.b #'Q',d0
@@ -245,7 +250,7 @@ loc4:
 
     cmpi.b #'T',d0
     bne mandel
-
+@l14
     pea TextFrame(pc)
     _EraseRect
 
@@ -397,22 +402,26 @@ tcolor1 dc.w $8000    ;must be after tcolor0
 cpat ds.l 1
 
 EventRecord ds.b 16
-msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1,msg9-msg1
+msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1,msg9-msg1,msg10-msg1
 
 msg1     dc.b '  **********************************'
 msg2     dc.b '  * Superfast Mandelbrot generator *'
-msg3     dc.b '  *         2 colors, v2           *'
+msg3     dc.b '  *         2 colors, v3           *'
 msg4     dc.b '  **********************************'
 msg5     dc.b 'The original version was published for'
 msg6     dc.b 'the BK0011 in 2021 by Stanislav Maslovski.'
 msg7     dc.b 'This Apple Macintosh port was created by Litwr, 2022-23.'
 msg8     dc.b 'The T-key gives us timings.'
-msg9     dc.b 'Use the Q-key to quit'
+msg9     dc.b 'Use the Q-key to quit.'
+msg10    dc.b 'Press B to enter benchmark mode'
 
 WindowName DC.B 'Superfast Mandelbrot Generator'
 
 pat0 dc.b	15,1,2, 3, 5,10,14,0
 pat1 dc.b	15,4,9,12,14, 5, 1,0
      dc.b	15,1,2, 3, 5,10,14,0   ;copy of pat0
+
+benchmark dc.b 0
+bcount dc.b 0
         END
 

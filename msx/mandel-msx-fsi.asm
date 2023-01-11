@@ -420,7 +420,7 @@ lx2 ld (dataindex),a
     and 0dfh
     cp 'Q'
     jr nz,noq
-
+exit:
     xor a
     jp CHGMOD
 
@@ -482,6 +482,9 @@ ntsc
 lminus
 	call PR00
     call CHGET
+    and 0dfh
+    cp 'Q'
+    jp z,exit
     jp mandel
 
 div0 macro
@@ -624,7 +627,7 @@ ticks db 0,0,0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*  interlaced, 512x424, v2 *",13,10
+        db "*  interlaced, 512x424, v3 *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
         db "by Litwr, 2022. It is based",13,10

@@ -53,6 +53,8 @@ l2       ld a,(hl)
          jr l2
 
 l1       call CHGET
+         and 0dfh
+         ld (benchmark),a
          ld a,1
          ld c,$90
          call wrreg
@@ -169,6 +171,8 @@ r4l:
 mandel0:
     pop hl
 mandel:
+    ld a,16
+    ld (bcount),a
     ld hl,ticks
     xor a
     ld (hl),a
@@ -178,7 +182,7 @@ mandel:
     ld (hl),a
     ld a,$c3     ;opcode for CALL
     ld ($fd9a),a   ;start timer
-
+mandel1:
     ld ixl,1   ;dot even/odd
     ld iyl,0   ;line even/odd
     ld hl,0  ;scrbase
@@ -449,21 +453,34 @@ dx1p equ $+1
 dx2p equ $+1
     ld (dx),hl
     jp lx5
-endif
+
 lx2:pop hl
+endif
+    ld a,(benchmark)
+    cp 'B'
+    jr nz,loc3
+
+    ld hl,bcount
+    dec (hl)
+    jp nz,mandel1
+loc3:
     ld a,$c9   ;opcode for RET
     ld ($fd9a),a   ;stop timer
+    ld a,(benchmark)
+    cp 'B'
+    jr z,loc4
+
     call CHGET
     and 0dfh
     cp 'Q'
     jr nz,noq
-
+exit:
     xor a
     jp CHGMOD
 
 noq:cp 'T'
     jp nz,mandel
-
+loc4:
          ld a,1
          ld (GRPACX),a
          ld (GRPACY),a
@@ -520,6 +537,9 @@ ntsc
 lminus
 	call PR00
     call CHGET
+    and 0dfh
+    cp 'Q'
+    jp z,exit
     jp mandel
 
 div0 macro
@@ -643,10 +663,13 @@ timer:
 
 ticks db 0,0,0
 
+benchmark db 0
+bcount db 0
+
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*        generator         *",13,10
-        db "*     interlaced, v1       *",13,10
+        db "*     interlaced, v2       *",13,10
         db "****************************",13,10
         db "The original version was",13,10
         db "published for the BK0011 in",13,10
@@ -654,7 +677,8 @@ msg     db "****************************",13,10
         db "This MSX2 port was created",13,10
         db "by Litwr, 2022.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit",0
+        db "Use the Q-key to quit",13,10
+        db "Press B to enter benchmark mode",0
 ec:
 sqrbase equ (msg + $16b0 + $ff) and $ff00
 buf equ sqrbase + $1700

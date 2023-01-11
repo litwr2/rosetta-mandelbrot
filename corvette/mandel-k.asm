@@ -1,7 +1,6 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the Corvette, 4 colors (planar write mode), simulates 8 colors using textures
@@ -48,6 +47,8 @@ start
     ld c,9
     call BDOS
     call waitk
+    and 0dfh
+    ld (benchmark),a
     ld de,curoff
     ld c,9
     call BDOS
@@ -101,11 +102,14 @@ r4l:
 mandel0: 
     pop hl
 mandel:
+    ld a,16
+    ld (bcount),a
     ld hl,0
     ld (tilo),hl
     ld (tihi),hl
     ld hl,KINTR
     ld (0xf7f1),hl   ;start timer
+mandel1:
     ld hl,$401f  ;scrtop
     push hl
     ld hl,(dy)
@@ -366,17 +370,29 @@ dx2p equ $+1
 
 lx2:pop hl
 endif
+    ld a,(benchmark)
+    cp 'B'
+    jp nz,loc3
+
+    ld hl,bcount
+    dec (hl)
+    jp nz,mandel1
+loc3:
     ld hl,(KL+1)
     ld (0xf7f1),hl   ;stop timer
+    cp 'B'
+    jp z,loc4
+
     call waitk
     and 0dfh
     cp 'Q'
     jp nz,noq
+exit:
     rst 0
 
 noq:cp 'T'
     jp nz,mandel
-
+loc4:
     ld a,(niter)
     sub 7
     ld l,a
@@ -400,6 +416,10 @@ noq:cp 'T'
         add hl,hl  ;*2
 	call PR00
     call waitk
+    and 0dfh
+    cp 'Q'
+    jp z,exit
+
     call clscursor
     jp mandel
 
@@ -485,6 +505,23 @@ PR0	ld A,$FF
 	ld L,C
 	jp PRD
 
+benchmark db 0
+bcount db 0
+
+          ;0,    1,    2,    3,    4,    5,    6,    7
+pat0:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
+        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
+          ;B    gB,   rB,   yB,    g,   ry,    r,    y
+pat1:	db 0, 0x40, 0x00, 0x40, 0xC0, 0x40, 0x00, 0xC0
+        db 0, 0x00, 0x40, 0x40, 0x00, 0x00, 0xC0, 0xC0
+          ;B    Bg,   Br,   By,    g,   Bg,    r,    y
+pat0c:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
+        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
+
+  if (pat0 and $ff00) != ((pat0+47) and $ff00)
+ERROR ERROR
+  endif
+
 KINTR
      push af
      push hl
@@ -506,19 +543,6 @@ KL   jp 0
    if NOCALC=1
    ds 2
    endif
-          ;0,    1,    2,    3,    4,    5,    6,    7
-pat0:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
-          ;B    gB,   rB,   yB,    g,   ry,    r,    y
-pat1:	db 0, 0x40, 0x00, 0x40, 0xC0, 0x40, 0x00, 0xC0
-        db 0, 0x00, 0x40, 0x40, 0x00, 0x00, 0xC0, 0xC0
-          ;B    Bg,   Br,   By,    g,   Bg,    r,    y
-pat0c:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
-        db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
-
-  if (pat0 and $ff00) != ((pat0+47) and $ff00)
-ERROR ERROR
-  endif
 
 waitk:
     ld c,6  ;direct console i/o
@@ -538,15 +562,17 @@ curoff db 27,";$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v2    *",13,10
+        db "*     4 colors + textures, v3    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Corvette port was created by",13,10
-        db "Litwr, 2022.",13,10
+        db "Litwr, 2022-23.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit$"
+        db "Use the Q-key to quit.",13,10
+        db "Press B to enter benchmark mode$"
+
 sqrbase equ (msg + $16b0 + $ff) and $ff00
    end start
 

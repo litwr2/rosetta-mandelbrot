@@ -86,8 +86,11 @@ sf4	=	436/4*65536		; sf/4
 mandel0:
     mov r6,#initer
 mandel:
+    mov r0,#16
+    str r0,[bcount]
     swi OS_ReadMonotonicTime
     str r0,[timer]
+mandel1:
     mov r7,#0x9f00
     add r7,#0xa0
     ldr r12,[screen_addr]
@@ -178,12 +181,26 @@ if NOCALC=0
     str r3,[r1],#4     ;mov	sqr+sf4(r2), (r1) // sub	sqr-sf4(r2), (r1)+
     subs r5,#1
     bne .l4
-end if
+
     add r6,#1   ;inc	@#nitera
+end if
+    ldr r7,[benchmark]
+    cmp r7,"B"
+    bne .l8
+
+    ldr r0,[bcount]
+    subs r0,1
+    str r0,[bcount]
+    bne mandel1
+.l8:
     swi OS_ReadMonotonicTime
     ldr r1,[timer]
     sub r0,r0,r1
     str r0,[timer]
+
+    cmp r7,"B"
+    beq .l7
+
     bl getkey
     bic r1,#0x20
     cmp r1,#"Q"
@@ -191,7 +208,7 @@ end if
 
     cmp r1,#"T"
     bne mandel
-
+.l7:
 	mov r0, #30   ;VDU = Home Cursor
 	swi OS_WriteC
     mov r0,r6
@@ -235,7 +252,15 @@ end if
     add r0, pc, text_string-$-8
 	swi OS_WriteO
     bl getkey
-	b mandel
+    bic r1,#0x20
+    cmp r1,#"Q"
+	bne mandel
+
+exit:	
+	; wait for vsync (any pending buffers)
+	mov r0, #19
+	swi OS_Byte
+	SWI OS_Exit
 	
 get_screen_addr:
 	str lr, [sp, #-4]!
@@ -254,12 +279,6 @@ mxa:	dw	imx*65536
 x0a:    dw  ix0*65536
 timer:  dw 0
 
-exit:	
-	; wait for vsync (any pending buffers)
-	mov r0, #19
-	swi OS_Byte
-	SWI OS_Exit
-
 init:
     str lr, [sp, #-4]!
 	MOV r0,#22	;VDU = Set MODE
@@ -272,6 +291,8 @@ init:
     add r0, pc, msg-$-8
 	swi OS_WriteO
     bl getkey
+    bic r1,#0x20
+    str r1,[benchmark]
 
 	MOV r0,#23	;VDU = Disable cursor
 	SWI OS_WriteC
@@ -343,6 +364,9 @@ debug_write_32:
 	mov pc, lr
  end if
 
+benchmark dw 0
+bcount dw 0
+
 text_string:
 	rb 12
 
@@ -358,15 +382,16 @@ colors:
 
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *          16 colors, v2         *",13,10
+        db "  *          16 colors, v3         *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Acorn Archimedes port was created",13,10
-        db "by Litwr, 2022.",13,10
+        db "by Litwr, 2022-23.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit.",0
+        db "Use the Q-key to quit.",13,10
+        db "Press B to enter benchmark mode",0
 
     align 4
 sqr0:

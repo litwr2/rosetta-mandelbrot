@@ -28,8 +28,7 @@ sf4	equ 436/4		*sf/4
        limi 4
    .endm
    .defm svam1
-       ori 1,>4000
-       swpb 1
+       ori 1,>40
        limi 0
        movb 1,@VDP1   ;R3h - hi addr OR >40, R3l - lo addr
        swpb 1
@@ -56,6 +55,8 @@ MANDEL: li 1,msg
         clr 2
         xop @six,0
         bl @getkey
+   andi 1,>5f00
+   mov 1,@benchmark
 
         clr 0
         li 1,6  ;graphic mode 6, 256x212, 16 colors
@@ -136,20 +137,8 @@ merr text 'memory allocation error'
     even
 
 mdlbrt:
-  .svam0
-  .ifeq fastRAM,1
-       li 0,mram
-       li 2,(efast-sfast)/2
-       li 3,sfast
-       li 5,savef
-!:     mov *0,*5+
-       mov *3+,*0+
-       dec 2
-       jne -!
-  .endif
-       li 15,VDP3
-       bl @waitvdp
-       li 11,VDP0
+  li 1,16
+  mov 1,@bcount
 
        limi 0   ;timer
        clr 2
@@ -167,6 +156,22 @@ mdlbrt:
        mov @6,@tickn+2
        mov 2,@6
        limi 4
+mdlbrt1:
+  .svam0
+  .ifeq fastRAM,1
+       li 0,mram
+       li 2,(efast-sfast)/2
+       li 3,sfast
+       li 5,savef
+!:     mov *0,*5+
+       mov *3+,*0+
+       dec 2
+       jne -!
+  .endif
+
+       li 15,VDP3
+       bl @waitvdp
+       li 11,VDP0
 
      clr 13  ;VDP flag
      li 8,127 ;byte pos in VRAM
@@ -383,7 +388,18 @@ lx1:
   .endif
 
 	inc @niter     ;inc	@#nitera	; increase the iteration count
-    mov @tickn+2,@6  ;stop timer
+   mov @benchmark,1
+   ci 1,>4200
+   jne !
+
+   dec @bcount
+   jeq !
+   b @mdlbrt1
+
+!: mov @tickn+2,@6  ;stop timer
+   ci 1,>4200
+   jeq !
+
    bl @getkey
    andi 1,>5f00
    ci 1,>5100  *Q
@@ -449,6 +465,9 @@ lx1:
        bl @PR00
 
        bl @getkey
+   andi 1,>5f00
+   ci 1,>5100  *Q
+   jeq exit
        b @mdlbrt
 exit:
        clr 0
@@ -579,6 +598,9 @@ vmx data imx
 x0  data ix0
 niter data initer
 
+benchmark data 0
+bcount data 0
+
 space  data >202e   *space,dot
        byte 1      *home cursor
 
@@ -590,7 +612,7 @@ msg     text "****************************"
         byte 13,10
         text "*        generator         *"
         byte 13,10
-        text "*       rotated, v1        *"
+        text "*       rotated, v2        *"
         byte 13,10
         text "****************************"
         byte 13,10
@@ -602,11 +624,13 @@ msg     text "****************************"
         byte 13,10
         text "This Geneve 9650 port was"
         byte 13,10
-        text "created by Litwr, 2022."
+        text "created by Litwr, 2022-23."
         byte 13,10
         text "The T-key gives us timings."
         byte 13,10
         text "Use the Q-key to quit"
+        byte 13,10
+        text "Press B to enter benchmark mode"
         byte 0
 
 sqrbase equ msg + >16b0

@@ -39,19 +39,21 @@ MANDEL: li 1,msg
         clr 2
         xop @six,0
         bl @getkey
+   andi 1,>5f00
+   mov 1,@benchmark
 
         clr 0
-        li 1,6  ;graphic mode 6, 256x212, 16 colors
+        li 1,6    *graphic mode 6, 256x212, 16 colors
         xop @six,0
 
         li 0,>d
         li 1,1
         li 2,>77
-        xop @six,0   ;set color 1
+        xop @six,0   *set color 1
 
         li 0,>c
         clr 1
-        xop @six,0  ;border color
+        xop @six,0  *border color
 
         li 0,>36
         li 1,9       *read reg
@@ -133,19 +135,8 @@ merr text 'memory allocation error'
     even
 
 mdlbrt:
-  .ifeq fastRAM,1
-       li 0,mram
-       li 2,(efast-sfast)/2
-       li 3,sfast
-       li 5,savef
-!:     mov *0,*5+
-       mov *3+,*0+
-       dec 2
-       jne -!
-  .endif
-       li 15,VDP0
-       bl @waitvdp
-       li 11,VDP3
+  li 1,16
+  mov 1,@bcount
 
        limi 0   ;timer
        clr 2
@@ -163,6 +154,20 @@ mdlbrt:
        mov @6,@tickn+2
        mov 2,@6
        limi 4
+mdlbrt1:
+  .ifeq fastRAM,1
+       li 0,mram
+       li 2,(efast-sfast)/2
+       li 3,sfast
+       li 5,savef
+!:     mov *0,*5+
+       mov *3+,*0+
+       dec 2
+       jne -!
+  .endif
+       li 15,VDP0
+       bl @waitvdp
+       li 11,VDP3
 
      li 12,1   ;dot even/odd
      clr 13   ;line even/odd
@@ -374,7 +379,6 @@ oddli:
      jeq !
      b @loop0
 !:
-    mov @tickn+2,@6  ;stop timer
   .ifeq fastRAM,1
        li 0,mram
        li 2,(efast-sfast)/2
@@ -396,6 +400,17 @@ oddli:
 	jne -!            ;sob	r0, 4$
 
 	inc @niter     ;inc	@#nitera	; increase the iteration count
+   mov @benchmark,1
+   ci 1,>4200
+   jne !
+
+   dec @bcount
+   jeq !
+   b @mdlbrt1
+
+!: mov @tickn+2,@6  ;stop timer
+   ci 1,>4200
+   jeq !
 
    bl @getkey
    andi 1,>5f00
@@ -462,6 +477,9 @@ oddli:
        bl @PR00
 
        bl @getkey
+   andi 1,>5f00
+   ci 1,>5100  *Q
+   jeq exit
        b @mdlbrt
 exit:
        clr 0
@@ -592,6 +610,9 @@ vmx data imx
 x0  data ix0
 niter data initer
 
+benchmark data 0
+bcount data 0
+
 space  data >202e   *space,dot
        byte 1      *home cursor
 
@@ -603,7 +624,7 @@ msg     text "****************************"
         byte 13,10
         text "*        generator         *"
         byte 13,10
-        text "*     interlaced, v1       *"
+        text "*     interlaced, v2       *"
         byte 13,10
         text "****************************"
         byte 13,10
@@ -615,11 +636,13 @@ msg     text "****************************"
         byte 13,10
         text "This Geneve 9650 port was"
         byte 13,10
-        text "created by Litwr, 2022."
+        text "created by Litwr, 2022-23."
         byte 13,10
         text "The T-key gives us timings."
         byte 13,10
         text "Use the Q-key to quit"
+        byte 13,10
+        text "Press B to enter benchmark mode"
         byte 0
 
 sqrbase equ msg + >16b0

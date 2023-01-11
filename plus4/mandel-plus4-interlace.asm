@@ -111,7 +111,7 @@ irqe2  pha      ;@202
 irqe3  pha    ;@206
        LDA #$EC
        STA $FF1D  ;236
-       JSR comm1  
+       JSR comm1
        INC $FF09
        LDA #$A0    ;$800
        STA $FF14
@@ -132,16 +132,18 @@ irqe3  pha    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V6I *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V7I *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
        byte "mASLOVSKI.",13
        byte "tHIS cOMMODORE+4 PORT WAS CREATED BY",13,0
        JSR JPRIMM
-       byte "LITWR, 2021-22.",13
-       byte "tHE t-KEY GIVES US TIMINGS",0
+       byte "LITWR, 2021-23.",13
+       byte "tHE t-KEY GIVES US TIMINGS",13
+       byte 'pRESS b TO ENTER BENCHMARK MODE',0
        JSR getkey
+       stx benchmark
 
        LDA #$55
        LDY #0
@@ -356,7 +358,10 @@ mandel0:
 mandel:
     ldx #0
     stx tmp
- 
+
+    ldx #16
+    stx bcount
+
     sei
     lda $a5  ;timer
     sta ti
@@ -365,7 +370,7 @@ mandel:
     lda $a3
     sta ti+2
     cli
-
+mandel1:
     lda #$20
     sta .m1hi
     lda #$60
@@ -673,6 +678,14 @@ r4hi = * + 1
 
     inc	.niter
    endif
+    ldx benchmark
+    cpx #$f0
+    bne .loc3
+
+    dec bcount
+    beq .loc3
+    jmp mandel1
+.loc3:
     sei
     sec
     lda $a5
@@ -685,11 +698,16 @@ r4hi = * + 1
     sbc ti+2
     sta ti+2
     cli
+
+    ldx benchmark
+    cpx #$f0
+    beq .loc6
+
     jsr getkey
     cpx #$c0  ;T-key?
-    beq *+5
+    beq .loc6
     jmp .mandel
-
+.loc6:
     lda .niter
     sec
     sbc #7
@@ -769,6 +787,9 @@ pat1   byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1
 pat2   byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
    endif
 ti     byte 0,0,0
+
+benchmark byte 0
+bcount byte 0
 
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
@@ -923,7 +944,7 @@ t4 = r1+1
          inc .m2+1
          bne *+5
          inc .m2+2
-         
+
          ldy t4
          iny
          tya

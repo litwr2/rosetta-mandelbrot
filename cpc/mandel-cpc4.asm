@@ -35,6 +35,8 @@ char:
     jr char
 
 ni: call KM_WAIT_CHAR
+    and 0dfh
+    ld (benchmark),a
     call setvmode
     ld hl,sqrbase
     push hl
@@ -81,9 +83,12 @@ r4l:
 mandel0: 
     pop hl
 mandel:
+    ld a,16
+    ld (bcount),a
     call KL_TIME_PLEASE
     ld (ti),hl
     ld (ti+2),de
+mandel1:
     ld ixl,2
     ld hl,$4040  ;scrtop
     push hl
@@ -272,6 +277,14 @@ dx2p equ $+1
 
 lx2:pop hl
 endif
+    ld a,(benchmark)
+    cp 'B'
+    jr nz,loc3
+
+    ld hl,bcount
+    dec (hl)
+    jp nz,mandel1
+loc3:
     call KL_TIME_PLEASE
     xor a
     ld bc,(ti)
@@ -281,6 +294,10 @@ endif
     ld bc,(ti+2)
     sbc hl,bc
     ld (ti+2),hl
+    ld a,(benchmark)
+    cp 'B'
+    jr z,loc4
+
     call KM_WAIT_CHAR
     and 0dfh
     cp 'Q'
@@ -288,7 +305,7 @@ endif
     rst 0
 noq:cp 'T'
     jp nz,mandel
-
+loc4:
     ld a,30  ;home cursor
     call TXT_OUTPUT
     ld a,(niter)
@@ -459,29 +476,30 @@ jr nz,writeCRTCloop
 ret
 
 inithvideocfg
-db &1,32,&2,42
+db 1,32,2,42
 initvvideocfg
-db &6,32,&7,35,&c,16,&d,0
+db 6,32,7,35,&c,16,&d,0
 
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
+dx  	dw idx
+dy	    dw idy
+mx      dw imx
   if (dx and $ff00) != ((mx+2) and $ff00)
 ERROR ERROR2
   endif
         org ($ + 15)&$fff0
-pat0:	db 0, 0x8, 0x80, 0x88, 0xc4, 0xc, 0xc0, 0xcc
-pat1:	db 0, 0x4, 0x40, 0x44, 0x4, 0xc, 0xc0, 0xcc
+pat0	db 0, 0x8, 0x80, 0x88, 0xc4, 0xc, 0xc0, 0xcc
+pat1	db 0, 0x4, 0x40, 0x44, 0x4, 0xc, 0xc0, 0xcc
 ; 0 - black, 1 - blue-black, 2 - green-black, 3 - red-black, 14 - green-red, 5 - blue, 10 - green, 15 - red
 ; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
 
-ti:     dw 0,0
+ti     dw 0,0
 
-
+benchmark db 0
+bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v7    *",13,10
+        db "*     4 colors + textures, v8    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
@@ -489,6 +507,7 @@ msg     db "**********************************",13,10
         db "This Amstrad CPC port was created by",13,10
         db "Litwr, 2021-23.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit",0
+        db "Use the Q-key to quit",13,10
+        db "Press B to enter benchmark mode",0
    end start
 

@@ -47,6 +47,8 @@ start:
          trap #1
          addq.l #6,sp
          bsr getchar
+    andi.b #$df,d0
+    move.b d0,benchmark(a3)
 
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
@@ -91,12 +93,14 @@ mandel0:
     trap #14
     adda #22,sp
 mandel:
+    move.b #16,bcount(a3)
          clr.l -(sp)
 	     move #32,-(sp)    ;super
 	     trap #1
 	     addq.l #6,sp
 	     move.l d0,ssp(a3)
     move.l timer,time(a3)
+mandel1:
     movea #$800,a1
     moveq #-2,d6   ;-2=$fe
     movea.l screenbase(pc),a5
@@ -205,12 +209,21 @@ loc4:
 	dbra d0,loc4          ;sob	r0, 4$
   endif
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
+    lea benchmark(pc),a5
+    cmpi.b #'B',(a5)+
+    bne.s loc3
 
+    subq.b #1,(a5)
+    bne mandel1
+loc3:
     move.l timer,d6
          move.l	ssp(pc),-(sp)
          move.w	#32,-(sp)     ;super
 	     trap #1
 	     addq.l #6,sp
+    cmpi.b #'B',-(a5)
+    beq.s loc5
+
     bsr getchar
     andi.b #$df,d0
     cmpi.b #"Q",d0
@@ -218,7 +231,7 @@ loc4:
 
     cmpi.b #"T",d0
     bne mandel
-
+loc5:
          move #27,-(sp)  ;ESC+H = home cursor
          move #2,-(sp)    ;conout
          trap #1
@@ -335,15 +348,18 @@ palette
 
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v1         *",13,10
+        dc.b "  *          16 colors, v2         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
         dc.b "This Atari ST port was created by Litwr, 2023.",13,10
         dc.b "The T-key gives us timings.",13,10
         dc.b "Use the Q-key to quit.",13,10
-        dc.b "Press a "
-string  dc.b "key",0
+        dc.b "Press B to enter benchmark m"
+string  dc.b "ode",0
+
+benchmark dc.b 0
+bcount ds.b 1
 
         align 1
 sqr0

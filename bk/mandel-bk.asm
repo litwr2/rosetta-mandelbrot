@@ -13,14 +13,10 @@ NOCALC = 0
 	.asect
 	.=1000
 .if ne NOCALC
-.rept 27.
+.rept 25.
     nop
 .endr
 .endc
-    mov #msg,r1
-    clr r2
-    emt ^O20
-    clr @#timerport1
     call @#init
 ;************************************************************
 ; Fixpoint squares up to approx. 8.0^2, 11 significant bits
@@ -31,7 +27,7 @@ NOCALC = 0
 r6	=	%6
 sqr	=	20000		; table base
 ;************************************************************
-	clr	r0		; 7 lower bits in high byte
+	;clr	r0		; 7 lower bits in high byte
 	clr	r1		; higher 11+1 bits
 	clr	r2		; operand-index
 	mov	#sqr, r4	; for lower half-table
@@ -62,6 +58,10 @@ sf4	=	664/4		; sf/4
 ;************************************************************
 mdlbrt:
     mov #^B1110010,@#timerport3    ;sets timer, /64
+    movb #16.,@#bcount
+    clr @#timelo
+    clr @#timehi
+mdlbrt1:
     mov @#timerport2,@#time
 
 	mov	#100000, r0	; last screen address
@@ -154,11 +154,20 @@ patt1	=	.+2
 	inc	@#nitera	; increase the iteration count
 .endc
     sub @#timerport2,@#time
+    add @#time,@#timelo
+    adc @#timehi
+    cmpb #"B",@#benchmark
+    bne 6$
+
+    decb @#bcount
+    bne mdlbrt1
+    br 5$
+6$:
     emt 6
     bic #^B1111111100100000,r0
     cmpb #"T",r0
     bne mdlbrt
-
+5$:
     mov #18.,r0    ;home cursor
     emt ^O16
     ;mov #155.,r0    ;32/64 screen
@@ -173,14 +182,15 @@ patt1	=	.+2
     call @#pr1
     mov #" ",r0    ;clear screen
     emt ^O16
-         mov @#time,r2
-         clr r3
+         mov @#timelo,r2
+         mov @#timehi,r3
          asl r2     ;*100
          rol r3
          asl r2
          rol r3
-         add @#time,r2
+         add @#timelo,r2
          adc r3
+         add @#timehi,r3
          mov r3,-(sp)
          mov r2,-(sp)
          asl r2
@@ -204,7 +214,14 @@ ticonst = . + 2
     jmp @#mdlbrt
 
 init:
+    mov #msg,r1
+    clr r2
+    emt ^O20
+    clr @#timerport1
     emt 6
+    bic #^B1111111100100000,r0
+    movb r0,@#benchmark
+
     mov #18.,r0    ;home cursor
     emt ^O16
 
@@ -249,7 +266,8 @@ div32x16s: ;R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
 
      sub r1,r3
      inc r2
-0$:  return
+0$:  clr r0
+     return
 
 printsec:  ;prints R1:R2/100
         clr r4
@@ -299,12 +317,17 @@ pr0:     mov #65535.,r0
 
 ;************************************************************
 time:   .word 0
+timelo: .word 0
+timehi: .word 0
 
 dxa:	.word	dx
 dya:	.word	dy
 mxa:	.word	mx
 pat0:	.byte	0,1,2,3,16,5,12,17
 pat1:	.byte	0,4,10,14,4,5,12,17
+
+bcount: .byte 0
+benchmark: .byte 0
 
 msg:.byte 12., 155.
     .ascii "Superfast Mandelbrot generator, v3"
@@ -319,9 +342,11 @@ msg:.byte 12., 155.
     .byte 10.
     .ascii "additional features that were"
     .byte 10.
-    .ascii "added by Litwr (2021)."
+    .ascii "added by Litwr (2021, 23)."
     .byte 10.
     .ascii "The T-key gives us timings"
+    .byte 10.
+    .ascii "Press B to enter benchmark mode"
     .byte 0
 	.end
 

@@ -12,7 +12,7 @@ J	 BSR.S STARTUP
 
      bsr start
      BSR CLOSEDOWN
-    move.l 4.w,a6  ;??
+    move.l 4.w,a6
     moveq.l #INTB_VERTB,d0
     lea.l VBlankServer(pc),a1
     jsr RemIntServer(a6)
@@ -48,9 +48,12 @@ STARTUP:
          MOVE.L #endmsg-msg,D3
          jsr Write(a6)
          move.l CONHANDLE(a3),d1
-         MOVE.L #msg,D2
+         MOVE.L #data,D2
          MOVE.L #1,D3
          jsr Read(a6)
+         move.b data(pc),d4
+         andi.b #$df,d4
+         move.b d4,benchmark(a3)
          movea.l doslib(a3),a6  ;??
          move.l CONHANDLE(a3),d1
 	     jsr Close(a6)

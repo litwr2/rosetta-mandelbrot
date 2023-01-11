@@ -1,18 +1,17 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
-;256x256 (fullscreen) Mandelbrot for the Corvette,
-;8 colors (color write mode), simulates 16 colors using textures
+;256x256 (fullscreen, 512x256) Mandelbrot for the Corvette,
+;8 colors (color write mode), simulates 16 colors using 2x1 textures
 
 BDOS equ 5
 
 RGBASE2 EQU     0FA00H  ;ROMB1, ODOSA, NDOS, BASIC
 RGBASE3 EQU     0FF00H  ;DOSA, DOSG1
 
-SYSREG  EQU     7FH 
+SYSREG  EQU     7FH
 DOSG1   EQU     3CH
 ODOSA   EQU     1CH
 
@@ -293,6 +292,7 @@ lx2:ld hl,(KL+1)
     and 0dfh
     cp 'Q'
     jp nz,noq
+exit:
     rst 0
 
 noq:cp 'T'
@@ -347,6 +347,10 @@ lt1:ld (de),a
         add hl,hl  ;*2
 	call PR00
     call waitk
+    and 0dfh
+    cp 'Q'
+    jp z,exit
+
     call clscursor
     jp mandel
 
@@ -496,9 +500,9 @@ dataindex dw data
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*       8 colors + textures      *",13,10
-        db "*   fullscreen (512x256) , v3    *",13,10
+        db "*   fullscreen (512x256) , v4    *",13,10
         db "**********************************",13,10
-        db "This Corvette code was created by Litwr, 2022.",13,10
+        db "This Corvette code was created by Litwr, 2022-23.",13,10
         db "It is based on code published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10

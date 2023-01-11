@@ -1,7 +1,6 @@
 ;for vasm assembler, oldstyle syntax
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the BBC Micro, 4 color mode simulates 8 colors using textures
@@ -154,6 +153,9 @@ sqrloop:
     inc r2+1
 	bne	sqrloop
 mandel:
+         lda #16
+         sta bcount
+
          lda #0
          sta tmp
          sta ti
@@ -163,6 +165,7 @@ mandel:
          ldy #>ti
          lda #2
          jsr OSWORD
+mandel1:
     lda #$41
     sta .m1hi
     lda #$7f
@@ -433,15 +436,28 @@ r4hi = * + 1
 
     inc	.niter
   endif
+    ldx benchmark
+    cpx #"B"
+    bne .loc3
+
+    dec bcount
+    beq .loc3
+    jmp mandel1
+.loc3:
          ldx #<ti
          ldy #>ti
          lda #1
          jsr OSWORD
+
+    lda benchmark
+    cmp #"B"
+    beq .loc9
+
     jsr OSRDCH
     and #$df
     cmp #"Q"
     bne .noq
-
+.exit:
    lda #22
    jsr OSWRCH
    lda #7     ;mode 7
@@ -450,7 +466,7 @@ r4hi = * + 1
     cmp #"T"
     beq *+5
     jmp mandel
-
+.loc9:
    lda #31   ;set the cursor position
    jsr OSWRCH
    lda #16    ;x
@@ -508,7 +524,12 @@ r4hi = * + 1
     lda #30  ;hide cursor
     jsr OSWRCH
     jsr OSRDCH
+    and #$df
+    cmp #"Q"
+    beq .exit1
     jmp mandel
+.exit1:
+    jmp .exit
 
 ti byte 0,0,0,0,0
 
@@ -586,17 +607,21 @@ div32x16w        ;dividend+2 < divisor, divisor < $8000
 	;sta dividend+3
 	rts
 
+benchmark byte 0
+bcount byte 0
+
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*    4 colors + textures, v3     *",13
+        byte "*    4 colors + textures, v4     *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13
         byte "Maslovski.",13
         byte "This BBC Micro port was created by",13
-        byte "Litwr, 2021-22.",13
+        byte "Litwr, 2021-23.",13
         byte "The T-key gives us timings.",13
-        byte "Use the Q-key to quit",0
+        byte "Use the Q-key to quit",13
+        byte "Press B to enter benchmark mode",0
 
 init:
    lda #16
@@ -607,17 +632,19 @@ init:
    lda #<msg
    sta r0
    ldy #0
-nchar:
+.nchar:
    lda (r0),y
-   beq msgend
+   beq .msgend
 
    iny
    bne *+4
    inc r0+1
    jsr OSWRCH
-   jmp nchar
-msgend:
+   jmp .nchar
+.msgend:
    jsr OSRDCH
+   and #$df
+   sta benchmark
    lda #>pat1
    sta zpat1+1
    ;lda #>pat2   ;pat1 & pat2 are on the same page

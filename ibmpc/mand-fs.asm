@@ -9,7 +9,6 @@
          use16
          org 100h
 
-NOCALC = 0
 FASTTIMER = 1  ;200Hz instead of 18.21Hz standard
 debug = 0
 
@@ -119,14 +118,11 @@ end if
     mul byte [vdy]
     mov dx,ax
 loop0:
-if NOCALC=0
 	mov bp,[x0]   ;mov	#x0, r4
-end if
 loop1:
     push di
     push bx
 loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
-if NOCALC=0
 	add bp,[vdx] ;add	@#dxa, r4
 	mov cx,[niter] ;mov	#niter, r2	; max iter. count
 	mov si,bp    ;mov	r4, r0
@@ -154,7 +150,6 @@ if NOCALC=0
     dec cl
 	jnz .l1        ;sob	r2, 1$		; to next iteration
 .l2:
-end if
     ;and cl,15
     mov ax,[colorm]
     xchg dx,bx    ;faster than MOV on the 8088

@@ -64,6 +64,8 @@ start:  jsr IOSAVE
 .lg:    bne .m    ;always
 
 .exm:   jsr RDKEY
+        and #$1f
+        sta benchmark
         jsr setmouse
         sei
         ldx #INITMOUSE
@@ -145,10 +147,13 @@ start:  jsr IOSAVE
 	inc r2   ;inc	r2
     bne .sqrloop
 .mandel:
+    lda #16
+    sta bcount
          stz time  ;clear timer
          stz time+2
     lda #$db0   ;$b0 = bcs - start timer
     sta timeirq.sw
+.mandel1:
     lda dy   ;mov	@#dya, r5
 	xba      ;swab	r5
 	lsr      ;asr	r5		; r5 = 128*dy
@@ -332,10 +337,23 @@ r4 = * + 1
     stz .z2+1
     stz .z3+1
     inc	.niter
-    lda #$90   ;bcc  - stop timer
-    sta timeirq.sw
+    lda benchmark
+    cmp #"B"&$1f
+    bne .loc5
+
+    dec bcount
+    beq .loc5
     rep #$20  ;16-bit acc
     a16
+    jmp .mandel1
+.loc5:
+    a8
+    lda #$90   ;bcc  - stop timer
+    sta timeirq.sw
+
+    lda benchmark
+    cmp #"B"&$1f
+    beq .t
 
     sec
     xce
@@ -429,10 +447,15 @@ r4 = * + 1
     rep #$30
     a16
     x16
+    and #$1f
+    cmp #'Q'&$1f
+    bne .log7
+    jmp .irqv
+.log7:
     jmp .mandel
 
-       x16
-       a16 
+       ;x16
+       ;a16 
 div32x16m:       ;dividend+2 < divisor
         lda dividend+2
         clc
@@ -571,6 +594,9 @@ pr000: ;prints C = B:A
          sta d+2
          bcs .prn   ;always
 
+benchmark word 0
+bcount word 0
+
 pal: word 0     ;0 black  RGB
      word $fff  ;1 white
      word $f00  ;2 red
@@ -604,13 +630,14 @@ digifont db $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
 time    byte 0,0,0,0
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*              v1                *",13
+        byte "*              v2                *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13
         byte "Maslovski.",13
         byte "This Apple IIgs port was created by",13
-        byte "Litwr, 2022.",13
+        byte "Litwr, 2022-23.",13
         byte "The T-key gives us timings.",13
-        byte "Use the Q-key to quit",0
+        byte "Use the Q-key to quit",13
+        byte "Press B to enter benchmark mode",0
 

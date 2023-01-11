@@ -415,6 +415,9 @@ oddli:
        bl @PR00
 
        bl @getkey
+   andi 1,>5f00
+   ci 1,>5100  *Q
+   jeq exit
        b @mdlbrt
 exit:
        clr 0
@@ -577,13 +580,13 @@ msg     text "****************************"
         byte 13,10
         text "*   fullscreen generator   *"
         byte 13,10
-        text "* interlaced, 512x424, v1  *"
+        text "* interlaced, 512x424, v2  *"
         byte 13,10
         text "****************************"
         byte 13,10
         text "This Geneve 9640 code was"
         byte 13,10
-        text "created by Litwr, 2022. It"
+        text "created by Litwr, 2022-23. It"
         byte 13,10
         text "is based on code published"
         byte 13,10

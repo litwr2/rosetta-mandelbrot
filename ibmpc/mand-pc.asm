@@ -1,7 +1,6 @@
 ;for fasm assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the IBM PC (only the 8086 code), EGA (write mode 0), 16 color mode
@@ -26,7 +25,9 @@ start:
     int 21h
     xor ah,ah
     int 16h   ;wait a kbd event
-
+    and al,0dfh
+    mov [benchmark],al
+    
     ;mov ax,3  ;for debug
     mov ax,10h
     int 10h    ;640x350 4 colors
@@ -80,6 +81,7 @@ fillsqr:
 	jmp fillsqr ;br	fsqr
 mandel:
     mov sp,0x804
+    mov [bcount],16
     xor ax,ax
 if FASTTIMER
          mov [time],ax
@@ -89,6 +91,7 @@ else
          ;mov [time+2],cx
          mov [time],dx
 end if
+mandel1:
     mov ax,0a000h
     mov es,ax
     mov di,80*255+16+160  ;80*255+16 - bottom for top left, 160 is a +2 shift down 
@@ -134,8 +137,6 @@ if NOCALC=0
 .l2:
 end if
     ;and cl,15
-    ;mov bx,cx
-    ;mov al,[pat+bx]
     mov al,cl
     mov si,[tcolor1]
     shr al,1
@@ -224,7 +225,12 @@ if NOCALC=0
 
 	inc byte [niter]     ;inc	@#nitera	; increase the iteration count
 end if
-l0:
+    cmp [benchmark],'B'
+    jnz .l5
+
+    dec [bcount]
+    jnz mandel1
+.l5:
 if FASTTIMER
          ;cli
          mov dx,[time]
@@ -250,6 +256,9 @@ else
          inc ax
 .ft1:    mov dx,ax
 end if
+    cmp [benchmark],'B'
+    jz .showtime
+
     xor ah,ah
     int 16h   ;wait a kbd event
     and al,0dfh
@@ -369,16 +378,18 @@ tcolor2: dw 0
 tcolor3: dw 0
 tcolor4: dw $8000
 time dw 0 ;,0
+benchmark db 0
+bcount db 0
 
     align 2
-pe:
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *        EGA 16 colors, v4       *",13,10
+        db "  *        EGA 16 colors, v5       *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav Maslovski.",13,10
         db "This IBM PC EGA port was created by Litwr, 2021-23.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit$"
+        db "Use the Q-key to quit",13,10
+        db "Press B to enter benchmark mode$"
 

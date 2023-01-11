@@ -161,7 +161,7 @@ start:  jsr IOSAVE
 .l7:stx dataindex
     rep #$20
     a16
-    
+
          stz time  ;clear timer
          stz time+2
     lda #$db0   ;$b0 = bcs - start timer
@@ -307,8 +307,8 @@ r4 = * + 1
     inc	iter
     lda #$90   ;bcc  - stop timer
     sta timeirq.sw
-    rep #$20  ;16-bit acc
-    a16
+    ;rep #$20  ;16-bit acc
+    ;a16
 
     sec
     xce
@@ -400,10 +400,15 @@ r4 = * + 1
     rep #$30
     a16
     x16
+    and #$1f
+    cmp #"Q"&$1f
+    bne .loc7
+    jmp .irqv
+.loc7:
     jmp .mandel
 
        x16
-       a16 
+       a16
 div32x16m:       ;dividend+2 < divisor
         lda dividend+2
         clc
@@ -601,7 +606,7 @@ time    byte 0,0,0,0
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
         byte "* Fullscreen, 320x200, 16 colors *",13
-        byte "*              v1                *",13
+        byte "*              v2                *",13
         byte "**********************************",13
         byte "This code for the Apple IIgs was",13
         byte "created by Litwr in 2022. It is based",13

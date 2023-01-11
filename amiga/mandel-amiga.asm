@@ -135,7 +135,9 @@ fillsqr:
 mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
 mandel:
+    move.b #16,bcount(a3)
     clr.l time(a3)
+mandel1:
     moveq #-2,d6   ;-2=$fe
     move #$800,a2
     movea.w #16,a5	;screen top
@@ -288,7 +290,16 @@ loc4:
 
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
   endif
+    cmpi.b #"B",benchmark(a3)
+    bne.s loc5
+
+    subi.b #1,bcount(a3)
+    bne mandel1
+loc5:
     move.l time(a3),d5
+    cmpi.b #"B",benchmark(a3)
+    beq.s loc6
+
     bsr getkey
     andi.b #$df,d0
     cmpi.b #"Q",d0
@@ -297,7 +308,7 @@ loc4:
 noquit:
     cmpi.b #"T",d0
     bne mandel
-
+loc6:
     lsl.l d5
     move niter(a3),d0
     subq #7,d0
@@ -466,18 +477,21 @@ WINDOW_HANDLE:	DC.L	0
 time dc.l 0
 fmt     dc.b "%d %02d",0   ;even number of bytes
 CONHANDLE   DC.L 0
+benchmark ds.b 1
+bcount ds.b 1
 CONWINDOW	DC.B	'CON:10/10/400/100/Superfast Mandelbrot',0
 data = CONWINDOW
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v6         *",13,10
+        dc.b "  *          16 colors, v7         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
         dc.b "This Amiga port was created by Litwr, 2021-23.",13,10
         dc.b "The T-key gives us timings.",13,10
         dc.b "Use the Q-key to quit.",13,10
-        dc.b "Press Enter now"
+        dc.b "Press Enter to use standard mode",13,10
+        dc.b "Press B and then Enter to use benchmark mode"
 endmsg
          align 1
 t1:

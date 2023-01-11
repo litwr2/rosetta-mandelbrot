@@ -1,7 +1,6 @@
 ;for pasmo assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the Corvette, 8 colors (color write mode), simulates 16 colors using textures
@@ -42,6 +41,8 @@ start
     ld c,9
     call BDOS
     call waitk
+    and 0dfh
+    ld (benchmark),a
     ld de,curoff
     ld c,9
     call BDOS
@@ -95,11 +96,14 @@ r4l:
 mandel0: 
     pop hl
 mandel:
+    ld a,16
+    ld (bcount),a
     ld hl,0
     ld (tilo),hl
     ld (tihi),hl
     ld hl,KINTR
     ld (0xf7f1),hl   ;start timer
+mandel1:
     ld hl,$401f  ;scrtop
     push hl
     ld hl,(dy)
@@ -319,17 +323,29 @@ dx2p equ $+1
 
 lx2:pop hl
 endif
+    ld a,(benchmark)
+    cp 'B'
+    jp nz,loc3
+
+    ld hl,bcount
+    dec (hl)
+    jp nz,mandel1
+loc3:
     ld hl,(KL+1)
     ld (0xf7f1),hl   ;stop timer
+    cp 'B'
+    jp z,loc4
+
     call waitk
     and 0dfh
     cp 'Q'
     jp nz,noq
+exit:
     rst 0
 
 noq:cp 'T'
     jp nz,mandel
-
+loc4:
     ld a,(niter)
     sub 7
     ld l,a
@@ -353,6 +369,10 @@ noq:cp 'T'
         add hl,hl  ;*2
 	call PR00
     call waitk
+    and 0dfh
+    cp 'Q'
+    jp z,exit
+
     call clscursor
     jp mandel
 
@@ -379,6 +399,18 @@ t1
      inc e
 t2
 endm
+
+             ;0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15
+pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
+        db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
+             ;B,  bB,   r,  gB,   g,  rB,  mB,   w,  yB,  yg,   b,   c,  wB,   m,  cB,   y   
+pat1:	db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
+        db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
+                                                              
+  if (pat0 and $ff00) != ((pat0+64) and $ff00)
+ERROR ERROR
+  endif
+
 
 div32x16r proc
      local t,t0,t1,t2,t3
@@ -457,16 +489,8 @@ mx:     dw imx
 ERROR2 ERROR2
   endif
 
-             ;0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15
-pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
-        db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
-             ;B,  bB,   r,  gB,   g,  rB,  mB,   w,  yB,  yg,   b,   c,  wB,   m,  cB,   y   
-pat1:	db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
-        db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
-                                                              
-  if (pat0 and $ff00) != ((pat0+64) and $ff00)
-ERROR ERROR
-  endif
+benchmark db 0
+bcount db 0
 
 waitk:
     ld c,6  ;direct console i/o
@@ -483,23 +507,25 @@ clscursor:
     ld de,curpos
     ld c,9
     jp BDOS
-
 curoff db 27,";$"
 ;curon  db 27,":$"
 ;curpos db 27,"Y",33,65,"$"
 curpos db 1,33,65,"$"
 
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     8 colors + textures, v2    *",13,10
+        db "*     8 colors + textures, v3    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Corvette port was created by",13,10
-        db "Litwr, 2022.",13,10
+        db "Litwr, 2022-23.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit$"
+        db "Use the Q-key to quit.",13,10
+        db "Press B to enter benchmark mode$"
+
 sqrbase equ (msg + $16b0 + $ff) and $ff00
    end start
 

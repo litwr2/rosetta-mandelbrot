@@ -42,7 +42,8 @@ start
     ld c,9
     call BDOS
     call wait_char
-
+         and 0dfh
+         ld (benchmark),a
     ld hl,sqrbase
     push hl
     ld bc,0
@@ -90,12 +91,14 @@ mandel0:
 	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
 	LD	(intr_save + 1),hl
 mandel:
+    ld a,16
+    ld (bcount),a
 	LD	HL,timer_intr
 	LD	(INTR_VECTOR + 1),HL
     ld hl,0
     ld (time),hl
     ld (time+2),hl
-
+mandel1:
     ld hl,0     ;scrtop, y*2
     push hl
     ld hl,(dy)
@@ -406,8 +409,20 @@ dx2p equ $+1
 
 lx2:pop hl
 endif
+    ld a,(benchmark)
+    cp 'B'
+    jr nz,loc3
+
+    ld hl,bcount
+    dec (hl)
+    jp nz,mandel1
+loc3:
     LD	hl,(intr_save + 1)
 	LD	(INTR_VECTOR + 1),HL
+    ;ld a,(benchmark)
+    cp 'B'
+    jr z,loc4
+
     call wait_char
     and 0dfh
     cp 'Q'
@@ -415,7 +430,7 @@ endif
     rst 0
 noq:cp 'T'
     jp nz,mandel
-
+loc4:
     ld de,home  ;home cursor
     ld c,9
     call BDOS
@@ -580,9 +595,12 @@ mx:     dw imx
 ERROR ERROR2
   endif
 
+benchmark db 0
+bcount db 0
+
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         4x1 textures, v1       *",13,10
+        db "*         4x1 textures, v2       *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
@@ -590,5 +608,6 @@ msg     db "**********************************",13,10
         db "This Amstrad PCW port was created by",13,10
         db "Litwr, 2022-23.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit$"
+        db "Use the Q-key to quit",13,10
+        db "Press B to enter benchmark mode$"
    end start
