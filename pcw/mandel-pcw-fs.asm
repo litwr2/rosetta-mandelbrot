@@ -81,6 +81,9 @@ mandel0:
     pop hl
 	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
 	LD	(intr_save + 1),hl
+    ld de,cursoroff
+    ld c,9
+    call BDOS
 mandel:
     ld a,(dataindex)
     ld l,a
@@ -394,9 +397,9 @@ lx2 ld (dataindex),a
     call wait_char
     and 0dfh
     cp 'Q'
-    jr nz,noq
-    rst 0
-noq:cp 'T'
+    jr z,exit
+
+    cp 'T'
     jp nz,mandel
 
     ld de,home  ;home cursor
@@ -446,6 +449,10 @@ noq:cp 'T'
     and 0dfh
     cp 'Q'
     jp nz,mandel
+exit:
+    ld de,cursoron
+    ld c,9
+    call BDOS
     rst 0
 
 div0 macro
@@ -548,6 +555,8 @@ intr_save
 
 time dw 0,0
 home db 27,"H$"
+cursoroff db 27,"f$"
+cursoron db 27,"e",27,"E$"
 
 mentry macro dx,dy,ni
      db -dx, dy
@@ -574,7 +583,7 @@ data  ;     dx, dy, x0, niter - to convert to real values divide by 512
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     720x256, 2 colors, v1      *",13,10
+        db "*     720x256, 2 colors, v2      *",13,10
         db "**********************************",13,10
         db "This Amstrad PCW code was created by",13,10
         db "Litwr in 2023. It is based on code",13,10

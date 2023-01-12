@@ -90,6 +90,9 @@ mandel0:
     pop hl
 	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
 	LD	(intr_save + 1),hl
+    ld de,cursoroff
+    ld c,9
+    call BDOS
 mandel:
     ld a,16
     ld (bcount),a
@@ -426,9 +429,9 @@ loc3:
     call wait_char
     and 0dfh
     cp 'Q'
-    jr nz,noq
-    rst 0
-noq:cp 'T'
+    jr z,exit
+
+    cp 'T'
     jp nz,mandel
 loc4:
     ld de,home  ;home cursor
@@ -479,6 +482,10 @@ loc4:
     and 0dfh
     cp 'Q'
     jp nz,mandel
+exit:
+    ld de,cursoron
+    ld c,9
+    call BDOS
     rst 0
 
 div0 macro
@@ -580,6 +587,8 @@ intr_save
       jp 0
 
 home db 27,"H$"
+cursoroff db 27,"f$"
+cursoron db 27,"e",27,"E$"
 
         org ($ + 15)&$fff0
 ;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
@@ -600,7 +609,7 @@ bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         4x1 textures, v2       *",13,10
+        db "*         4x1 textures, v3       *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
