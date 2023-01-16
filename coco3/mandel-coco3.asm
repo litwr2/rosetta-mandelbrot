@@ -101,6 +101,7 @@ x0 equ *+1
   endif
 loop2
   if NOCALC==0
+    ldx #sqrbase
     ldd r4        ;add @#dxa,r4
     addd <dx
     std r4
@@ -114,16 +115,14 @@ niter equ *+1
     std <r1
 loc1
     ldd <r1        ;mov sqr(r1),r3
-    addd #sqrbase
     andb #$fe
-    tfr d,x
-    ldd ,x  ;??sqrbase,x
+    ldd d,x
     std <r3
+
     tfr y,d        ;mov sqr(r0),r0
-    addd #sqrbase
     andb #$fe
-    tfr d,x
-    ldd ,x
+    ldd d,x
+
     addd <r3       ;add r3,r0
 	cmpa #8       ;cmp r0,r6
     bcc loc2      ;bge loc2
@@ -131,10 +130,8 @@ loc1
     std <t
     tfr y,d       ;add r0,r1
     addd <r1
-    addd #sqrbase ;mov sqr(r1),r1
-    andb #$fe
-    tfr d,x
-    ldd ,x
+    andb #$fe     ;mov sqr(r1),r1
+    ldd d,x
     subd <t       ;sub r0,r1
   endif
 r5 equ *+1
@@ -294,7 +291,7 @@ exit
     jmp mandel
 
 getchr
-    lda #0/256
+    lda #0
     tfr a,dp
     jsr [POLCAT]
     beq getchr
