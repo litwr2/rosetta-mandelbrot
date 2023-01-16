@@ -83,16 +83,15 @@ mandel
     lda #16
     sta <bcount
 mand1
-    ldd #$4000
-    std yindex
-    ldb #$7f
-    std xindex
+    ldy #$4000
+    ldx #$407f
 
 	ldd <dy      ;mov	@#dya, r5
     exg a,b     ;swab	r5
     lsra        ;asr	r5		; r5 = 128*dy
     rorb
     std r5
+    ldu #sqrbase
 loop0
   if NOCALC==0
 x0 equ *+1
@@ -101,7 +100,6 @@ x0 equ *+1
   endif
 loop2
   if NOCALC==0
-    ldx #sqrbase
     ldd r4        ;add @#dxa,r4
     addd <dx
     std r4
@@ -116,12 +114,12 @@ niter equ *+1
 loc1
     ldd <r1        ;mov sqr(r1),r3
     andb #$fe
-    ldd d,x
+    ldd d,u
     std <r3
 
     ldd <r0        ;mov sqr(r0),r0
     andb #$fe
-    ldd d,x
+    ldd d,u
 
     addd <r3       ;add r3,r0
 	cmpa #8       ;cmp r0,r6
@@ -131,7 +129,7 @@ loc1
     ldd <r0       ;add r0,r1
     addd <r1
     andb #$fe     ;mov sqr(r1),r1
-    ldd d,x
+    ldd d,u
     subd <t       ;sub r0,r1
   endif
 r5 equ *+1
@@ -148,10 +146,6 @@ r4 equ *+1
     bne loc1
   endif
 loc2
-xindex equ * + 1
-    ldx #$407f
-yindex equ * + 2
-    ldy #$4000
     lda <r2
     anda #$f
 xtoggle equ * + 1
@@ -165,18 +159,13 @@ xtoggle equ * + 1
     asla
     sta ,y   ;left
     leax 128,x
-    stx xindex
-    tfr y,d
-    addd #128
-    std yindex
-    cmpa #$80
-    lbne loop2
+    leay 128,y
+    cmpx #$8000
+    lbcs loop2
 
-    sta xtoggle
-    suba #$40
-    std yindex
+    inc xtoggle  ;??
+    leay -$4000,y
     leax -$4000,x
-    stx xindex
     bra lr
 loc8
     ora ,y
@@ -189,17 +178,12 @@ loc8
     ROLa
     sta ,x
     leay 128,y
-    sty yindex
-    tfr x,d
-    addd #128
-    std xindex
-    cmpa #$80
-    lbne loop2
+    leax 128,x
+    cmpy #$8000
+    lbcs loop2
 
-    subd #$4001
-    std xindex
+    leax -$4001,x
     leay -$3fff,y
-    sty yindex
     clr xtoggle
 lr
     ldd r5
