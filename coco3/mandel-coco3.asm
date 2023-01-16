@@ -20,6 +20,7 @@ sf4	equ	436/4		; sf/4
 sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
          org $b00
+         setdp dpage/256
      ldx #msg
 2    lda ,x+
      beq 1F
@@ -30,7 +31,9 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 1    jsr [POLCAT]
      beq 1B
 
-     sta benchmark
+     ldb #dpage/256
+     tfr b,dp
+     sta <benchmark
      sta $ffd9   ;high speed
      ;orcc #$50  ;stop interrupts
 
@@ -47,8 +50,8 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      ;;sta $ff9f   ;hor offset
 
    	ldd #0
-	std r0	;clr r0; 7 lower bits in high byte
-	std r1   	;clr r1; higher 11+1 bits
+	std <r0	;clr r0; 7 lower bits in high byte
+	std <r1   	;clr r1; higher 11+1 bits
 	tfr d,u		;clr r2; operand-index
 	ldx #sqrbase	;mov	#sqr, r4; for lower half-table
 	tfr x,y		;mov	r4, r5; for upper half-table
@@ -59,14 +62,14 @@ fillsqr
     aslb
     rola
     exg a,b     ;swab r2  ; LLLLLL00 00HHHHHH
-    stb r3+1    ;movb	r2, r3		; 00000000 00HHHHHH
-    clr r3
-	addd r0     ;add	r2, r0		; add up lower bits
-    std r0
-	ldd r3      ;adc	r1		; add carry to r1
-	adcb r1+1   ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
-    adca r1
-    std r1
+    stb <r3+1    ;movb	r2, r3		; 00000000 00HHHHHH
+    clr <r3
+	addd <r0     ;add	r2, r0		; add up lower bits
+    std <r0
+	ldd <r3      ;adc	r1		; add carry to r1
+	adcb <r1+1   ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+    adca <r1
+    std <r1
     std ,--x    ;mov	r1, -(r4)	; to lower half tbl
     bcs mandel  ;bcs mdlbrt
 
@@ -76,16 +79,16 @@ fillsqr
 mandel
     ldd #0
     std STIMER
-    std timer
+    std <timer
     lda #16
-    sta bcount
+    sta <bcount
 mand1
     ldd #$4000
     std yindex
     ldb #$7f
     std xindex
 
-	ldd dy      ;mov	@#dya, r5
+	ldd <dy      ;mov	@#dya, r5
     exg a,b     ;swab	r5
     lsra        ;asr	r5		; r5 = 128*dy
     rorb
@@ -97,56 +100,54 @@ x0 equ *+1
     std r4
   endif
 loop2
-;    mov r1, -(r6)
-;	mov	r3, -(r6)	; push mask on stack
   if NOCALC==0
     ldd r4        ;add @#dxa,r4
-    addd dx
+    addd <dx
     std r4
-    tfr d,y           ;mov r4,r0  ;direct is faster!! - std >r0 on the 6809
+    tfr d,y           ;mov r4,r0  ;direct is faster!! - std <r0 on the 6809
   endif
 niter equ *+1
     lda #initer
   if NOCALC==0
-    sta r2        ;mov #initer,r2
+    sta <r2        ;mov #initer,r2
     ldd r5        ;mov r5,r1
-    std r1
+    std <r1
 loc1
-    ldd r1        ;mov sqr(r1),r3
+    ldd <r1        ;mov sqr(r1),r3
     addd #sqrbase
     andb #$fe
     tfr d,x
     ldd ,x  ;??sqrbase,x
-    std r3
+    std <r3
     tfr y,d        ;mov sqr(r0),r0
     addd #sqrbase
     andb #$fe
     tfr d,x
     ldd ,x
-    addd r3       ;add r3,r0
+    addd <r3       ;add r3,r0
 	cmpa #8       ;cmp r0,r6
     bcc loc2      ;bge loc2
 
-    std t
+    std <t
     tfr y,d       ;add r0,r1
-    addd r1
+    addd <r1
     addd #sqrbase ;mov sqr(r1),r1
     andb #$fe
     tfr d,x
     ldd ,x
-    subd t       ;sub r0,r1
+    subd <t       ;sub r0,r1
   endif
 r5 equ *+1
     addd #0      ;add r5,r1
   if NOCALC==0
-    std r1
-    ldd t        ;sub r3,r0
-    subd r3
-    subd r3       ;sub r3,r0
+    std <r1
+    ldd <t        ;sub r3,r0
+    subd <r3
+    subd <r3       ;sub r3,r0
 r4 equ *+1
     addd #0      ;add r4,r0
     tfr d,y
-    dec r2       ;sob r2,1$
+    dec <r2       ;sob r2,1$
     bne loc1
   endif
 loc2
@@ -154,7 +155,7 @@ xindex equ * + 1
     ldx #$407f
 yindex equ * + 2
     ldy #$4000
-    lda r2
+    lda <r2
     anda #$f
 xtoggle equ * + 1
     ldb #0
@@ -205,13 +206,13 @@ loc8
     clr xtoggle
 lr
     ldd r5
-    subd dy
+    subd <dy
     std r5   ;sub	@#dya, r5
 	lbne loop0
 
   if NOCALC==0
     ldd x0
-    addd mx
+    addd <mx
     std x0     ;add	@#mxa, @#x0a
     ldx #6
 loc4
@@ -232,23 +233,21 @@ loc4
     bne loc4  ;sob	r0, 4$
   endif
     inc	niter
-    lda benchmark
+    lda <benchmark
     cmpa #"B"
     bne 1F
 
-    dec bcount
+    dec <bcount
     lbne mand1
 
 1   ldd STIMER
-    addd timer
-    std timer
-    lda benchmark
+    addd <timer
+    std <timer
+    lda <benchmark
     cmpa #"B"
     beq 2F
 
-1   jsr [POLCAT]
-    beq 1B
-
+    jsr getchr
     cmpa #"T"
     beq 2F
 
@@ -259,66 +258,74 @@ exit
     sta $ff90
     sta $71    ;restart basic
     jmp $8c1b
+
 2   clra
-    sta xpos+1
+    sta <xpos+1
     ldb niter
     subb #7
     jsr pr000
     ldy #10*8   ;space
     jsr outdigi
 
-    ldd timer
-    std dividend
+    ldd <timer
+    std <dividend
     ldd #60
     jsr div16x16w
-    std divisor   ;remainder
-    ldd dividend
+    std <divisor   ;remainder
+    ldd <dividend
     jsr pr000
     ldy #11*8   ;dot
     jsr outdigi
     lda divisor+1
     ldb #50
     mul
-         std dividend
+         std <dividend
          ldd #3
          jsr div16x16w
          cmpb #2
-         ldd dividend
+         ldd <dividend
          bcs 1F
 
          addd #1
 1        jsr pr000
-
-1   jsr [POLCAT]
-    beq 1B
-
+    jsr getchr
     cmpa #"Q"
     beq exit
     jmp mandel
 
+getchr
+    lda #0/256
+    tfr a,dp
+    jsr [POLCAT]
+    beq getchr
+
+    ldb #dpage/256
+    tfr b,dp
+    rts
+
 outdigi   ;xpos,Y-char(0..11)*8
-         ldx xpos
+         ldx <xpos
 3        lda digifont,y
          pshs y
-         sta r1
+         sta <r1
          lda #4
-         sta r2
+         sta <r2
 6        lda #2
-         sta r3
+         sta <r3
 4        ldy #4
 1        lda #$80
-         adda r1
+         adda <r1
          rolb
          leay -1,y
          bne 1B
 
-         asl r1
-         dec r3
+         asl <r1
+         dec <r3
          bne 4B
 
          stb $4000,x
          leax 1,x
-         dec r2
+         dec <r2
          bne 6B
 
          leax 124,x    ;128 - screen width in bytes
@@ -328,20 +335,20 @@ outdigi   ;xpos,Y-char(0..11)*8
          andb #7
          bne 3B
 
-         lda xpos+1
+         lda <xpos+1
          adda #4
-         sta xpos+1
+         sta <xpos+1
          rts
 
 pr000 ;prints D = B:A
-         std ds+2
+         std <ds+2
          ldd #100
-         std ds
+         std <ds
          jsr pr0
          lda #10
-         sta ds+1
+         sta <ds+1
          jsr pr0
-         ldx ds+2
+         ldx <ds+2
 prd      tfr x,d
          aslb
          aslb
@@ -351,38 +358,40 @@ prd      tfr x,d
 
 pr0      ldx #65535
 prn      leax 1,x
-         ldd ds+2
-         cmpd ds
+         ldd <ds+2
+         cmpd <ds
          bcs prd
 
-         subd ds
-         std ds+2
+         subd <ds
+         std <ds+2
          bra prn
 
 div16x16w        ;dividend, dividend < divisor, divisor < $8000
                  ;quotinent = dividend, remainder = D, X = 0
-        std divisor
+        std <divisor
         ldx #16
         ldd #0
-2       asl dividend+1
-        rol dividend
+2       asl <dividend+1
+        rol <dividend
         rolb
 	    rola
-	    cmpd divisor
+	    cmpd <divisor
         bcs 1F
 
-        subd divisor
-	    inc dividend+1
+        subd <divisor
+	    inc <dividend+1
 1       leax -1,x
         bne 2B
 
-        ;std remainder
+        ;std <remainder
         rts
+
+         org $e00
+dpage
 
 dx	fdb	idx
 dy	fdb	idy
 mx	fdb	imx
-
    
 benchmark fcb 0
 bcount fcb 0
