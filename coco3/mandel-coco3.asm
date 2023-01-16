@@ -105,7 +105,7 @@ loop2
     ldd r4        ;add @#dxa,r4
     addd <dx
     std r4
-    tfr d,y           ;mov r4,r0  ;direct is faster!! - std <r0 on the 6809
+    std <r0           ;mov r4,r0
   endif
 niter equ *+1
     lda #initer
@@ -119,7 +119,7 @@ loc1
     ldd d,x
     std <r3
 
-    tfr y,d        ;mov sqr(r0),r0
+    ldd <r0        ;mov sqr(r0),r0
     andb #$fe
     ldd d,x
 
@@ -128,7 +128,7 @@ loc1
     bcc loc2      ;bge loc2
 
     std <t
-    tfr y,d       ;add r0,r1
+    ldd <r0       ;add r0,r1
     addd <r1
     andb #$fe     ;mov sqr(r1),r1
     ldd d,x
@@ -143,7 +143,7 @@ r5 equ *+1
     subd <r3       ;sub r3,r0
 r4 equ *+1
     addd #0      ;add r4,r0
-    tfr d,y
+    std <r0
     dec <r2       ;sob r2,1$
     bne loc1
   endif
