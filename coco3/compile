@@ -1,2 +1,2 @@
 f=${1%%.asm}
-asm6809 -l $f.lst $1 -D -o $f.bin
+asm6809 -3 -l $f.lst $1 -D -o $f.bin

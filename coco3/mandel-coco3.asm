@@ -2,10 +2,12 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;256x128 Mandelbrot for the Tandy CoCo 3 (the 6809 code), 16 colors, rotated
+;256x128 Mandelbrot for the Tandy CoCo 3 (the 6809/6309 code), 16 colors, rotated
 ;on the 256x128 16 colors screen
 
 NOCALC equ 0
+CPU6309 equ 1
+
 CHROUT equ $A002
 POLCAT equ $A000    ;Z=0 and A=key
 STIMER equ $112
@@ -21,6 +23,9 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
          org $b00
          setdp dpage/256
+  if CPU6309==1
+     ldmd #1     ;to native mode
+  endif
      ldx #msg
 2    lda ,x+
      beq 1F
@@ -49,6 +54,14 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      ;;lda #0
      ;;sta $ff9f   ;hor offset
 
+    ldx #$ffb0   ;set palette
+    lda #0
+1   sta ,x+
+    adda #$41
+    cmpx #$ffc0
+    bne 1B
+
+    ldb $
    	ldd #0
 	std <r0	;clr r0; 7 lower bits in high byte
 	std <r1   	;clr r1; higher 11+1 bits
@@ -79,7 +92,7 @@ fillsqr
 mandel
     ldd #0
     std STIMER
-    std <timer
+    std <time
     lda #16
     sta <bcount
 mand1
@@ -222,8 +235,8 @@ loc4
     lbne mand1
 
 1   ldd STIMER
-    addd <timer
-    std <timer
+    addd <time
+    std <time
     lda <benchmark
     cmpa #"B"
     beq 2F
@@ -245,17 +258,20 @@ exit
     ldb niter
     subb #7
     jsr pr000
-    ldy #10*8   ;space
-    jsr outdigi
+;    ldy #11*8   ;space
+;    jsr outdigi
+    lda <xpos+1
+    adda #4
+    sta <xpos+1
 
-    ldd <timer
+    ldd <time
     std <dividend
     ldd #60
     jsr div16x16w
     std <divisor   ;remainder
     ldd <dividend
     jsr pr000
-    ldy #11*8   ;dot
+    ldy #10*8   ;dot
     jsr outdigi
     lda divisor+1
     ldb #50
@@ -367,18 +383,6 @@ div16x16w        ;dividend, dividend < divisor, divisor < $8000
         ;std <remainder
         rts
 
-         org $e00
-dpage
-
-dx	fdb	idx
-dy	fdb	idy
-mx	fdb	imx
-   
-benchmark fcb 0
-bcount fcb 0
-timer fcb 0,0
-xpos fcb 0,0
-
 digifont fcb $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          fcb $18,$18,$38,$18,$18,$18,$7e,0  ;1
          fcb $3c,$66,6,$c,$30,$60,$7e,0     ;2
@@ -389,8 +393,16 @@ digifont fcb $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          fcb $7e,$66,$c,$18,$18,$18,$18,0   ;7
          fcb $3c,$66,$66,$3c,$66,$66,$3c,0  ;8
          fcb $3c,$66,$66,$3e,6,$66,$3c,0   ;9
-         fcb 0,0,0,0,0,0,0,0               ;space
          fcb 0,0,0,0,0,$18,$18,0         ;dot
+         ;fcb 0,0,0,0,0,0,0,0               ;space
+
+         org $e00
+dpage
+
+dx	fdb	idx
+dy	fdb	idy
+mx	fdb	imx
+xpos fdb 0,0   ;the 1st zero matters
 
 msg     fcb "**************************",13
         fcb "*  Superfast Mandelbrot  *",13
@@ -404,14 +416,18 @@ msg     fcb "**************************",13
         fcb "created by Litwr, 2023.",13
         fcb "The T-key gives us timings.",13
         fcb "Use the Q-key to quit.",13
-        fcb "Press B to enter benchmark mode",13,0
+        fcb "Press B to enter benchmark mode",0
 
-r0 equ msg
-r1 equ msg+2
-r3 equ msg+4
+benchmark equ msg
+bcount equ msg+1 
+time equ msg+2
+;xpos equ msg+4
+r0 equ msg+6
+r1 equ msg+8
+r3 equ msg+10
 dividend equ r3
-t equ msg+6
+t equ msg+12
 divisor equ t
-r2 equ msg+8
-ds equ msg+10
+r2 equ msg+14
+ds equ msg+16
 
