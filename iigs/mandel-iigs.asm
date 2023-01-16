@@ -195,10 +195,10 @@ start:  jsr IOSAVE
     lda 0,x       ;mov	sqr(r0), r0
     clc
     adc r3
-    sta t      ;add	r3, r0
     cmp #$800
     bcs .loc2
 
+    sta t      ;add	r3, r0
     tya
     adc r1    ;C=0
     ;sta r1      ;add	r0, r1
@@ -237,18 +237,18 @@ r4 = * + 1
     sep #$20
     a8
     lda r2   ;color index
+    and #15
 .xtoggle = * + 1
     ldy #0
     bne .loc8
 
-    and #15
 .z1:sta $e1207f,x
     asl
     asl
     asl
     asl
 .z0:sta $e12000,x
-    rep #$21  ;16-bit acc
+    rep #$21  ;16-bit acc, C=0
     a16
     txa
     adc #$a0
@@ -263,7 +263,6 @@ r4 = * + 1
 
 .loc8:
     a8
-    and #15
 .z2:ora $e12000,x
 .z3 sta $e12000,x
     ASL      ;Efficient nybble-swap on 6502 by Garth Wilson
@@ -286,7 +285,7 @@ r4 = * + 1
     jmp .mloop2
 .lzz:
     stz .index
-    dec .xtoggle
+    stz .xtoggle
     inc .z0+1
     inc .z2+1
     inc .z3+1
@@ -509,22 +508,19 @@ setmouse:lda $c400+SERVEMOUSE
        x16
        a16
 outdigi:   ;xpos,Y-char(0..11)*8,8/16-bit acc/idx
-t1 = r3
-t2 = r1
-t3 = r2
          sep #$20
          a8
          ldx xpos
 .l3:     lda digifont,y
          phy
-         sta t1
+         sta r1
          lda #4
-         sta t2
+         sta r2
 .l6:     lda #2
-         sta t3
+         sta r3
 .l4:     ldy #4
 .l1:     clc
-         bit t1
+         bit r1
          bpl .l5
 
          sec
@@ -532,19 +528,18 @@ t3 = r2
          dey
          bne .l1
 
-         asl t1
-         dec t3
+         asl r1
+         dec r3
          bne .l4
 
          sta $e12000,x
          inx
-         dec t2
+         dec r2
          bne .l6
 
-         rep #$20
+         rep #$21   ;C=0
          a16
          txa
-         clc
          adc #$a0-4
          tax
          sep #$20
@@ -592,7 +587,7 @@ pr000: ;prints C = B:A
 
          sbc d
          sta d+2
-         bcs .prn   ;always
+         bra .prn
 
 benchmark word 0
 bcount word 0
@@ -630,7 +625,7 @@ digifont db $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
 time    byte 0,0,0,0
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*              v2                *",13
+        byte "*              v3                *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13

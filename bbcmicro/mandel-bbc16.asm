@@ -186,7 +186,7 @@ mandel1:
   endif
 .mloop2:
   if NOCALC=0
-    clc  
+    clc
     lda r4lo
     adc dx
     sta r4lo
@@ -200,7 +200,7 @@ mandel1:
     lda #initer
   if NOCALC=0
     sta r2        ;mov	#niter, r2
-	lda r5lo
+    lda r5lo
     sta r1
     lda r5hi
     sta r1+1      ;mov	r5, r1
@@ -234,11 +234,11 @@ mandel1:
     sta t
     txa
     adc r3+1
-    sta t+1      ;add	r3, r0
 
     cmp #8
     bcs .loc2
 
+    sta t+1      ;add	r3, r0
     lda r0
     adc r1    ;C=0
     tax
@@ -596,7 +596,7 @@ bcount byte 0
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*         16 colors, v4          *",13
+        byte "*         16 colors, v5          *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13

@@ -145,7 +145,7 @@ irqe3  pha    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V7F *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V8F *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
@@ -459,11 +459,10 @@ mandel1:
     sta t
     txa
     adc r3+1
-    sta t+1      ;add	r3, r0
-
     cmp #8
     bcs .loc2
 
+    sta t+1      ;add	r3, r0
     lda r0
     adc r1    ;C=0
     tax

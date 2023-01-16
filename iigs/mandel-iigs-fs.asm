@@ -215,10 +215,10 @@ start:  jsr IOSAVE
     lda 0,x       ;mov	sqr(r0), r0
     clc
     adc r3
-    sta t      ;add	r3, r0
     cmp #$800
     bcs .loc2
 
+    sta t      ;add	r3, r0
     tya
     adc r1    ;C=0
     ;sta r1      ;add	r0, r1
@@ -424,7 +424,7 @@ div32x16m:       ;dividend+2 < divisor
         rol dividend
         sta remainder
         stz dividend+2
-	    rts
+        rts
 
        x8
        a8
@@ -462,22 +462,19 @@ setmouse:lda $c400+SERVEMOUSE
        x16
        a16
 outdigi:   ;xpos,Y-char(0..11)*8,8/16-bit acc/idx
-t1 = r3
-t2 = r1
-t3 = r2
          sep #$20
          a8
          ldx xpos
 .l3:     lda digifont,y
          phy
-         sta t1
+         sta r1
          lda #4
-         sta t2
+         sta r2
 .l6:     lda #2
-         sta t3
+         sta r3
 .l4:     ldy #4
 .l1:     clc
-         bit t1
+         bit r1
          bpl .l5
 
          sec
@@ -485,19 +482,18 @@ t3 = r2
          dey
          bne .l1
 
-         asl t1
-         dec t3
+         asl r1
+         dec r3
          bne .l4
 
          sta $e12000,x
          inx
-         dec t2
+         dec r2
          bne .l6
 
-         rep #$20
+         rep #$21
          a16
          txa
-         clc
          adc #$a0-4
          tax
          sep #$20
@@ -545,7 +541,7 @@ pr000: ;prints C = B:A
 
          sbc d
          sta d+2
-         bcs .prn   ;always
+         bra .prn
 
 pal: word 0     ;0 black  RGB
      word $fff  ;1 white
@@ -606,7 +602,7 @@ time    byte 0,0,0,0
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
         byte "* Fullscreen, 320x200, 16 colors *",13
-        byte "*              v2                *",13
+        byte "*              v3                *",13
         byte "**********************************",13
         byte "This code for the Apple IIgs was",13
         byte "created by Litwr in 2022. It is based",13

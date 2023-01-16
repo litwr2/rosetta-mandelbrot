@@ -294,11 +294,10 @@ mandel:
     sta t
     txa
     adc r3+1
-    sta t+1      ;add	r3, r0
-
     cmp #8
     bcs .loc2
 
+    sta t+1      ;add	r3, r0
     lda r0
     adc r1    ;C=0
     tax

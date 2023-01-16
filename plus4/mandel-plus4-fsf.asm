@@ -135,7 +135,7 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*    gENERATOR V5 160x256 fLASHED    *",13
+       byte "*    gENERATOR V6 160x256 fLASHED    *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
        byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
@@ -411,11 +411,10 @@ mandel:
     sta t
     txa
     adc r3+1
-    sta t+1      ;add	r3, r0
-
     cmp #8
     bcs .loc2
 
+    sta t+1      ;add	r3, r0
     lda r0
     adc r1    ;C=0
     tax
