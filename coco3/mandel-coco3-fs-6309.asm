@@ -2,7 +2,7 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;320x225 Fullscreen Mandelbrot for the Tandy CoCo 3 (the 6809 code), 16 colors
+;320x225 Fullscreen Mandelbrot for the Tandy CoCo 3 (the 6309 code), 16 colors
 
 HSize equ 320
 VSize equ 225
@@ -15,6 +15,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
          org $b00
          setdp dpage/256
+     ldmd #1     ;to native mode
      ldx #msg
 2    lda ,x+
      beq 1F
@@ -62,16 +63,14 @@ fillsqr
 	std ,y++    ;mov r1, (r5)+; to upper half tbl
     leau 1,u    ;inc r2
 	tfr u,d     ;asl r2
-    aslb
-    rola
+    asld
     exg a,b     ;swab r2  ; LLLLLL00 00HHHHHH
     stb <r3+1    ;movb	r2, r3		; 00000000 00HHHHHH
     clr <r3
 	addd <r0     ;add	r2, r0		; add up lower bits
     std <r0
 	ldd <r3      ;adc	r1		; add carry to r1
-	adcb <r1+1   ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
-    adca <r1
+	adcd <r1   ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
     std <r1
     std ,--x    ;mov	r1, -(r4)	; to lower half tbl
     bcs mandel  ;bcs mdlbrt
@@ -137,14 +136,16 @@ niter equ *+1
 loc1
     ldd <r1        ;mov sqr(r1),r3
     andb #$fe
-    ldd d,u
-    std <r3
+    ;ldd d,u
+    ;std <r3
+    ldw d,u
 
     ldd <r0        ;mov sqr(r0),r0
     andb #$fe
     ldd d,u
 
-    addd <r3       ;add r3,r0
+    ;addd <r3
+    addr w,d       ;add r3,r0
 	cmpa #8       ;cmp r0,r6
     bcc loc2      ;bge loc2
 
@@ -158,8 +159,10 @@ r5 equ *+1
     addd #0      ;add r5,r1
     std <r1
     ldd <t        ;sub r3,r0
-    subd <r3
-    subd <r3       ;sub r3,r0
+    ;subd <r3
+    ;subd <r3       ;sub r3,r0
+    subr w,d
+    subr w,d       ;sub r3,r0
 r4 equ *+1
     addd #0      ;add r4,r0
     std <r0
@@ -252,10 +255,10 @@ exit
 irq0 sta $ffde  ;rom
      ;sta >savea
      stx >savex
-     ldx 10,s
+     ldx 12,s
      stx irq2
      ldx #1F
-     stx 10,s
+     stx 12,s
 irq1 equ *+1
      jmp 0
 
