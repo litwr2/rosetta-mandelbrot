@@ -32,7 +32,11 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      ldb #dpage/256
      tfr b,dp
      sta $ffd9   ;high speed
-   orcc #$50  ;stop interrupts
+   
+     ldd $10c+1  ;irq
+     std irq1
+     ldd #irq0
+     std $10c+1
 
      lds #msg+70
 
@@ -249,9 +253,30 @@ exit
     beq exit
     jmp mandel
 
+irq0 sta $ffde  ;rom
+     ;sta >savea
+     stx >savex
+     ldx 10,s
+     stx irq2
+     ldx #1F
+     stx 10,s
+irq1 equ *+1
+     jmp 0
+
+1    pshs cc
+     ldx >savex
+     sta $ffdf  ;ram
+     puls cc
+irq2 equ *+1
+     jmp 0
+
 getchr
+    ldx irq1
+    orcc #$50  ;stop interrupts
     sta $ffde  ;rom
-   andcc #$af  ;allow interrupts
+    stx $10c+1
+    andcc #$af  ;allow interrupts
+
     lda #0
     tfr a,dp
     jsr [POLCAT]
@@ -259,8 +284,12 @@ getchr
 
     ldb #dpage/256
     tfr b,dp
-   orcc #$50  ;stop interrupts
+
+    ldx #irq0
+    orcc #$50  ;stop interrupts
+    stx $10c+1
     sta $ffdf   ;ram
+    andcc #$af  ;allow interrupts
     rts
 
 outdigi   ;xpos,Y-char(0..11)*8
@@ -382,7 +411,7 @@ mdata    ;dx, dy, iterations
 
 dataindex fdb mdata
 
-         org $e00
+         org $f00
 dpage
 
 dx	fdb	-1
@@ -402,9 +431,10 @@ msg     fcb "**************************",13
         fcb "2021 by Stanislav Maslovski.",13
         fcb "The T-key gives us timings.",13
         fcb "Use the Q-key to quit.",0
-xcount equ msg  ;1 byte
+xcount equ msg
+;equ msg+1
 time equ msg+2
-;xpos equ msg+4
+savex equ msg+4
 r0 equ msg+6
 r1 equ msg+8
 r3 equ msg+10
@@ -412,5 +442,5 @@ dividend equ r3
 t equ msg+12
 divisor equ t
 r2 equ msg+14
-ds equ msg+16
+ds equ msg+15
 
