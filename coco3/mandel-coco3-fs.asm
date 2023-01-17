@@ -82,8 +82,8 @@ fillsqr
 mandel
     ldx dataindex
     ldd ,x++
-    sta dx+1
-    stb dy+1
+    sta <dx+1
+    stb <dy+1
     ldd ,x++
     std x0
     lda ,x
@@ -91,7 +91,7 @@ mandel
     inca
     inca
     sta ,x+
-    cmpx #iter
+    cmpx #dataindex
     bne 1F
 
     ldx #mdata
@@ -195,6 +195,7 @@ tcolor equ *+1
     std r5   ;sub	@#dya, r5
 	lbne loop0
 
+    inc <iter
     ldd STIMER
     addd <time
     std <time
@@ -206,6 +207,7 @@ tcolor equ *+1
     cmpa #"Q"
     lbne mandel
 exit
+    sta $ffde  ;rom
     lda #$cc
     sta $ff90
     sta $71    ;restart basic
@@ -213,8 +215,7 @@ exit
 
 2   clra
     sta <xpos+1
-    ldb niter
-    subb #7
+    ldb <iter
     jsr pr000
 ;    ldy #11*8   ;space
 ;    jsr outdigi
@@ -287,7 +288,7 @@ outdigi   ;xpos,Y-char(0..11)*8
          dec <r2
          bne 6B
 
-         leax 124,x    ;128 - screen width in bytes
+         leax HSize/2-4,x
          puls y
          leay 1,y
          tfr y,d
@@ -379,7 +380,6 @@ mdata    ;dx, dy, iterations
      mentry 3, 4, 25   ;11
      mentry 4, 6, 37   ;12
 
-iter fcb 0
 dataindex fdb mdata
 
          org $e00
@@ -388,11 +388,12 @@ dpage
 dx	fdb	-1
 dy	fdb	0
 xpos fdb 0,0   ;the 1st zero matters
+iter fcb 0
 
 msg     fcb "**************************",13
         fcb "*  Superfast Mandelbrot  *",13
         fcb "* generator, fullscreen  *",13
-        fcb "* 16 colors, 320x224, v1 *",13
+        fcb "* 16 colors, 320x225, v1 *",13
         fcb "**************************",13
         fcb "This code for the Tandy",13
         fcb "Color 3 was created by Litwr",13
@@ -401,7 +402,7 @@ msg     fcb "**************************",13
         fcb "2021 by Stanislav Maslovski.",13
         fcb "The T-key gives us timings.",13
         fcb "Use the Q-key to quit.",0
-xcount equ msg
+xcount equ msg  ;1 byte
 time equ msg+2
 ;xpos equ msg+4
 r0 equ msg+6
