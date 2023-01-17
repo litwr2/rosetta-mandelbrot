@@ -6,7 +6,6 @@
 ;on the 256x192 16 colors screen
 
 NOCALC equ 0
-CPU6309 equ 1
 
 CHROUT equ $A002
 POLCAT equ $A000    ;Z=0 and A=key
@@ -23,9 +22,6 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
          org $b00
          setdp dpage/256
-  if CPU6309==1
-     ldmd #1     ;to native mode
-  endif
      ldx #msg
 2    lda ,x+
      beq 1F
@@ -40,14 +36,12 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      tfr b,dp
      sta <benchmark
      sta $ffd9   ;high speed
-
      lds #msg+70
 
      lda #$4c   ;??
      sta $ff90  ;bit 7 only
-     ldd #$801a  +$2000  ;alternative palette
+     ldd #$801a ;+$2000  ;??alternative palette
      std $ff98  ;256x192x16
-     ;;ldd #$600
      ldd #$e800
      std $ff9d
      ;;lda #0
@@ -61,7 +55,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
     bne 1B
 
    	ldd #0
-	std <r0	;clr r0; 7 lower bits in high byte
+	std <r0	        ;clr r0; 7 lower bits in high byte
 	std <r1   	;clr r1; higher 11+1 bits
 	tfr d,u		;clr r2; operand-index
 	ldx #sqrbase	;mov	#sqr, r4; for lower half-table

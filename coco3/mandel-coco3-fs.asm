@@ -2,27 +2,23 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;256x128 Mandelbrot for the Tandy CoCo 3 (the 6309 code), 16 colors, rotated
-;on the 256x192 16 colors screen
+;320x225 Fullscreen Mandelbrot for the Tandy CoCo 3 (the 6809/6309 code), 16 colors
 
-NOCALC equ 0
+CPU6309 equ 0
+HSize equ 320
+VSize equ 225
 
 CHROUT equ $A002
 POLCAT equ $A000    ;Z=0 and A=key
 STIMER equ $112
 
-initer	equ 7
-idx	equ	-36       ;-.0703125
-idy	equ	18        ;.03515625, 1 = 1/512
-ix0	equ	-62*idx
-imx	equ	10*idx		; x move
-sf4	equ	436/4		; sf/4
-
 sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
          org $b00
          setdp dpage/256
+  if CPU6309==1
      ldmd #1     ;to native mode
+  endif
      ldx #msg
 2    lda ,x+
      beq 1F
@@ -35,14 +31,15 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
      ldb #dpage/256
      tfr b,dp
-     sta <benchmark
      sta $ffd9   ;high speed
+   orcc #$50  ;stop interrupts
+
      lds #msg+70
 
      lda #$4c   ;??
      sta $ff90  ;bit 7 only
-     ldd #$801a ;+$2000  ;??alternative palette
-     std $ff98  ;256x192x16
+     ldd #$807e  ;+$2000  ;??alternative palette
+     std $ff98  ;320x225x16
      ldd #$e800
      std $ff9d
      ;;lda #0
@@ -56,7 +53,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
     bne 1B
 
    	ldd #0
-	std <r0	        ;clr r0; 7 lower bits in high byte
+	std <r0	;clr r0; 7 lower bits in high byte
 	std <r1   	;clr r1; higher 11+1 bits
 	tfr d,u		;clr r2; operand-index
 	ldx #sqrbase	;mov	#sqr, r4; for lower half-table
@@ -65,14 +62,16 @@ fillsqr
 	std ,y++    ;mov r1, (r5)+; to upper half tbl
     leau 1,u    ;inc r2
 	tfr u,d     ;asl r2
-    asld
+    aslb
+    rola
     exg a,b     ;swab r2  ; LLLLLL00 00HHHHHH
     stb <r3+1    ;movb	r2, r3		; 00000000 00HHHHHH
     clr <r3
 	addd <r0     ;add	r2, r0		; add up lower bits
     std <r0
 	ldd <r3      ;adc	r1		; add carry to r1
-	adcd <r1     ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+	adcb <r1+1   ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+    adca <r1
     std <r1
     std ,--x    ;mov	r1, -(r4)	; to lower half tbl
     bcs mandel  ;bcs mdlbrt
@@ -81,49 +80,71 @@ fillsqr
 	bra fillsqr
 
 mandel
+    ldx dataindex
+    ldd ,x++
+    sta dx+1
+    stb dy+1
+    ldd ,x++
+    std x0
+    lda ,x
+    sta niter
+    inca
+    inca
+    sta ,x+
+    cmpx #iter
+    bne 1F
+
+    ldx #mdata
+1   stx dataindex
+
     ldd #0
     std STIMER
     std <time
-    lda #16
-    sta <bcount
-mand1
-    ldy #$4000
-    ldx #$407f
 
-	ldd <dy      ;mov	@#dya, r5
-    exg a,b     ;swab	r5
-    lsrd        ;asr	r5		; r5 = 128*dy
+    ldy #$4000+HSize/2
+    ldx #$4000+HSize/2*VSize
+
+	lda <dy+1      ;mov	@#dya, r5
+    ldb #VSize/2
+    mul
+    std <r1
+    lda <dy
+    ldb #VSize/2
+    mul
+    exg a,b
+  if VSize%2==1
+    addd <dy
+  endif
+    addd <r1
     std r5
     ldu #sqrbase
 loop0
-  if NOCALC==0
 x0 equ *+1
-	ldd	#ix0     ;mov	#x0, r4
+	ldd	#0     ;mov	#x0, r4
     std r4
-  endif
+    lda #HSize/2
+    sta <xcount
 loop2
-  if NOCALC==0
     ldd r4        ;add @#dxa,r4
     addd <dx
     std r4
     std <r0           ;mov r4,r0
-  endif
 niter equ *+1
-    lda #initer
-  if NOCALC==0
+    lda #0
     sta <r2        ;mov #initer,r2
     ldd r5        ;mov r5,r1
     std <r1
 loc1
     ldd <r1        ;mov sqr(r1),r3
     andb #$fe
-    ldw d,u
+    ldd d,u
+    std <r3
 
     ldd <r0        ;mov sqr(r0),r0
     andb #$fe
     ldd d,u
 
-    addr w,d       ;add r3,r0
+    addd <r3       ;add r3,r0
 	cmpa #8       ;cmp r0,r6
     bcc loc2      ;bge loc2
 
@@ -133,102 +154,50 @@ loc1
     andb #$fe     ;mov sqr(r1),r1
     ldd d,u
     subd <t       ;sub r0,r1
-  endif
 r5 equ *+1
     addd #0      ;add r5,r1
-  if NOCALC==0
     std <r1
     ldd <t        ;sub r3,r0
-    subr w,d
-    subr w,d       ;sub r3,r0
+    subd <r3
+    subd <r3       ;sub r3,r0
 r4 equ *+1
     addd #0      ;add r4,r0
     std <r0
     dec <r2       ;sob r2,1$
     bne loc1
-  endif
 loc2
     lda <r2
-    anda #$f
 xtoggle equ * + 1
     ldb #0
     bne loc8
 
-    sta ,x   ;right
-    asla
-    asla
-    asla
-    asla
-    sta ,y   ;left
-    leax 128,x
-    leay 128,y
-    cmpx #$8000
-    lbcs loop2
-
-    inc xtoggle  ;??
-    leay -$4000,y
-    leax -$4000,x
-    bra lr
+    anda #$f
+    sta tcolor
+    inca
+    sta xtoggle   ;??
+    bra loop2
 loc8
-    ora ,y
-    sta ,y
-    ASLa       ;Efficient nybble-swap on 6502 by Garth Wilson
-    ADCa  #$80 ;adapted for the 6809
-    ROLa
-    ASLa
-    ADCa  #$80
-    ROLa
-    sta ,x
-    leay 128,y
-    leax 128,x
-    cmpy #$8000
-    lbcs loop2
-
-    leax -$4001,x
-    leay -$3fff,y
     clr xtoggle
-lr
+    asla
+    asla
+    asla
+    asla
+tcolor equ *+1
+    ora #0
+    sta ,-x   ;bottom
+    sta ,-y   ;top
+    dec <xcount
+    bne loop2
+
+    leay HSize,y
     ldd r5
     subd <dy
     std r5   ;sub	@#dya, r5
 	lbne loop0
 
-  if NOCALC==0
-    ldd x0
-    addd <mx
-    std x0     ;add	@#mxa, @#x0a
-    ldx #6
-loc4
-    ldd #sqrbase+sf4
-    addd dx-2,x
-    andb #$fe
-    tfr d,y
-    ldd ,y
-    pshs a,b        ;mov	sqr+sf4(r2), (r1)
-    ldd #sqrbase-sf4
-    addd dx-2,x
-    andb #$fe
-    tfr d,y
-    puls a,b
-    subd ,y
-    std dx-2,x
-    leax -2,x      ;sub	sqr-sf4(r2), (r1)+
-    bne loc4  ;sob	r0, 4$
-  endif
-    inc	niter
-    lda <benchmark
-    cmpa #"B"
-    bne 1F
-
-    dec <bcount
-    lbne mand1
-
-1   ldd STIMER
+    ldd STIMER
     addd <time
     std <time
-    lda <benchmark
-    cmpa #"B"
-    beq 2F
 
     jsr getchr
     cmpa #"T"
@@ -280,6 +249,8 @@ exit
     jmp mandel
 
 getchr
+    sta $ffde  ;rom
+   andcc #$af  ;allow interrupts
     lda #0
     tfr a,dp
     jsr [POLCAT]
@@ -287,6 +258,8 @@ getchr
 
     ldb #dpage/256
     tfr b,dp
+   orcc #$50  ;stop interrupts
+    sta $ffdf   ;ram
     rts
 
 outdigi   ;xpos,Y-char(0..11)*8
@@ -385,30 +358,50 @@ digifont fcb $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          fcb 0,0,0,0,0,$18,$18,0         ;dot
          ;fcb 0,0,0,0,0,0,0,0               ;space
 
+mentry macro
+     fcb -\1*319/HSize-1, \2*199/VSize+1
+     fdb \1*HSize/2-384   ;dx, dy, x0 = dx/160, niter
+     fcb \3
+     endm
+
+;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
+mdata    ;dx, dy, iterations
+     mentry 9, 14, 7   ;1
+     mentry 8, 11, 8   ;2
+     mentry 8, 9, 9   ;3
+     mentry 7, 8, 10  ;4
+     mentry 6, 7, 11  ;5
+     mentry 5, 6, 12   ;6
+     mentry 5, 5, 13   ;7
+     mentry 4, 4, 14   ;8
+     mentry 4, 4, 15   ;9
+     mentry 4, 4, 16   ;10
+     mentry 3, 4, 25   ;11
+     mentry 4, 6, 37   ;12
+
+iter fcb 0
+dataindex fdb mdata
+
          org $e00
 dpage
 
-dx	fdb	idx
-dy	fdb	idy
-mx	fdb	imx
+dx	fdb	-1
+dy	fdb	0
 xpos fdb 0,0   ;the 1st zero matters
 
 msg     fcb "**************************",13
         fcb "*  Superfast Mandelbrot  *",13
-        fcb "*    generator, 6309     *",13
-        fcb "* 16 colors, rotated, v1 *",13
+        fcb "* generator, fullscreen  *",13
+        fcb "* 16 colors, 320x224, v1 *",13
         fcb "**************************",13
-        fcb "The original version was",13
+        fcb "This code for the Tandy",13
+        fcb "Color 3 was created by Litwr",13
+        fcb "in 2023. It is based on code",13
         fcb "published for the BK0011 in",13
         fcb "2021 by Stanislav Maslovski.",13
-        fcb "This Tandy CoCo 3 port was",13
-        fcb "created by Litwr, 2023.",13
         fcb "The T-key gives us timings.",13
-        fcb "Use the Q-key to quit.",13
-        fcb "Press B to enter benchmark mode",0
-
-benchmark equ msg
-bcount equ msg+1 
+        fcb "Use the Q-key to quit.",0
+xcount equ msg
 time equ msg+2
 ;xpos equ msg+4
 r0 equ msg+6
