@@ -3,6 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
 ;320x225 Fullscreen Mandelbrot for the Tandy CoCo 3 (the 6809 code), 16 colors
+;it won't work under the 6309 native mode
 
 HSize equ 320
 VSize equ 225
@@ -46,7 +47,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      ;;sta $ff9f   ;hor offset
 
     ldx #$ffb0   ;set palette
-    lda #0
+    clra
 1   sta ,x+
     adda #$41
     cmpx #$ffc0
@@ -217,11 +218,11 @@ exit
     sta <xpos+1
     ldb <iter
     jsr pr000
-;    ldy #11*8   ;space
-;    jsr outdigi
-    lda <xpos+1
-    adda #4
-    sta <xpos+1
+    ldy #11*8   ;space
+    jsr outdigi
+    ;lda <xpos+1
+    ;adda #4
+    ;sta <xpos+1
 
     ldd <time
     std <dividend
@@ -273,7 +274,7 @@ getchr
     stx $10c+1
     andcc #$af  ;allow interrupts
 
-    lda #0
+    clra
     tfr a,dp
     jsr [POLCAT]
     beq getchr
@@ -382,7 +383,7 @@ digifont fcb $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          fcb $3c,$66,$66,$3c,$66,$66,$3c,0  ;8
          fcb $3c,$66,$66,$3e,6,$66,$3c,0   ;9
          fcb 0,0,0,0,0,$18,$18,0         ;dot
-         ;fcb 0,0,0,0,0,0,0,0               ;space
+         fcb 0,0,0,0,0,0,0,0               ;space
 
 mentry macro
      fcb -\1*319/HSize-1, \2*199/VSize+1
@@ -427,7 +428,9 @@ msg     fcb "**************************",13
         fcb "published for the BK0011 in",13
         fcb "2021 by Stanislav Maslovski.",13
         fcb "The T-key gives us timings.",13
-        fcb "Use the Q-key to quit.",0
+        fcb "Use the Q-key to quit."
+endp    fcb 0
+
 xcount equ msg
 ;equ msg+1
 time equ msg+2
@@ -439,5 +442,5 @@ dividend equ r3
 t equ msg+12
 divisor equ t
 r2 equ msg+14
-ds equ msg+15
+ds equ msg+15   ;4 bytes are used
 

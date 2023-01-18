@@ -20,7 +20,7 @@ sf4	equ	436/4		; sf/4
 
 sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
 
-         org $b00
+         org $b00+20
          setdp dpage/256
      ldmd #1     ;to native mode
      ldx #msg
@@ -49,7 +49,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      ;;sta $ff9f   ;hor offset
 
     ldx #$ffb0   ;set palette
-    lda #0
+    clra
 1   sta ,x+
     adda #$41
     cmpx #$ffc0
@@ -247,11 +247,11 @@ exit
     ldb niter
     subb #7
     jsr pr000
-;    ldy #11*8   ;space
-;    jsr outdigi
-    lda <xpos+1
-    adda #4
-    sta <xpos+1
+    ldy #11*8   ;space
+    jsr outdigi
+    ;lda <xpos+1
+    ;adda #4
+    ;sta <xpos+1
 
     ldd <time
     std <dividend
@@ -280,7 +280,7 @@ exit
     jmp mandel
 
 getchr
-    lda #0
+    clra
     tfr a,dp
     jsr [POLCAT]
     beq getchr
@@ -359,8 +359,7 @@ div16x16w        ;dividend, dividend < divisor, divisor < $8000
         ldd #0
 2       asl <dividend+1
         rol <dividend
-        rolb
-	    rola
+        rold
 	    cmpd <divisor
         bcs 1F
 
@@ -383,7 +382,7 @@ digifont fcb $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          fcb $3c,$66,$66,$3c,$66,$66,$3c,0  ;8
          fcb $3c,$66,$66,$3e,6,$66,$3c,0   ;9
          fcb 0,0,0,0,0,$18,$18,0         ;dot
-         ;fcb 0,0,0,0,0,0,0,0               ;space
+         fcb 0,0,0,0,0,0,0,0               ;space
 
          org $e00
 dpage
@@ -405,7 +404,8 @@ msg     fcb "**************************",13
         fcb "created by Litwr, 2023.",13
         fcb "The T-key gives us timings.",13
         fcb "Use the Q-key to quit.",13
-        fcb "Press B to enter benchmark mode",0
+        fcb "Press B to enter benchmark mode"
+endp    fcb 0
 
 benchmark equ msg
 bcount equ msg+1 
@@ -418,5 +418,5 @@ dividend equ r3
 t equ msg+12
 divisor equ t
 r2 equ msg+14
-ds equ msg+16
+ds equ msg+16   ;4 bytes are used
 
