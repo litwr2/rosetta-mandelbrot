@@ -29,6 +29,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      ldb #dpage/256
      tfr b,dp
      sta $ffd9   ;high speed
+     orcc #$40   ;mask FIRQ
    
      ldd $10c+1  ;irq
      std irq1
@@ -443,5 +444,5 @@ dividend equ r3
 t equ msg+12
 divisor equ t
 r2 equ msg+14
-ds equ msg+15     ;4 bytes are used
+ds equ msg+15   ;4 bytes are used
 
