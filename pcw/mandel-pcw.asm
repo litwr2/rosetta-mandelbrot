@@ -10,10 +10,10 @@
 NOCALC equ 0
 
 ROLLPAGE equ 2
-ROLLBASE equ $B600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
-                     ;page 2 is used to access ROLLBASE memory
+ROLLBASE equ $7600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
+                     ;page 1 is used to access ROLLBASE memory
 
-sqrstart equ $1250
+sqrstart equ $8250
 sqrbase equ sqrstart + $16b0   ;must be a multiple of $100
 linebuft equ $1180
 linebufb equ $1100
@@ -88,19 +88,21 @@ r4l:
 
 mandel0:
     pop hl
-	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
-	LD	(intr_save + 1),hl
+	LD HL,(INTR_VECTOR + 1)    ;interrupt mode 1
+	LD (intr_save),hl
     ld de,cursoroff
     ld c,9
     call BDOS
 mandel:
     ld a,16
     ld (bcount),a
-	LD	HL,timer_intr
-	LD	(INTR_VECTOR + 1),HL
+	LD HL,timer_intr
+	LD (INTR_VECTOR + 1),HL
+    ld a,$85
+    out ($f3),a
     ld hl,0
-    ld (time),hl
     ld (time+2),hl
+    ld (time),hl
 mandel1:
     ld hl,0     ;scrtop, y*2
     push hl
@@ -220,8 +222,8 @@ lx1
    pop de    ;scrtop Y
    add hl,de   ;sets C=0
    ld a,$80+ROLLPAGE
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld c,(hl)
    inc l
    ld b,(hl)
@@ -233,7 +235,7 @@ lx1
    ld e,(hl)
    inc l
    ld d,(hl)
-   ei
+;   ei
    ld a,d
    and $e0
    rlca
@@ -243,7 +245,7 @@ lx1
    ld iyl,a  ;bank bottom
    ld a,d
    and $1f
-   or $40  ;page 2
+   or $20  ;page 1
    ld d,a
    ld a,e
    and 7
@@ -265,7 +267,7 @@ lx1
    ld iyh,a  ;bank top
    ld a,b
    and $1f
-   or $40  ;page 2
+   or $20  ;page 1
    ld h,a
    ld a,c
    and 7
@@ -282,8 +284,8 @@ lx1
 
    rept 7,ll
    ld a,iyh
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -294,7 +296,7 @@ lx1
    ld (hl),a
    endm
 
-   ei
+;   ei
 ;   bit 6,h   ;BECAUSE WE USE ONLY THE FIRST 512 PIXELS!
 ;   jr z,l##ll
 ;   res 6,h
@@ -305,8 +307,8 @@ lx1
    endm
 
    ld a,iyh
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -316,14 +318,14 @@ lx1
    ld a,(de)
    ld (hl),a
    endm
-   ei
+;   ei
 
    pop hl
    ld de,linebufb
    rept 7
    ld a,iyl
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -334,14 +336,14 @@ lx1
    ld (hl),a
    endm
 
-   ei
+;   ei
    inc e
    add hl,bc
    endm
 
    ld a,iyl
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -351,7 +353,7 @@ lx1
    ld a,(de)
    ld (hl),a
    endm
-   ei
+;   ei
 
     ld c,low(pat0)
     ld a,(patx)
@@ -420,8 +422,10 @@ endif
     dec (hl)
     jp nz,mandel1
 loc3:
-    LD	hl,(intr_save + 1)
-	LD	(INTR_VECTOR + 1),HL
+    ld a,$87
+    out ($f3),a
+    LD hl,(intr_save)
+	LD (INTR_VECTOR + 1),HL
     ;ld a,(benchmark)
     cp 'B'
     jr z,loc4
@@ -568,24 +572,27 @@ wait_char
 
 timer_intr
       push af
-      ld a,(time)
-      inc a
-      ld (time),a
-      jp nz,exit_intr
+      push hl
+      ld hl,time
+      in a,($f4)
+      and 15
+      add a,(hl)
+      ld (hl),a
+      jr nc,exit_intr
 
-      ld a,(time+1)
-      inc a
-      ld (time+1),a
-      jp nz,exit_intr
+      inc hl
+      inc (hl)
+      jr nz,exit_intr
 
-      ld a,(time+2)
-      inc a
-      ld (time+2),a
+      inc hl
+      inc (hl)
 exit_intr
+      pop hl
       pop af
-intr_save
-      jp 0
+      ei
+      ret
 
+intr_save dw 0
 home db 27,"H$"
 cursoroff db 27,"f$"
 cursoron db 27,"e",27,"E$"
@@ -609,7 +616,7 @@ bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         4x1 textures, v3       *",13,10
+        db "*         4x1 textures, v4       *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
@@ -620,3 +627,4 @@ msg     db "**********************************",13,10
         db "Use the Q-key to quit",13,10
         db "Press B to enter benchmark mode$"
    end start
+

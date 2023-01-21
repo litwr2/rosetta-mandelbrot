@@ -30,7 +30,7 @@ sqrbase equ $2900  ; +-$16b0 = $1250-3fb0
      tfr b,dp
      sta $ffd9   ;high speed
      orcc #$40   ;mask FIRQ
-   
+
      ldd $10c+1  ;irq
      std irq1
      ldd #irq0

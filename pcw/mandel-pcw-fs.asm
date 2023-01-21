@@ -10,10 +10,10 @@ HSize equ 720
 VSize equ 256
 
 ROLLPAGE equ 2
-ROLLBASE equ $B600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
-                     ;page 2 is used to access ROLLBASE memory
+ROLLBASE equ $7600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
+                     ;page 1 is used to access ROLLBASE memory
 
-sqrstart equ $1250
+sqrstart equ $8250
 sqrbase equ sqrstart + $16b0   ;must be a multiple of $100
 linebuf equ $1180
 
@@ -79,8 +79,8 @@ r4l:
 
 mandel0:
     pop hl
-	LD	HL,(INTR_VECTOR + 1)    ;interrupt mode 1
-	LD	(intr_save + 1),hl
+	LD HL,(INTR_VECTOR + 1)    ;interrupt mode 1
+	LD (intr_save),hl
     ld de,cursoroff
     ld c,9
     call BDOS
@@ -112,11 +112,13 @@ mandel:
     add a,2
     ld (hl),a
 
-	LD	HL,timer_intr
-	LD	(INTR_VECTOR + 1),HL
+	LD HL,timer_intr
+	LD (INTR_VECTOR + 1),HL
+    ld a,$85
+    out ($f3),a
     ld hl,0
-    ld (time),hl
     ld (time+2),hl
+    ld (time),hl
 
     ld hl,0     ;scrtop, y*2
     push hl
@@ -206,8 +208,8 @@ loc2:
    pop de    ;scrtop Y
    add hl,de   ;sets C=0
    ld a,$80+ROLLPAGE
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld c,(hl)
    inc l
    ld b,(hl)
@@ -219,7 +221,7 @@ loc2:
    ld e,(hl)
    inc l
    ld d,(hl)
-   ei
+;   ei
    ld a,d
    and $e0
    rlca
@@ -229,7 +231,7 @@ loc2:
    ld iyl,a  ;bank bottom
    ld a,d
    and $1f
-   or $40  ;page 2
+   or $20  ;page 1
    ld d,a
    ld a,e
    and 7
@@ -251,7 +253,7 @@ loc2:
    ld iyh,a  ;bank top
    ld a,b
    and $1f
-   or $40  ;page 2
+   or $20  ;page 1
    ld h,a
    ld a,c
    and 7
@@ -268,8 +270,8 @@ loc2:
 
    rept 8
    ld a,iyh
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -280,14 +282,14 @@ loc2:
    ld (hl),a
    endm
 
-   ei
+;   ei
    inc e
    add hl,bc
    endm
 
    ld a,iyh
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -298,19 +300,21 @@ loc2:
    ld (hl),a
    endm
 
-   ei
+;   ei
    inc e
    add hl,bc
-   bit 6,h    ;this position depends on ROLLER-RAM values
+   bit 7,h    ;this position depends on ROLLER-RAM values
    jr z,lm0
-   res 6,h
+
+   res 7,h
+   set 6,h
    inc iyh
 lm0
 
-   rept 2,ll
+   rept 2
    ld a,iyh
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -321,19 +325,14 @@ lm0
    ld (hl),a
    endm
 
-   ei
+;   ei
    inc e
    add hl,bc
-   bit 6,h
-   jr z,l##ll
-   res 6,h
-   inc iyh
-l##ll
    endm
 
    ld a,iyh
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -347,8 +346,8 @@ l##ll
    ld de,linebuf
    rept 11
    ld a,iyl
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -359,14 +358,14 @@ l##ll
    ld (hl),a
    endm
 
-   ei
+;   ei
    inc e
    add hl,bc
    endm
 
    ld a,iyl
-   di
-   out ($f2),a
+;   di
+   out ($f1),a
    ld a,(de)
    ld (hl),a
 
@@ -374,7 +373,7 @@ l##ll
    add hl,bc   ;sets C=0
    ld a,(de)
    ld (hl),a
-   ei
+;   ei
 
     ld de,(dy)
     ld hl,(r5)
@@ -392,8 +391,10 @@ l##ll
 
     xor a
 lx2 ld (dataindex),a
-    LD	hl,(intr_save + 1)
-    LD	(INTR_VECTOR + 1),HL
+    ld a,$87
+    out ($f3),a
+    LD hl,(intr_save)
+    LD (INTR_VECTOR + 1),HL
     call wait_char
     and 0dfh
     cp 'Q'
@@ -535,24 +536,27 @@ wait_char
 
 timer_intr
       push af
-      ld a,(time)
-      inc a
-      ld (time),a
-      jp nz,exit_intr
+      push hl
+      ld hl,time
+      in a,($f4)
+      and 15
+      add a,(hl)
+      ld (hl),a
+      jr nc,exit_intr
 
-      ld a,(time+1)
-      inc a
-      ld (time+1),a
-      jp nz,exit_intr
+      inc hl
+      inc (hl)
+      jr nz,exit_intr
 
-      ld a,(time+2)
-      inc a
-      ld (time+2),a
+      inc hl
+      inc (hl)
 exit_intr
+      pop hl
       pop af
-intr_save
-      jp 0
+      ei
+      ret
 
+intr_save dw 0
 time dw 0,0
 home db 27,"H$"
 cursoroff db 27,"f$"
@@ -583,7 +587,7 @@ data  ;     dx, dy, x0, niter - to convert to real values divide by 512
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     720x256, 2 colors, v2      *",13,10
+        db "*     720x256, 2 colors, v3      *",13,10
         db "**********************************",13,10
         db "This Amstrad PCW code was created by",13,10
         db "Litwr in 2023. It is based on code",13,10
