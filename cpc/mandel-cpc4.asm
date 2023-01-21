@@ -485,6 +485,10 @@ mx      dw imx
   if (dx and $ff00) != ((mx+2) and $ff00)
 ERROR ERROR2
   endif
+
+benchmark db 0
+bcount db 0
+
         org ($ + 15)&$fff0
 pat0	db 0, 0x8, 0x80, 0x88, 0xc4, 0xc, 0xc0, 0xcc
 pat1	db 0, 0x4, 0x40, 0x44, 0x4, 0xc, 0xc0, 0xcc
@@ -492,9 +496,6 @@ pat1	db 0, 0x4, 0x40, 0x44, 0x4, 0xc, 0xc0, 0xcc
 ; 0 - black, 4 - black-blue, 8 - black-green, 12 - black-red, 4 - black-blue, 5 - blue, 10 - green, 15 - red
 
 ti     dw 0,0
-
-benchmark db 0
-bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10

@@ -1,6 +1,6 @@
  10 clear 16,&h84f8
  20 screen 0:width 80:print "1. 128x256, 16c, interlaced (mode 256x424)"
- 30 print "2. 256x128, 16c, rotated (mode 256x212)"
+ 30 print "2. 256x128, 16c, rotated (mode 256x192)"
  40 print "3. 512x212, 16c (fullscreen)"
  50 print "4. 512x424, 16c (fullscreen, interlaced)"
  60 print "5. 256x212, 256c (fullscreen)"

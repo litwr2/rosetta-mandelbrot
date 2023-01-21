@@ -414,11 +414,14 @@ dx2p equ $+1
 
 lx2:pop hl
 endif
-    ld a,(benchmark)
+    ld de,benchmark
+    ld a,(de)
     cp 'B'
     jr nz,loc3
 
-    ld hl,bcount
+    ld h,d
+    ld l,e
+    inc hl
     dec (hl)
     jp nz,mandel1
 loc3:
@@ -426,7 +429,7 @@ loc3:
     out ($f3),a
     LD hl,(intr_save)
 	LD (INTR_VECTOR + 1),HL
-    ;ld a,(benchmark)
+    ld a,(de)
     cp 'B'
     jr z,loc4
 
@@ -597,22 +600,23 @@ home db 27,"H$"
 cursoroff db 27,"f$"
 cursoron db 27,"e",27,"E$"
 
+time dw 0,0
+
         org ($ + 15)&$fff0
 ;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
 ;pat1 db	15,4,9,12,14, 5, 1,0
 pat0 db	0,14,13,12,10, 5, 1,15
 pat1 db	0,11, 6, 3, 1,10,14,15
 
-time dw 0,0
+benchmark db 0
+bcount db 0   ;must follow benchmark
+
 dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
   if (dx and $ff00) != ((mx+2) and $ff00)
 ERROR ERROR2
   endif
-
-benchmark db 0
-bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
