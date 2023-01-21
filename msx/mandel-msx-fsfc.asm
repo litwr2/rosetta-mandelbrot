@@ -193,8 +193,7 @@ dx equ $+1
     ld de,$ff00
     add hl,de
     ld (r4),hl
-    ld d,h
-    ld e,l      ;mov	r4, r0
+    ex de,hl    ;mov	r4, r0
 niter equ $+2
     ld ixh,0
     ld hl,(r5)  ;mov	r5, r1	
@@ -536,7 +535,7 @@ ticks db 0,0,0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*  256 colors, 256x212, v3 *",13,10
+        db "*  256 colors, 256x212, v4 *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
         db "by Litwr, 2022. It is based",13,10

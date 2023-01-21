@@ -111,8 +111,7 @@ if NOCALC=0
     ld de,(dx)
     add hl,de
     ld (r4),hl
-    ld d,h
-    ld e,l      ;mov	r4, r0
+    ex de,hl      ;mov	r4, r0
 endif
 niter equ $+2
     ld ixh,initer
@@ -499,7 +498,7 @@ bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v8    *",13,10
+        db "*     4 colors + textures, v9    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10

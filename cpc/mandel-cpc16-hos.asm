@@ -131,8 +131,7 @@ dx equ $+1
     ld de,$ff00
     add hl,de
     ld (r4),hl
-    ld d,h
-    ld e,l      ;mov	r4, r0
+    ex de,hl      ;mov	r4, r0
 niter equ $+2
     ld ixh,0
     ld hl,(r5)  ;mov	r5, r1	
@@ -528,7 +527,7 @@ msg     db "**********************************",13,10
         db VMAX/100+48
         db (VMAX-(VMAX/100)*100)/10+48
         db VMAX % 10+48
-        db ", 16 colors, v5     *",13,10
+        db ", 16 colors, v6     *",13,10
         db "**********************************",13,10
         db "This Amstrad CPC code was created by",13,10
         db "Litwr in 2022. It is based on code",13,10

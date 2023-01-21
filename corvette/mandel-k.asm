@@ -135,8 +135,7 @@ if NOCALC=0
     ld hl,(r4)
     add hl,de
     ld (r4),hl
-    ld d,h
-    ld e,l      ;mov	r4, r0
+    ex de,hl    ;mov	r4, r0
 endif
 niter equ $+1
     ld a,initer
@@ -562,7 +561,7 @@ curoff db 27,";$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v3    *",13,10
+        db "*     4 colors + textures, v4    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10

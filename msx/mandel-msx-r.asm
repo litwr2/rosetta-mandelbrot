@@ -195,8 +195,7 @@ if NOCALC=0
     ld de,(dx)
     add hl,de
     ld (r4),hl
-    ld d,h
-    ld e,l      ;mov	r4, r0
+    ex de,hl    ;mov	r4, r0
 endif
 niter equ $+2
     ld ixh,initer
@@ -678,7 +677,7 @@ lbuf ds 128
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*        generator         *",13,10
-        db "*       rotated, v3        *",13,10
+        db "*       rotated, v4        *",13,10
         db "****************************",13,10
         db "The original version was",13,10
         db "published for the BK0011 in",13,10
