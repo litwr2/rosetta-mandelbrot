@@ -13,19 +13,17 @@ ROLLPAGE equ 2
 ROLLBASE equ $7600   ;these values correspond to value $5b in port $f5, I suppose it is used always, at least under CP/M
                      ;page 1 is used to access ROLLBASE memory
 
-sqrstart equ $8250
-sqrbase equ sqrstart + $16b0   ;must be a multiple of $100
+sqrbase equ $8000 ;must be fixed here!
 linebuf equ $1180
-
-sqrtab macro
-    res 0,l
-    ld a,h
-    add a,high(sqrbase)
-    ld h,a
-endm
+psp equ $1000
 
 BDOS equ 5
 INTR_VECTOR equ $38
+
+sqrtab macro
+    res 0,l
+    set 7,h
+endm
 
 org #100
 
@@ -35,6 +33,10 @@ start
     call BDOS
     call wait_char
 
+    ;ld hl,0
+    ;add hl,sp
+    ;ld (ssp),hl
+    ld sp,psp
     ld hl,sqrbase
     push hl
     ld bc,0
@@ -144,8 +146,9 @@ dx equ $+1
     ld de,$ff00
     add hl,de
     ld (r4),hl
-    ld d,h
-    ld e,l      ;mov	r4, r0
+    ;ld d,h
+    ;ld e,l      ;mov	r4, r0
+    ex de,hl
 niter equ $+2
     ld ixh,0
     ld hl,(r5)  ;mov	r5, r1	
@@ -556,6 +559,7 @@ exit_intr
       ei
       ret
 
+;ssp dw 0
 intr_save dw 0
 time dw 0,0
 home db 27,"H$"

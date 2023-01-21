@@ -80,7 +80,7 @@ r4l:
     inc de
     jr sqrloop
 
-mandel0: 
+mandel0:
     pop hl
 mandel:
     ld a,16
