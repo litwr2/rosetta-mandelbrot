@@ -112,7 +112,7 @@ irqe2  pha      ;@202
 irqe3  pha    ;@206
        LDA #$EC
        STA $FF1D  ;236
-       JSR comm1  
+       JSR comm1
        INC $FF09
        LDA #$A0    ;$800
        STA $FF14

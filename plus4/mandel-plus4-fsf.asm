@@ -4,7 +4,7 @@
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
 ;
-;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing
+;160xN (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing
 
 ; text data for 32 lines:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
@@ -22,6 +22,7 @@ JPRIMM = $FF4F
 
 colors = 8   ;2/4/8/16
 HSize = 160
+VSize = 280  ;must be a multiple of 8, up to 280
 
 sqrbase = $BF00 ;must be $xx00
 
@@ -54,7 +55,7 @@ color3 = $32  ;red
    byte start/1000+48,start%1000/100+48,start%100/10+48,start%10+48
    byte 0,0,0
 
-irqe1  pha      ;@284
+irqe1  pha      ;@284 when VSize=256
        LDA #$36
        STA $FF1D    ;310
        LDA #$CA		;202
@@ -68,9 +69,9 @@ irqe0  INC $FF09
        RTI
 
 irqe2  pha      ;@202
-       LDA #$92
+       LDA #(402-VSize)   ;146 when VSize=256
        STA $FF1D
-       LDA #$CE		;206
+       LDA #206   	 ;206 when VSize=256
        STA $FF0B
        LDA #<irqe3
        STA $FFFE
@@ -98,8 +99,8 @@ irqe2  pha      ;@202
        RTI
 
 irqe3  pha    ;@206
-       LDA #$EC
-       STA $FF1D  ;236
+       LDA #(108+VSize/2)  ;236 when VSize=256
+       STA $FF1D
        JSR comm1  
        INC $FF09
        LDA #$A0    ;$800
@@ -135,16 +136,18 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*    gENERATOR V6 160x256 fLASHED    *",13
+       byte "*    gENERATOR V7 "
+       byte HSize/100+48,HSize/10%10+48,HSize%10+48,"x"
+       byte VSize/100+48,VSize/10%10+48,VSize%10+48," fLASHED    *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
-       byte "2022. iT IS BASED ON CODE PUBLISHED FOR",13,0
+       byte "2022-23. iT IS BASED ON CODE PUBLISHED",13,0
        JSR JPRIMM
-       byte "THE bk0011 IN 2021 BY sTANISLAV",13
+       byte "FOR THE bk0011 IN 2021 BY sTANISLAV",13
        byte "mASLOVSKI.",13
        byte "tHE t-KEY GIVES US TIMINGS",0
        JSR getkey
-
+  if 0
        LDA #$55
        LDY #0
        LDX #$20
@@ -156,7 +159,7 @@ loopi: STA $2000,Y
        INX
        CPX #$C0
        BNE loopk
-
+   endif
        LDA #(color2&$f0)|(color1&$f0)>>4    ;lum
        LDX #4
 loopi2:STA $a000,Y
@@ -283,7 +286,6 @@ mandel0:
     STA $FF15
     JSR iniirq
 mandel:
-
 .m1hi = $e3
 .m1lo = $e2
 .m2hi = $e5
@@ -338,13 +340,13 @@ mandel:
     sta .m1hi
     lda #$60
     sta .m2hi
-    lda #$c7
+    lda #<($c7+(VSize-256)*40)   ;$c7 when VSize=256
     sta .m3lo
     sta .m4lo
 
-    lda #$48
+    lda #>($48c7+(VSize-256)*40)   ;$48 when VSize=256
     sta .m3hi
-    lda #$88
+    lda #>($88c7+(VSize-256)*40)   ;$88 when VSize=256
     sta .m4hi
     lda #1
     sta .ahi
@@ -352,11 +354,14 @@ mandel:
     sty alo
     lda dy
     sta r4lo
-    lsr
-    sta r5hi
+    sta r2
+    lda #VSize/2
+    sta r0
     lda #0
-    ror
-    sta r5lo    ;r5 = 128*dy
+    sta r0+1
+    jsr mul16  ;r2lo*r0 -> y:x
+    sty r5hi
+    stx r5lo
 .mloop0:
 .x0lo = * + 1
     lda #0
@@ -365,7 +370,7 @@ mandel:
     lda #0
     sta r4hi  ;mov	#x0, r4
 .mloop2:
-    clc  
+    clc
     lda r4lo
     adc dx
     sta r4lo
@@ -708,6 +713,25 @@ pat2   byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0
    endif
 ti     byte 0,0,0
 
+mul16:   ;multiply r0 by r2l -> y:x
+    ldx #0
+    ldy #0
+.t3:lsr r2
+    bcc .t4
+
+    clc
+    txa
+    adc r0
+    tax
+    tya
+    adc r0+1
+    tay
+.t4:asl r0
+    rol r0+1
+    lda r2
+    bne .t3
+    rts
+    
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
         ldy #16
@@ -802,14 +826,14 @@ iniirq:LDA #$F8
        STA $FFFF
 comm1: LDA #<irqe1
        STA $FFFE
-       LDA #$1C     ;$11c = 284
+       LDA #<(412-VSize/2)  ;284 when VSize=256
        STA $FF0B
        LDA #$A3		;1 - hi byte, raster irq only
        STA $FF0A
        RTS
 
   macro mentry
-     byte -\1, \2
+     byte -\1, \2*256/VSize
      word \1*HSize/2-384   ;dx, dy, x0 = dx*HSize, niter
      byte \3
   endm
