@@ -521,11 +521,11 @@ msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*     "
         db HMAX/100+48
-        db (HMAX-(HMAX/100)*100)/10+48
+        db HMAX/10 % 10+48
         db HMAX % 10+48
         db "x"
         db VMAX/100+48
-        db (VMAX-(VMAX/100)*100)/10+48
+        db VMAX/10 % 10+48
         db VMAX % 10+48
         db ", 16 colors, v6     *",13,10
         db "**********************************",13,10

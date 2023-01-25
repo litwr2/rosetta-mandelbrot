@@ -618,8 +618,8 @@ r4hi = * + 1
     bne .loop0t  ;bgt	loop0
 
     inc	.niter
-    sei
     sec
+    sei
     lda $a5
     sbc ti
     sta ti

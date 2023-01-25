@@ -8,6 +8,9 @@ gawk '/@start@/{print "s/@start@/"strtonum("0x"substr($1,4,4))"/"}
 /@x0hi@/{print "s/@x0hi@/"strtonum("0x"substr($1,4,4))+1"/"}
 /@color@/{print "s/@colidx@/"strtonum("0x"substr($1,4,4))+1"/"}
 /@coltab@/{print "s/@coltab@/"strtonum("0x"substr($1,4,4))-4"/"}
+/@r5lo@/{print "s/@r5lo@/"strtonum("0x"substr($1,4,4))+1"/"}
+/@r5hi@/{print "s/@r5hi@/"strtonum("0x"substr($1,4,4))+1"/"}
+/@vsize@/{print "s/@vsize@/"$4"/g;s/@vsize1@/"1024/$4"/g"}
 /@flash@/{print "s/@flash@/"strtonum("0x"substr($1,4,4))"/"}
 /@n@/{print "s/@n@/"strtonum("0x"substr($1,4,4))+1"/"}' $A.lst >z.sed
 sed -f z.sed $A.cbas >$A.bas

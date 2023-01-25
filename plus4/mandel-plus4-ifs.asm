@@ -4,7 +4,7 @@
 ;The next code was made by litwr in 2021, 2022
 ;Thanks to reddie for some help with optimization
 ;
-;160x256 (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing/interlacing
+;160xN (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing/interlacing
 ;16 colors actually are 10 for interlacing
 ;interactive version
 
@@ -25,6 +25,8 @@ JPRIMM = $FF4F
 sqrbase = $C800 ;must be $xx00
 colorpat1 = $1f60
 colorpat2 = $1f70
+HSize = 160
+VSize = 280  ;must be a multiple of 8, up to 280 @vsize@
 
 r0 = $d0
 r1 = $d2
@@ -46,7 +48,7 @@ color3 = $32  ;red
        org $1001
        include mandel-i.inc
 
-       org $14c8
+       org $1510
 start: lda #$a0    ;@start@
        sta loopi2+2
        lda #$a8
@@ -221,25 +223,18 @@ mandel:
     sta .m1hi
     lda #$60
     sta .m2hi
-    lda #$c7
+    lda #<($c7+(VSize-256)*40)   ;$c7 when VSize=256
     sta .m3lo
     sta .m4lo
 
-    lda #$48
+    lda #>($48c7+(VSize-256)*40)   ;$48 when VSize=256
     sta .m3hi
-    lda #$88
+    lda #>($88c7+(VSize-256)*40)   ;$88 when VSize=256
     sta .m4hi
     lda #1
     sta .ahi
     ldy #$38
     sty alo
-    lda dy
-    sta r4lo
-    lsr
-    sta r5hi
-    lda #0
-    ror
-    sta r5lo    ;r5 = 128*dy
 .mloop0:
 .x0lo = * + 1
     lda #0      ;@x0lo@
@@ -248,7 +243,7 @@ mandel:
     lda #0      ;@x0hi@
     sta r4hi  ;mov	#x0, r4
 .mloop2:
-    clc  
+    clc
     lda r4lo
     adc dx
     sta r4lo
@@ -314,12 +309,12 @@ mandel:
     lda (tmp),y
     clc
 r5lo = * + 1
-    adc #0   ;C=0   
+    adc #0   ;C=0   @r5lo@
     tax 
     iny
     lda (tmp),y     ;mov sqr(r1), r1
 r5hi = * + 1
-    adc #0
+    adc #0         ;@r5hi@
     tay        ;add	r5, r1
 
     sec
@@ -536,18 +531,7 @@ r4hi = * + 1
     sty $ef   ;clear kbd buffer
     rts
 
-pat1_2   byte 0,2*64   ;@coltab@
-pat2_2   byte 0,2*64
-pat1_4   byte 0,1*64,2*64,3*64
-pat2_4   byte 0,1*64,2*64,3*64
-pat1_8   byte 0,1*64,2*64,3*64,1*64,2*64,0*64,3*64
-pat2_8   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
-pat1_16  byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
-pat2_16  byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
-ti     byte 0,0,0
-flash_st byte 1   ;@flash@
-
-irqe1  pha      ;@284
+irqe1  pha      ;@284 when VSize=256
        LDA #$36
        STA $FF1D    ;310
        LDA #$CA		;202
@@ -560,10 +544,10 @@ irqe1  pha      ;@284
 irqe0  INC $FF09
        RTI
 
-irqe2  pha          ;@202
-       LDA #$92
+irqe2  pha      ;@202
+       LDA #(402-VSize)   ;146 when VSize=256
        STA $FF1D
-       LDA #$CE		;206
+       LDA #206   	 ;206 when VSize=256
        STA $FF0B
        LDA #<irqe3
        STA $FFFE
@@ -596,9 +580,9 @@ irqe2  pha          ;@202
        PLA
        RTI
 
-irqe3  PHA    ;@206
-       LDA #$EC
-       STA $FF1D  ;236
+irqe3  pha    ;@206
+       LDA #(108+VSize/2)  ;236 when VSize=256
+       STA $FF1D
        JSR comm1  
        INC $FF09
        LDA #$A0    ;$A000
@@ -668,9 +652,20 @@ iniirq:lda flash_st
        STA $FFFF
 comm1: LDA #<irqe1
        STA $FFFE
-       LDA #$1C     ;$11c = 284
+       LDA #<(412-VSize/2)  ;284 when VSize=256
        STA $FF0B
        LDA #$A3		;1 - hi byte, raster irq only
        STA $FF0A
        RTS
+
+pat1_2   byte 0,2*64   ;@coltab@
+pat2_2   byte 0,2*64
+pat1_4   byte 0,1*64,2*64,3*64
+pat2_4   byte 0,1*64,2*64,3*64
+pat1_8   byte 0,1*64,2*64,3*64,1*64,2*64,0*64,3*64
+pat2_8   byte 0,1*64,2*64,0*64,3*64,1*64,2*64,3*64
+pat1_16  byte 0,1*64,2*64,3*64,   0,1*64,2*64,3*64,   0,1*64,2*64,3*64,0,   2*64,1*64,3*64
+pat2_16  byte 0,1*64,2*64,   0,1*64,2*64,3*64,1*64,2*64,3*64,0*64,2*64,3*64,1*64,0*64,3*64
+ti     byte 0,0,0
+flash_st byte 1   ;@flash@
 

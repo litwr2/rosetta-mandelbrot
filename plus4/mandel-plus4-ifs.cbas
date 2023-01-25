@@ -1,24 +1,24 @@
 10 printchr$(9)chr$(14)
 15 print"**************************************"
 20 print"*  {red}Superfast Fullscreen Mandelbrot{blk}   *"
-25 print"*      {blu}Interactive Generator v3{blk}      *"
-30 print"*      {pur}2/4/8/16 Colors 160X256{blk}       *"
+25 print"*      {blu}Interactive Generator v4{blk}      *"
+30 print"*      {pur}2/4/8/16 Colors 160X@vsize@{blk}       *"
 35 print"**************************************"
-40 print"This Plus4 code was created by Litwr in 2022. It is based on code published for ";
+40 print"This Plus4 code was created by Litwr in 2022-23. It is based on code published for ";
 50 print"the BK0011 in 2021 by Stanislav Maslovski. The visible Mandelbrot set is in area ";
 60 print"{grn}X{blk} in {grn}[-2, 0.47]{blk} and {grn}Y{blk} in {grn}[-1.12, 1.12]{blk}"
-70 xi=-2:xa=.5:y=1.3:n=16:c=16
+70 xi=-2:xa=.5:y=1.25:n=16:c=16
 80 print"min x ("xi")";:inputxi:ifabs(xi)>9thengosub200:goto80
 90 print"max x ("xa")";:inputxa:ifxi>=xaorxa>9thengosub200:goto90
 100 dx=(xi-xa)*16/5:i=xa*512:ifi<0theni=65536+i
 110 xa=int(i)/512:xi=xa+int(dx)*160/512:print"{grn}min x ="xi"{left}, max x ="xa
 120 print"{blk}max y ("y")";:inputy:ify<.25ory>9thengosub200:goto120
-130 y=int(4*y)/4:print"{grn}max y ="y
+130 z=int(@vsize1@*y):print"{grn}max y ="z/@vsize1@
 140 print"{blk}number of iterations ("n")";:inputn:ifn<=0orn>255thengosub200:goto140
-150 poke217,4*y:poke216,256+dx:poke@x0lo@,iand255:poke@x0hi@,int(i/256):poke@n@,n
+150 poke217,z:poke216,256+dx:poke@x0lo@,iand255:poke@x0hi@,int(i/256):poke@n@,n
 160 print"number of colors ("c")";:inputc:ifc<>2andc<>4andc<>8andc<>16thengosub200:goto160
 165 ifc>5thenprint"0-interlacing, 1-flashing ("f")";:inputf:iff<>0andf<>1thengosub200:goto165
-170 poke@colidx@,c-1:a=@coltab@+2*c:poke@flash@,f
+170 poke@colidx@,c-1:a=@coltab@+2*c:poke@flash@,f:poke@r5hi@,int(z*@vsize@/512):poke@r5lo@,(z*@vsize@/2)and255
 180 fori=0toc-1:poke8032+i,peek(a+i):poke8048+i,peek(a+i+c):next
 190 u=u+1:printu" time=";:sys@start@:print(peek(208)+peek(209)*256+peek(210)*65536)/50;"s":print:goto80
 200 printchr$(145)chr$(27)"d";:return
