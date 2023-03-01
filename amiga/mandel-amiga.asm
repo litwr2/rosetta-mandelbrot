@@ -2,7 +2,7 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;128x256 Mandelbrot for the Amiga (only the 68000 code), 16 colors
+;128x256 Mandelbrot for the Amiga (PAL, only the 68000 code), 16 colors
 
 QCOLORS=16   ;do not change this!
 NOCALC=0

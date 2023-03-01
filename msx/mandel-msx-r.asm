@@ -471,8 +471,9 @@ dx2p equ $+1
     ld (dx),hl
     jp lx5
 
-lx2:pop hl
+lx2:
 endif
+    pop hl
     ld a,(benchmark)
     cp 'B'
     jr nz,loc3

@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;The next code was made by litwr in 2021
 ;
-;320x256 (Fullscreen) Mandelbrot for the Amiga (only the 68000 code), 16/32 colors
+;320x256 (Fullscreen) Mandelbrot for the Amiga (PAL, only the 68000 code), 16/32 colors
 
 QCOLORS = 32 ;16
 HSize = 320

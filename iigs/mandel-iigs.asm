@@ -608,7 +608,7 @@ pal: word 0     ;0 black  RGB
      word $770  ;d yellow
      word $707  ;e cyan
      word $077  ;f magenta
-         
+
 digifont db $3c,$66,$6e,$76,$66,$66,$3c,0  ;0
          db $18,$18,$38,$18,$18,$18,$7e,0  ;1
          db $3c,$66,6,$c,$30,$60,$7e,0     ;2
