@@ -263,11 +263,8 @@ bcolor2 equ $+1
          di
          ld (hl),DOSG1
     ld hl,RGBASE3+NCREG
-    ld (hl),WSEL1
+    ld (hl),WSEL1&WSEL2
     ld a,$ff
-    ld (de),a
-    ld (bc),a
-    ld (hl),WSEL2
     ld (de),a
     ld (bc),a
     ld (hl),WSEL1+WBIT
@@ -561,7 +558,7 @@ curoff db 27,";$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v4    *",13,10
+        db "*     4 colors + textures, v5    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
