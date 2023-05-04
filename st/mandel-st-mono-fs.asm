@@ -2,7 +2,7 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;320x200 Fullscreen Mandelbrot for the Atari ST (the 68000 code), 16 colors
+;640x400 Mandelbrot for the Atari ST (the 68000 code), 2 colors
 
 timer = $4ba
 
@@ -27,8 +27,8 @@ endm
     basereg SOD,a3
 start:
     lea.l SOD(pc),a3
-
-         move.l #msg,-(sp)
+    
+         pea msg(pc)
          move #9,-(sp)    ;print line
          trap #1
          addq.l #6,sp
@@ -59,23 +59,10 @@ fillsqr:
 mandel0:
     move d1,-(a4)   ;mov	r1, -(r4)	; to lower half tbl
 
-    move #4,-(sp)
-    trap #14
-    move d0,screenres(a3)
     move #2,-(sp)   ;get the screen base
     trap #14
     move.l d0,screenbase(a3)   ;graph base
-
-    move #0,-(sp)   ;320x200 16 colors mode
-    move.l d0,-(sp)
-    move.l d0,-(sp)
-    move #5,-(sp)   ;setscreen
-    trap #14
-
-    pea palette(pc)
-    move #6,-(sp)   ;set palette
-    trap #14
-    adda #22,sp
+    addq #2,sp
 mandel:
     move dataindex(pc),d0
     lea.l data(pc),a0
@@ -85,23 +72,34 @@ mandel:
     move.b 4(a0,d0.w),niter+1(a3)
     addq.b #2,4(a0,d0.w)
 
+         pea discursor(pc)
+         move #9,-(sp)    ;print line
+         trap #1
+         addq.l #6,sp
+
          clr.l -(sp)
 	     move #32,-(sp)    ;super
 	     trap #1
 	     addq.l #6,sp
 	     move.l d0,ssp(a3)
+	     
+	     clr $ff8240  ;invert colors
+	     
     move.l timer,time(a3)
+mandel1:
     movea #$800,a1
     moveq #-2,d6   ;-2=$fe
     movea.l screenbase(pc),a5
-    lea.l 160*199+160(a5),a6	;screen bottom
-    lea.l 160(a5),a5	;screen top
+    lea.l 80*400(a5),a6	;screen bottom
+    lea.l 80(a5),a5	;screen top
     lea.l sqr0+$16b0(pc),a4
 	move dy(pc),d5
-    mulu #100,d5
+	mulu #200,d5
 loop0:
-    suba.l a0,a0      ;line counter
+    move.b #20,linecount(a3)      ;line counter
 	move x0(pc),d4
+loop1:
+        movea.l #$80000000,a0
 loop2:
 	add dx(pc),d4   ;add	@#dxa, r4		; update a
 	move niter(pc),d2	; max iter. count
@@ -131,29 +129,18 @@ loc1:
     subi #1,d2
 	bne loc1        ;sob	r2, 1$		; to the next iteration  ??dbra
 loc2:
-    lea tcolor1(a3),a2
-    movem (a2)+,d0/d1/d3/d7
-    lsr d2
-    roxr d7
-    lsr d2
-    roxr d3
-    lsr d2
-    roxr d1
-    lsr d2
-    roxr d0
-    bcs.s loc3
+    move.l a0,d3
+    roxr #1,d2
+    roxr.l #1,d3
+    movea.l d3,a0
+    bcc.s loop2
+loc8
+    move.l d3,-(a6)
+    move.l d3,-(a5)
+    subq.b #1,linecount(a3)
+    bne.s loop1
 
-    movem d0/d1/d3/d7,-(a2)
-    bra loop2
-loc3:
-    movem d0/d1/d3/d7,-(a5)
-    movem d0/d1/d3/d7,-(a6)
-    move #$8000,tcolor1(a3)
-    addq #1,a0
-    cmpa #20,a0
-    bne loop2
-
-    lea.l 320(a5),a5
+    lea 160(a5),a5
 	sub dy(pc),d5          ;sub	@#dya, r5
 	bne loop0
 
@@ -179,14 +166,11 @@ loc7:
 
     cmpi.b #"T",d0
     bne mandel
-
-         move #27,-(sp)  ;ESC+H = home cursor
-         move #2,-(sp)    ;conout
+loc5:
+         pea home(pc)
+         move #9,-(sp)    ;print line
          trap #1
-         move #'H',-(sp)
-         move #2,-(sp)    ;conout
-         trap #1
-         addq.l #8,sp
+         addq.l #6,sp
 
     clr.l d5
     move iter(pc),d5
@@ -237,13 +221,10 @@ loc7:
     bne mandel
 
 exit
-    move screenres(pc),-(sp)
-    move.l screenbase(pc),d0
-    move.l d0,-(sp)
-    move.l d0,-(sp)
-    move #5,-(sp)   ;setscreen
-    trap #14
-    add.l #12,sp
+         ;pea encursor(pc)
+         ;move #9,-(sp)    ;print line
+         ;trap #1
+         ;addq.l #6,sp
          clr -(sp)     ;term
          trap #1
 
@@ -284,44 +265,36 @@ niter  dc.w   0
 ssp dc.l 0
 time dc.l 0
 screenbase dc.l 0
-screenres dc.w 0
-palette
-	DC.W	$000,$770,$070,$777  ;black, green, yellow, white
-	DC.W	$700,$707,$077,$007  ;red, magenta, cyan, blue
-	DC.W	$400,$404,$044,$004  ;red, magenta, cyan, blue
-	DC.W	$040,$440,$333,$555  ;darkgreen, yellow, darkgray, gray
-;    dc.w $777,$700,$070,$000,$007,$707,$077,$555  ;original
-;    dc.w $333,$733,$373,$773,$337,$737,$377,$000
-
-tcolor1 dc.w $8000
-tcolor2 dc.w 0
-tcolor3 dc.w 0
-tcolor4 dc.w 0
 
   macro mentry
      dc.b -\1, \2
-     dc.w \1*320/2-384   ;dx, dy, x0 = dx*HSize, niter
+     dc.w \1*320-384   ;dx, dy, x0 = dx*HSize, niter
      dc.b \3,0
   endm
 
 dataindex dc.w 0
 iter dc.w 0
-data mentry 9, 14, 15 ;1
-     mentry 7, 11, 16 ;2
-     mentry 6,  9, 18 ;3
-     mentry 5,  8, 20 ;4
-     mentry 4,  7, 21 ;5
-     mentry 4,  6, 22 ;6
-     mentry 4,  5, 23 ;7
-     mentry 3,  4, 24 ;8
-     mentry 3,  4, 25 ;9
-     mentry 3,  4, 26 ;10
-     mentry 3,  4, 27 ;11
-     mentry 4,  6, 37 ;12
+data mentry 8, 12, 10 ;1
+     mentry 6, 10, 11 ;2
+     mentry 5,  8, 12 ;3
+     mentry 4,  7, 14 ;4
+     mentry 3,  6, 15 ;5
+     mentry 3,  5, 16 ;6
+     mentry 3,  4, 17 ;7
+     mentry 2,  4, 18 ;8
+     mentry 3,  3, 19 ;9
+     mentry 4,  3, 20 ;10
+     mentry 2,  5, 21 ;11
+     mentry 2,  3, 37 ;12
 
+linecount dc.b 0
+
+home    dc.b 27,"H",0
+discursor dc.b 27,"f",0
+;encursor dc.b 27,"e",0
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *    fullscreen, 16 colors, v2   *",13,10
+        dc.b "  *   mono fullscreen, 640x400, v1 *",13,10
         dc.b "  **********************************",13,10
         dc.b "This code for the Atari ST was created by",13,10
         dc.b "Litwr in 2023. It is based on code",13,10
