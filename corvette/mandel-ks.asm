@@ -17,6 +17,8 @@ ODOSA   EQU     1CH
 
 NCREG   EQU     0BFH  ;color reg
 
+INTRV EQU 0F7D0H
+
 HSize equ 256
 
 org #100
@@ -40,7 +42,7 @@ start
     call BDOS
     call clscursor
 
-    ld hl,(0xf7f1)
+    ld hl,(INTRV)
     ld (KL+1),hl    ;prepare the timer handler
 
     ld hl,sqrbase
@@ -121,7 +123,7 @@ le1 ld (dataindex),hl
     ld (tilo),hl
     ld (tihi),hl
     ld hl,KINTR
-    ld (0xf7f1),hl   ;start timer
+    ld (INTRV),hl   ;start timer
     ld hl,$403f  ;scrtop
     push hl
     xor a   ;sets C=0
@@ -284,7 +286,7 @@ dy equ $+1
     jp nz,loop0
 
 lx2:ld hl,(KL+1)
-    ld (0xf7f1),hl   ;stop timer
+    ld (INTRV),hl   ;stop timer
     ld hl,iter
     inc (hl)
     call waitk
@@ -499,7 +501,7 @@ dataindex dw data
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*       8 colors + textures      *",13,10
-        db "*    fullscreen (512x256), v5    *",13,10
+        db "*    fullscreen (512x256), v6    *",13,10
         db "**********************************",13,10
         db "This Corvette code was created by Litwr, 2022-23.",13,10
         db "It is based on code published for",13,10

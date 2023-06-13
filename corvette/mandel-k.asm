@@ -22,6 +22,8 @@ WSEL2   EQU     01110110B       ;2
 
 WBIT    EQU     00000001B       ;write 1
 
+INTRV EQU 0F7D0H
+
 NOCALC equ 0
 
 initer	equ	7
@@ -54,7 +56,7 @@ start
     call BDOS
     call clscursor
 
-    ld hl,(0xf7f1)
+    ld hl,(INTRV)
     ld (KL+1),hl    ;prepare the timer handler
 
     ld hl,sqrbase
@@ -108,7 +110,7 @@ mandel:
     ld (tilo),hl
     ld (tihi),hl
     ld hl,KINTR
-    ld (0xf7f1),hl   ;start timer
+    ld (INTRV),hl   ;start timer
 mandel1:
     ld hl,$401f  ;scrtop
     push hl
@@ -375,7 +377,7 @@ endif
     jp nz,mandel1
 loc3:
     ld hl,(KL+1)
-    ld (0xf7f1),hl   ;stop timer
+    ld (INTRV),hl   ;stop timer
     cp 'B'
     jp z,loc4
 
@@ -558,7 +560,7 @@ curoff db 27,";$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     4 colors + textures, v5    *",13,10
+        db "*     4 colors + textures, v6    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10

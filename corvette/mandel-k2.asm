@@ -16,6 +16,8 @@ ODOSA   EQU     1CH
 
 NCREG   EQU     0BFH  ;color reg
 
+INTRV EQU 0F7D0H
+
 NOCALC equ 0
 
 initer	equ	7
@@ -48,7 +50,7 @@ start
     call BDOS
     call clscursor
 
-    ld hl,(0xf7f1)
+    ld hl,(INTRV)
     ld (KL+1),hl    ;prepare the timer handler
 
     ld hl,sqrbase
@@ -93,7 +95,7 @@ r4l:
     inc de
     jp sqrloop
 
-mandel0: 
+mandel0:
     pop hl
 mandel:
     ld a,16
@@ -102,7 +104,7 @@ mandel:
     ld (tilo),hl
     ld (tihi),hl
     ld hl,KINTR
-    ld (0xf7f1),hl   ;start timer
+    ld (INTRV),hl   ;start timer
 mandel1:
     ld hl,$401f  ;scrtop
     push hl
@@ -331,7 +333,7 @@ endif
     jp nz,mandel1
 loc3:
     ld hl,(KL+1)
-    ld (0xf7f1),hl   ;stop timer
+    ld (INTRV),hl   ;stop timer
     cp 'B'
     jp z,loc4
 
@@ -514,7 +516,7 @@ curpos db 1,33,65,"$"
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     8 colors + textures, v4    *",13,10
+        db "*     8 colors + textures, v5    *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav",13,10
