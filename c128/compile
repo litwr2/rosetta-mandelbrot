@@ -1,0 +1,3 @@
+F=${1%%.asm}
+vasm6502_oldstyle $1 -Fbin -cbm-prg -o $F.prg -L $F.lst
+
