@@ -15,7 +15,7 @@ GETIN = $FFE4
 
 NOCALC = 0
 
-sqrbase = $3900 ;must be $xx00, it takes area $2250-$4fb0
+sqrbase = $3a00 ;must be $xx00, it takes area $2350-$50b0
 initer	= 7
 idx	=	-36       ;-.0703125
 idy	=	18        ;.03515625, 1 = 1/512
@@ -26,6 +26,7 @@ sf4	=	436/4		; sf/4
 r0 = $50
 r1 = $fb ;$fc
 r2 = $41
+alo = $42
 r3 = $43
 t = $66 ;$67
 tmp = $64 ;$65
@@ -42,6 +43,14 @@ dividend = $64	  ;..$67
 remainder = $50   ;..$51
 quotient = dividend ;save memory by reusing divident to store the quotient
 
+  macro msetr
+     stx APORT
+.\@:  bit APORT
+     bpl .\@
+
+     sta DPORT
+  endm
+     
          * = $1c01
    byte $b,$1c,$a,0,$9e
    byte start/1000+48,start%1000/100+48,start%100/10+48,start%10+48
@@ -50,12 +59,13 @@ quotient = dividend ;save memory by reusing divident to store the quotient
 start: JSR PRIMM
        byte 14,"**************************************",13
        byte "*  sUPERFAST mANDELBROT GENERATOR V1 *",13
+       byte "*         8502 2mhZ vdc 16kb         *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
-       byte "mASLOVSKI.",13
-       byte "tHIS cOMMODORE 128 PORT WAS CREATED",13,0
+       byte "mASLOVSKI.",13,0
        JSR PRIMM
+       byte "tHIS cOMMODORE 128 PORT WAS CREATED",13
        byte "BY LITWR, 2023.",13
        byte "tHE t-KEY GIVES US TIMINGS",13
        byte 'pRESS b TO ENTER BENCHMARK MODE',0
@@ -229,6 +239,8 @@ mandel1:
     ror
     sta r5lo    ;r5 = 128*dy
 .mloop0:
+    lda #63
+    sta alo
   if NOCALC=0
 .x0lo = * + 1
     lda #<ix0
@@ -368,6 +380,7 @@ r4hi = * + 1
     sta .tcolor1
     lda (zpat2),y
     sta .tcolor2
+.loop2t:
     jmp .mloop2
 
 .loc8:
@@ -378,18 +391,8 @@ r4hi = * + 1
     lsr
     lsr
     ora (zpat1),y
-    pha
-    ldx #18
-.m1hi = * + 1
-    lda #0
-    jsr setr
-    inx
-.m1lo = * + 1
-    lda #$3f
-    jsr setr
-    ldx #31
-    pla
-    jsr setr
+    ldx alo
+    sta lineb1,x
 .tcolor2 = * + 1
     lda #0
     lsr
@@ -397,41 +400,59 @@ r4hi = * + 1
     lsr
     lsr
     ora (zpat2),y
-    pha
+    sta lineb2,x
+    dex
+    stx alo
+    bpl .loop2t
+
+    ldx #18
+.m1hi = * + 1
+    lda #0
+    msetr
+    inx
+.m1lo = * + 1
+    lda #0
+    msetr
+
+    ldy #0
+    ldx #31
+.l7 lda lineb1,y
+    msetr
+    iny
+    cpy #64
+    bne .l7
+
     ldx #18
 .m2hi = * + 1
-    lda #0
-    jsr setr
+    lda #$3f
+    msetr
     inx
 .m2lo = * + 1
-    lda #$ff
-    jsr setr
+    lda #$c0
+    msetr
+
+    ldy #0
     ldx #31
-    pla
-    jsr setr
+.l6 lda lineb2,y
+    msetr
+    iny
+    cpy #64
+    bne .l6
 
-    ldx .m2lo
-    bne .lt1
-
-    dec .m2hi
-.lt1 dex
-    stx .m2lo
-    ldx .m1lo
-    txa
-    dex
-    stx .m1lo
-    and #$3f
-    bne .loop2t
-
-    inx
-    txa
+    lda .m1lo
     clc
-    adc #127
+    adc #64
     sta .m1lo
     lda .m1hi
     adc #0
     sta .m1hi
-.updr5:
+    lda .m2lo
+    sbc #63   ;C=0
+    sta .m2lo
+    lda .m2hi
+    sbc #0
+    sta .m2hi
+
     lda zpat1
     ldx zpat2
     sta zpat2
@@ -446,8 +467,6 @@ r4hi = * + 1
 	beq .loc7
 .loop0t:
     jmp .mloop0
-.loop2t:
-    jmp .mloop2
 .loc7:
     lda r5lo
     bne .loop0t  ;bgt	loop0
@@ -615,10 +634,9 @@ r4hi = * + 1
 .exit1:
     jmp .exit
 
-pat1: byte	0,$e0,$d0,$c0,$a0,$50,$10,$f0  ;pat1 & pat2 must be on the same page
-pat2: byte	0,$b0,$60,$30,$10,$a0,$e0,$f0
-;pat1: byte	15,1,2, 3, 5,10,14,0   ;inv
-;pat2: byte	15,4,9,12,14, 5, 1,0
+lineb1 blk 64
+lineb2 blk 64
+  assert (lineb1 & $ff) <= 128, "fix the alignment of lineb!"
 
 pr000:   sta d+2
          lda #100
@@ -651,7 +669,7 @@ prc      txa
          lda d+2
          sbc d+1
          sta d+2
-         bcs prn
+         bcs prn  ;always
 
 div32x16w        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
@@ -693,12 +711,14 @@ ti byte 0,0,0
 benchmark byte 0
 bcount byte 0
 
-setr:
-     stx APORT
-.l1: bit APORT
-     bpl .l1
+pat1: byte	0,$e0,$d0,$c0,$a0,$50,$10,$f0  ;pat1 & pat2 must be on the same page
+pat2: byte	0,$b0,$60,$30,$10,$a0,$e0,$f0
+;pat1: byte	15,1,2, 3, 5,10,14,0   ;inv
+;pat2: byte	15,4,9,12,14, 5, 1,0
+  assert (pat1 & $ff00) == ((pat2+8) & $ff00), "fix the alignment of pat!"
 
-     sta DPORT
+setr:
+     msetr
      rts
 
 waitk:
