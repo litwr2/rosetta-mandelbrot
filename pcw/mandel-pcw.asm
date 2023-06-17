@@ -615,7 +615,7 @@ dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
   if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
+.ERROR wrong alignment
   endif
 
 msg     db "**********************************",13,10

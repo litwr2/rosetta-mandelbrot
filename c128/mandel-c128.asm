@@ -600,14 +600,14 @@ r4hi = * + 1
          txa
          adc remainder+1
          sta remainder+1
-         
+
          lda remainder  ;*2
          asl
          rol remainder+1
          sta dividend
          lda remainder+1
          sta dividend+1
-         
+
          lda #3
          sta divisor
          lda #0   ;dividend = quotient
@@ -618,7 +618,7 @@ r4hi = * + 1
          lda remainder
          cmp #2
          bcs .l8
-         
+
          inx
          bne .l8
 
@@ -743,4 +743,3 @@ fast:
       lda #1
       sta $d030
       rts
- 

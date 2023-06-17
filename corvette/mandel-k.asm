@@ -425,7 +425,7 @@ dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
   if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
+.ERROR ERROR2
   endif
 
 div0 macro
@@ -517,7 +517,7 @@ pat0c:	db 0, 0x80, 0x00, 0x80, 0xC0, 0x40, 0x00, 0xC0
         db 0, 0x00, 0x80, 0x80, 0x00, 0xC0, 0xC0, 0xC0
 
   if (pat0 and $ff00) != ((pat0+47) and $ff00)
-ERROR ERROR
+.ERROR ERROR
   endif
 
 KINTR

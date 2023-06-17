@@ -483,7 +483,7 @@ dx  	dw idx
 dy	    dw idy
 mx      dw imx
   if (dx and $ff00) != ((mx+2) and $ff00)
-ERROR ERROR2
+.ERROR ERROR2
   endif
 
 benchmark db 0
