@@ -141,7 +141,6 @@ mandel:
 
     call fast
     di
- if 1
     ld bc,CIA1TOD+3
     ld hl,time+3
     in a,(c)
@@ -159,7 +158,6 @@ mandel:
     dec bc
     in a,(c)
     ld (hl),a
- endif
     ei
 
 mandel1:
@@ -401,7 +399,6 @@ endif
     dec (hl)
     jp nz,mandel1
 loc3:
-  if 1
     di
     ld bc,CIA1TOD+3
     ld hl,msg+3
@@ -543,7 +540,6 @@ loc3:
     inc de
     ld (ticks),hl
     ld (ticks+2),de
- endif
     call slow
 
     ld a,(benchmark)
