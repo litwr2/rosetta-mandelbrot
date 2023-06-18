@@ -173,14 +173,14 @@ mandel1:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld hl,63  ;scrtop, x
-    push hl
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
 endif
+    ld de,lineb1+63  ;x
 loop1:
+    push de
     ld ixl,2
 loop2:
 if NOCALC=0
@@ -259,23 +259,19 @@ loc8
     rla
     rla
     or iyl
-    ld hl,lineb1
-    add hl,de
-    ld (hl),a
+    ld (de),a
     ld a,c
     rla
     rla
     rla
     rla
     or iyh
-    ld bc,64
-    add hl,bc  ;lineb2
+    ld hl,64
+    add hl,de  ;lineb2
     ld (hl),a
     dec e
-    push de
     jp p,loop1
 
-    pop bc
     pop hl
     ld d,18
     ld e,h
@@ -683,29 +679,27 @@ wait_char
         jr z,wait_char
         ret
 
-time equ ticks        
-ticks db 0,0,0,0
-benchmark db 0
-bcount db 0
-
-        org ($ + 15) & $fff0
-pat1: db	0,$e,$d,$c,$a,$5,$1,$f  ;pat1 & pat2 must be on the same page
-pat2: db	0,$b,$6,$3,$1,$a,$e,$f
-
 setr:
      ld bc,APORT
      msetr
      ret
 
+time equ ticks        
+ticks db 0,0,0,0
+benchmark db 0
+bcount db 0
+
+
+        org ($ + 255) & $ff00
+lineb1 ds 64
+lineb2 ds 64
+
+pat1: db	0,$e,$d,$c,$a,$5,$1,$f  ;pat1 & pat2 must be on the same page
+pat2: db	0,$b,$6,$3,$1,$a,$e,$f
+
 ;getr:
 ;     mgetr
 ;     ret
-
-lineb1 ds 64
-lineb2 ds 64
-  if (lineb1 and $ff) > 128
-.ERROR fix the alignment of lineb!
-  endif
 
 slow: ;ld bc,$d030
       ;xor a
@@ -731,7 +725,7 @@ fast: ld bc,$d011
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "* generator, C128 VDC 16KB *",13,10
-        db "*             v1           *",13,10
+        db "*             v2           *",13,10
         db "*RUN IT ON VIC-II DISPLAY!!*",13,10
         db "****************************",13,10
         db "The original version was",13,10
