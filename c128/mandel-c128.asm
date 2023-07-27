@@ -50,7 +50,7 @@ quotient = dividend ;save memory by reusing divident to store the quotient
 
      sta DPORT
   endm
-     
+
          * = $1c01
    byte $b,$1c,$a,0,$9e
    byte start/1000+48,start%1000/100+48,start%100/10+48,start%10+48
@@ -82,7 +82,7 @@ start: JSR PRIMM
    ldx #12
    lda #0
    jsr setr
-   
+
    inx
    jsr setr
 
@@ -105,7 +105,7 @@ start: JSR PRIMM
    ldx #7
    lda #36
    jsr setr
-   
+
    lda #>pat1
    sta zpat1+1
    ;lda #>pat2   ;pat1 & pat2 are on the same page
@@ -322,7 +322,7 @@ mandel1:
 r5lo = * + 1
     adc #0   ;C=0
   if NOCALC=0
-    tax 
+    tax
     iny
     lda (tmp),y     ;mov sqr(r1), r1
   endif

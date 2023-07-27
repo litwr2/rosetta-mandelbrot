@@ -3,13 +3,17 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;512x256 Mandelbrot for the Commodore 128 (VDC) under CP/M, 2 colors are used to form 4x1 bricks to simulates 8 colors
+;512x256 Mandelbrot for the Commodore 128 (VDC, Z80) under ROM Basic, 2 colors are used to form 4x1 bricks to simulates 8 colors
 
 APORT equ $D600
 ;DPORT equ $D601
 CIA1TOD equ $DC08
 
-BDOS equ 5
+BSOUT equ $FFD2    ;print char in AC
+PRIMM equ $FA17
+GETIN equ $FFE4
+
+INTRM1 equ 0    ;0 - CIA1TOD, 1 - raster interrrupts
 
 NOCALC equ 0
 
@@ -39,6 +43,47 @@ l1:  in a,(c)
      in e,(c)
   endm
 
+to_8502 macro mm
+  local retaddr
+  ld hl,retaddr
+  ld ($ffdd),hl
+  jp $ffe0
+retaddr
+        db $a9 ;LDA#
+        db mm
+        db $8d    ;STA abs
+        dw $ff00
+  endm
+
+to_z80 macro
+  local retaddr
+  db $78   ;SEI
+  db $a9,$3f  ;LDA #$3f
+  db $8d   ;STA abs
+  dw $ff00
+  db $a9   ;LDA#
+  db $c3   ;JP
+  db $8d   ;STA abs
+  dw $ffee
+  db $a9   ;LDA#
+  db low(retaddr)
+  db $8d   ;STA abs
+  dw $ffef
+  db $a9   ;LDA#
+  db high(retaddr)
+  db $8d   ;STA abs
+  dw $fff0
+  db $4c   ;JMP
+  dw $ffd0
+retaddr
+if INTRM1
+  ld a,$bf
+else          ;remove?
+  ld a,$3f
+endif
+  ld ($ff00),a  ;all to RAM
+  endm
+
 msetr macro  ;d - port, e - data
      local l1
      out (c),d
@@ -50,10 +95,50 @@ l1:  in a,(c)
      out (c),e
   endm
 
-         org $100
-start    ld de,msg
-         ld c,9
-         call BDOS
+         org $1c01-2
+   dw $1c01
+   db $b,$1c,$a,0,$9e
+   db start/1000+48, (start % 1000)/100+48, (start % 100)/10+48, (start % 10)+48
+   db 0,0,0
+start    db $20   ;JSR
+         dw PRIMM
+         db 14,"**************************************",13
+if INTRM1
+         db "* sUPERFAST mANDELBROT GENERATOR V1I *",13
+else
+         db "*  sUPERFAST mANDELBROT GENERATOR V1 *",13
+endif
+         db "*            z80 vdc 16kb            *",13
+         db "*     run it on vic-ii display!!     *",13
+         db "**************************************",13
+         db "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13,0
+         db $20   ;JSR
+         dw PRIMM
+         db "THE bk0011 IN 2021 BY sTANISLAV",13
+         db "mASLOVSKI.",13
+         db "tHIS cOMMODORE 128 PORT WAS CREATED",13
+         db "BY LITWR, 2023.",13
+         db "tHE t-KEY GIVES US TIMINGS",13
+         db 'pRESS b TO ENTER BENCHMARK MODE',0
+
+         db $ad   ;LDA abs
+         dw $a03  ;NTSC/PAL
+         db $8d   ;STA abs
+         dw m1+1
+
+         to_z80
+         ld sp,stacka
+if INTRM1
+         ld a,($38)
+         push af
+         ld hl,($39)
+         push hl
+         ld a,$c3   ;JP
+         ld ($38),a
+         ld hl,irqh
+         ld ($39),hl
+         im 1
+endif
          call wait_char
          and 0dfh
          ld (benchmark),a
@@ -73,7 +158,7 @@ start    ld de,msg
          ld de,$140
          call setr
 
-         ld de,$25e 
+         ld de,$25e
          call setr
 
          ld de,$427
@@ -92,8 +177,10 @@ start    ld de,msg
          call setr
 
     ld hl,sqrbase
+    ld (r4l+1),hl
     push hl
     ld bc,0
+    ld (r0l+1),bc
     ld d,b
     ld e,c
 sqrloop:
@@ -136,28 +223,34 @@ r4l:
 mandel0:
     pop hl
 mandel:
+if INTRM1
+    ld hl,0
+    ld (ticks),hl
+    ld (ticks+2),hl
+    ei
+else
+    ld bc,CIA1TOD+6
+    in a,(c)
+    or $80
+m1  ld d,0
+    bit 0,d
+    jr nz,l1
+    
+    and $7f
+l1  out (c),a
+    ld bc,CIA1TOD+3
+    xor a
+    out (c),a       ;start TOD clock
+    dec c
+    out (c),a
+    dec c
+    out (c),a
+    dec c
+    out (c),a
+endif
     ld a,16
     ld (bcount),a
-
     call fast
-    ld bc,CIA1TOD+3
-    ld hl,ticks+3
-    in a,(c)
-    and $7f
-    ld (hl),a
-    dec hl
-    dec bc
-    in a,(c)
-    ld (hl),a
-    dec hl
-    dec bc
-    in a,(c)
-    ld (hl),a
-    dec hl
-    dec bc
-    in a,(c)
-    ld (hl),a
-
 mandel1:
     ld hl,$3fc0 ;bottom
     push hl
@@ -393,74 +486,20 @@ endif
     dec (hl)
     jp nz,mandel1
 loc3:
-    ld bc,CIA1TOD+3
-    ld hl,msg+3
-    in a,(c)
-    and $7f
-    ld (hl),a
-    dec hl
-    dec bc
-    in a,(c)
-    ld (hl),a
-    dec hl
-    dec bc
-    in a,(c)
-    ld (hl),a
-    dec bc
-    in a,(c)
-
-    ld bc,msg
-    ld hl,ticks
-    sub (hl)
-    daa
-    push af
-    and $f
-    ld (bc),a
-    pop af
-
-    inc hl
-    inc bc
-    ld a,(bc)
-    sbc a,(hl)
-    daa
-    push af
-    jr nc,$+4
-    sub $40
-    ld (bc),a
-    pop af
-
-    inc hl
-    inc bc
-    ld a,(bc)
-    sbc a,(hl)
-    daa
-    push af
-    jr nc,$+4
-    sub $40
-    ld (bc),a
-    pop af
-
-    inc hl
-    inc bc
-    ld a,(bc)
-    sbc a,(hl)
-    daa
-    jr nc,$+5
-    add a,$12
-    daa
-    ;ld (bc),a
+if INTRM1=0
     ld h,0
+    ld a,high(CIA1TOD)
+    in a,(low(CIA1TOD+3))
+    and $7f
     ld l,a
-    push bc
     ld bc,4500       ;36000/8
     call mul16
     ex de,hl
-    pop bc
-    dec bc
 
     push hl
-    ld a,(bc)
-    push bc
+    ld a,high(CIA1TOD)
+    in a,(low(CIA1TOD+2))
+    push af
     ld bc,375        ;6000/16
     and $f0
     rrca
@@ -469,26 +508,23 @@ loc3:
     ld h,0
     ld l,a
     call mul16
-    pop bc
+    pop af
     pop hl
     add hl,de
 
     push hl
-    ld a,(bc)
-    push bc
     ld bc,75       ;600/8
     and $f
     ld h,0
     ld l,a
     call mul16
-    pop bc
     pop hl
     add hl,de
-    dec bc
 
     push hl
-    ld a,(bc)
-    push bc
+    ld a,high(CIA1TOD)
+    in a,(low(CIA1TOD+1))
+    push af
     ld bc,25        ;100/4
     and $f0
     rrca
@@ -496,28 +532,24 @@ loc3:
     ld h,0
     ld l,a
     call mul16
-    pop bc
+    pop af
 
     push de
-    ld a,(bc)
-    push bc
     ld bc,10
     and $f
     ld h,0
     ld l,a
     call mul16
-    pop bc
     pop hl
     add hl,de
-    dec bc
 
-    ld a,(bc)
+    ld a,high(CIA1TOD)
+    in a,(low(CIA1TOD))
+    and $f
     ld d,0
     ld e,a
     add hl,de
     ld de,0
-    ld (ticks),de
-    ld (ticks+2),hl
     ld b,h
     ld c,l
     pop hl
@@ -532,8 +564,8 @@ loc3:
     inc de
     ld (ticks),hl
     ld (ticks+2),de
+endif
     call slow
-
     ld a,(benchmark)
     cp 'B'
     jr z,loc4
@@ -543,42 +575,85 @@ loc3:
     cp 'Q'
     jr nz,noq
 exit:
-    ld c,0
-    jp BDOS
+if INTRM1
+    pop hl
+    ld ($39),hl
+    pop af
+    ld ($38),a
+endif
+    to_8502 0
+         db $58   ;CLI
+         db $60   ;RTS
 
 noq:cp 'T'
     jp nz,mandel
 loc4:
-    ld e,$d
-    ld c,2
-    call BDOS
-    ld e,$a
-    ld c,2
-    call BDOS
+    ld a,$d
+    call out_char
     ld a,(niter)
     sub 7
     ld l,a
     ld h,0
     call PR000
-    ld e," "
-    ld c,2
-    call BDOS
+    ld a," "
+    call out_char
     ld hl,(ticks)
     ex de,hl
     ld a,(ticks+2)
     ld l,a
     ld h,0
+if INTRM1
+    ld bc,60
+m1  ld a,0
+    and 1
+    jr z,ntsc
+
+    ld c,50
+    call div32x16r
+	PUSH HL
+	EX DE,HL
+	call PR000
+	LD a,'.'
+    call out_char
+	POP hl
+    add hl,hl  ;*2
+    jr lminus
+ntsc
+    call div32x16r
+	PUSH HL
+	EX DE,HL
+	call PR000
+	LD a,'.'
+    call out_char
+	POP hl
+    push hl
+    add hl,hl
+    add hl,hl  ;*2
+    pop de
+    add hl,de
+    ld de,0
+    ex de,hl
+    ld bc,3
+    call div32x16r
+    ex de,hl
+    dec e
+    dec e
+    jp m,lminus
+
+    inc hl
+lminus
+	call PR00
+else
     ld bc,10
     call div32x16r
 	PUSH HL
 	EX DE,HL
 	call PR000
-	LD e,'.'
-    ld c,2
-    call BDOS
+	LD a,'.'
+    call out_char
 	POP hl
 	call PR0E
-
+endif
     call wait_char
     and 0dfh
     cp 'Q'
@@ -643,9 +718,7 @@ PR00	ld de,-10
 PR0E   	ld A,L
 PRD	add a,$30
     push hl
-    ld e,a
-    ld c,2
-    call BDOS
+    call out_char
     pop hl
     ret
 
@@ -660,6 +733,20 @@ PR0	ld A,$FF
 	ld L,C
 	jp PRD
 
+wait_char proc
+        local ichar
+        to_8502 $e
+        db $58   ;CLI
+        db $20   ;JSR
+        dw waitk
+        db $8d   ;STA abs
+        dw ichar+1
+        to_z80
+ichar
+        ld a,0
+        ret
+        endp
+
 dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
@@ -667,13 +754,18 @@ mx:     dw imx
 .ERROR wrong alignment for dx,dy,mx
   endif
 
-wait_char
-        ld c,6   ;direct console i/o
-        ld e,0ffh
-        call BDOS
-        or a
-        jr z,wait_char
+out_char proc
+        local m1
+        ld (m1),a
+        to_8502 $e
+        ;db $58   ;CLI
+        db $a9    ;LDA #
+m1      db 0        
+        db $20   ;JSR
+        dw BSOUT
+        to_z80
         ret
+        endp
 
 setr:
      ld bc,APORT
@@ -683,7 +775,6 @@ setr:
 ticks db 0,0,0,0
 benchmark db 0
 bcount db 0
-
 
         org ($ + 255) & $ff00
 lineb1 ds 64
@@ -704,11 +795,9 @@ slow: ;ld bc,$d030
       and $7f
       or $10
       out (c),a
-      ei
       ret
 
-fast: di
-      ld bc,$d011
+fast: ld bc,$d011
       in a,(c)
       and #$6f
       out (c),a
@@ -717,23 +806,42 @@ fast: di
       ;out (c),1
       ret
 
+if INTRM1
+irqh  proc
+      local l0
+      push af
+      push bc
+      LD BC,$D019 
+      IN A,(C) 
+      OUT (C),A ;CLEAR VIC RASTER IRQ
+      pop bc
+      push hl
+      ld hl,ticks
+      inc (hl)
+      jr nz,l0
+
+      inc hl
+      inc (hl)
+      jr nz,l0
+
+      inc hl
+      inc (hl)
+l0    pop hl
+      pop af
+      ei
+      ret
+      endp
+else
       include "mul16.s"
+endif
 
-msg     db "****************************",13,10
-        db "*   Superfast Mandelbrot   *",13,10
-        db "* generator, C128 VDC 16KB *",13,10
-        db "*             v3           *",13,10
-        db "*RUN IT ON VIC-II DISPLAY!!*",13,10
-        db "****************************",13,10
-        db "The original version was",13,10
-        db "published for the BK0011 in",13,10
-        db "2021 by Stanislav Maslovski.",13,10
-        db "This C128-Z80 port was created",13,10
-        db "by Litwr, 2023.",13,10
-        db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit",13,10
-        db "Press B to enter benchmark mode$"
+waitk: db $20 ;JSR
+      dw GETIN
+      db 9, 0   ;ora #0
+      db $f0, $f9  ;beq waitk
+      db $60       ;rts
 
-sqrbase equ (msg + $16b0 + $ff) and $ff00
+sqrbase equ ($ + $16b0 + $ff) and $ff00
+stacka equ sqrbase+$17b0
    end start
 
