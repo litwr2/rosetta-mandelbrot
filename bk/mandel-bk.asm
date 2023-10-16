@@ -117,15 +117,15 @@ nitera	=	.+2
 	bic	#177770,r2	; get 3 bits of color
 patt2 = .+2
     bisb	pat1(r2),r3
-7$:	mov	(r6)+,r1	; pop mask from stack
+	mov	(r6)+,r1	; pop mask from stack
 	asl	r1		; shift
 	asl	r1		;   left
 	asl	r1		; shift
 	asl	r1		;   left
 patt1	=	.+2
 	bisb	pat0(r2), r1	; OR the pattern
-3$:
 	bcc	loop2		; to next pixel
+
 	mov	(r6)+, r0	; pop addr from stack
 	mov	r1, -(r0)	; update addr, write to screen
 	mov	#^b0011111111000000, r2
