@@ -12,7 +12,6 @@
 PRO380 = 1  ;set it to 0 on the Pro-325/350
 HSIZE = 1024  ;fixed!
 VSIZE = 256  ;may be 240 or 256
-VA = 0  ;may be 0 or 16 that corresponds video amplifiers off or on
 
       .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
@@ -195,6 +194,21 @@ nitera	=	.+2
          bic #TTSPC$,@#$JSW
          .exit
 5$:
+    mov @sp,r1
+	mov #^B0000000000000010,6(r1)  ;plane 1, the MOV-op
+	mov #^B0000001000000010,8(r1) ;plane 2 & 3, the MOV/MOV-op
+    clr r4
+    mov r4,20(r1)
+12$:mov r4,16(r1)
+    mov #0,14(r1)
+    mov #112,18(r1)
+    tst 4(r1)   ;transfer done?
+    bpl .-4
+
+    inc r4
+    cmp #10,r4
+    bne 12$
+
     call @#rreg
     .print #chome
     mov @#nitera,r2
@@ -316,9 +330,9 @@ sreg:  mov 2(sp),r1
        mov 14(r1),(r2)+
        mov 16(r1),(r2)
 .if eq VSIZE-240
-     mov #^B0000000000000000!VA,4(r1)   ;240 lines
+     mov #^B0000000000000000,4(r1)   ;240 lines
 .iff
-     mov #^B0000000000000001!VA,4(r1)   ;256 lines
+     mov #^B0000000000000001,4(r1)   ;256 lines
 .endc
        return
 
@@ -338,7 +352,7 @@ XC: .word 0
 smsg:
     .ascii "Superfast Mandelbrot generator, 1024x2"
     .byte <VSIZE-200>/10+48,VSIZE-<<VSIZE/10>*10>+48
-    .ascii ", 8 colors, v1 (Pro-3"
+    .ascii ", 8 colors, v2 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
@@ -354,8 +368,8 @@ smsg:
 emsg:    .asciz "cannot find the graphic system"
 e2msg:    .asciz "cannot find the EBO"
 eol = . - 1
-chome:   .ascii <27> "[H" <128>
-term2:   .ascii <27> "[H" <27> "[J" <27> "[?25h" <128>
-term1:   .ascii <27> "[?25l" <128>
+chome:   .ascii <27> "[H" <128>    ;[home]
+term2:   .ascii <27> "[2J" <27> "[?25h" <128>  ;[clear] [show cursor]
+term1:   .ascii <27> "[?25l" <27> "[2J" <128>    ;[hide cursor] [clear]
 .End	START
 

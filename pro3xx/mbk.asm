@@ -12,7 +12,6 @@
 
 PRO380 = 1  ;set it to 0 on the Pro-325/350
 NOCALC = 0
-VA = 0  ;may be 0 or 16 that corresponds video amplifiers off or on
 
       .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
@@ -77,15 +76,15 @@ dx	=	-12*3
 dy	=	6*3
 x0	=	-62*dx
 mx	=	10*dx		; x move
-sf4	=	436/4		; sf/4
+sf4	=	436/4		; sf/4 = 109
 
 mandl:
     movb #16,@#bcount
+    .gtim #area,#time
 mandl1:
     clr @#YCU
     mov #255,@#YCL
     mov #508,@#XC
-    .gtim #area,#time
 	mov	@#dya, r5
 	swab	r5
 	asr	r5		; r5 = 128*dy = b
@@ -195,6 +194,19 @@ nitera	=	.+2
          bic #TTSPC$,@#$JSW
          .exit
 5$:
+;    mov @sp,r1
+;    clr r4
+;    mov r4,20(r1)
+;12$:mov r4,16(r1)
+;    mov #0,14(r1)
+;    mov #112,18(r1)
+;    tst 4(r1)   ;transfer done?
+;    bpl .-4
+;
+;    inc r4
+;    cmp #10,r4
+;    bne 12$
+
     call @#rreg
     .print #chome
     mov @#nitera,r2
@@ -315,7 +327,7 @@ sreg:  mov 2(sp),r1
        mov 8(r1),(r2)+
        mov 14(r1),(r2)+
        mov 16(r1),(r2)
-     mov #^B0000000000000001!VA,4(r1)   ;256 lines
+     mov #^B0000000000000001,4(r1)   ;256 lines
      mov #^B0000000000010010,6(r1)   ;256 dots, move to screen
      mov #^B0000000000000000,8(r1)  ;disable planes 3 (red) and 2 (green)
        return
@@ -337,7 +349,7 @@ YCL: .word 0
 XC: .word 0
 
 smsg:
-    .ascii "Superfast Mandelbrot generator, v2 (Pro-3"
+    .ascii "Superfast Mandelbrot generator, v3 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
@@ -354,8 +366,8 @@ smsg:
     .asciz "Press B to enter benchmark mode"
 emsg:    .asciz "cannot find the graphic system"
 eol = . - 1
-chome:   .ascii <27> "[H" <128>
-term2:   .ascii <27> "[H" <27> "[J" <27> "[?25h" <128>
-term1:   .ascii <27> "[?25l" <27> "[2J" <128>
+chome:   .ascii <27> "[H" <128>    ;[home]
+term2:   .ascii <27> "[2J" <27> "[?25h" <128>  ;[clear] [show cursor]
+term1:   .ascii <27> "[?25l" <27> "[2J" <128>    ;[hide cursor] [clear]
 .End	START
 
