@@ -138,6 +138,7 @@ nitera	=	.+2
     mov #4,18(r1)
     tst 4(r1)   ;transfer done?
     bpl .-4
+
     mov @#XCR,14(r1)
     mov #4,18(r1)
     dec @#YC
@@ -146,7 +147,6 @@ nitera	=	.+2
     mov #127,@#YC
     add #4,@#XCL
     add #-4,@#XCR
-
 	sub	@#dya,r5		; update b
 	bgt	loop0		; continue while b > 0
 .if eq NOCALC

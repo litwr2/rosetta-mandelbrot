@@ -346,7 +346,7 @@ addr:    .word 0
 
 save4:   .blkw 5
 YCU: .word 0
-YCL: .word 0 
+YCL: .word 0
 XC: .word 0
 
 smsg:

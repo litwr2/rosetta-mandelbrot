@@ -126,16 +126,7 @@ nitera	=	.+2
 	sob	r2, 1$		; to next iteration
 2$:
 .if ne SUPER
-    mov r2,r0
-    bic #65408,r0   ;$fff8
-    movb ts8(r0),r0
-    asr r2
-    asr r2
-    asr r2
-    bic #65408,r2   ;$fff8
-    movb ts8(r2),r2
-    asl r2
-    add r0,r2
+    call sshift
 .endc
 	mov @sp,r1
 	mov #^B0000000000001010,6(r1)  ;plane 1, the MOV-op
@@ -359,17 +350,30 @@ addr:    .word 0
 
 save4:   .blkw 5
 YCU: .word 0
-YCL: .word 0 
+YCL: .word 0
 XC: .word 0
 
 .if ne SUPER
-ts8 .byte 0,1,4,5,16,17,20,21
+sshift:
+    mov r2,r0
+    bic #65408,r0   ;$fff8
+    movb ts8(r0),r0
+    asr r2
+    asr r2
+    asr r2
+    ;bic #65408,r2   ;$fff8
+    movb ts8(r2),r2
+    asl r2
+    add r0,r2
+    return
+
+ts8: .byte 0,1,4,5,16,17,20,21
 .endc
 
 smsg:
     .ascii "Superfast Mandelbrot generator, 512x2"
     .byte <VSIZE-200>/10+48,VSIZE-<<VSIZE/10>*10>+48
-    .ascii ", 64 colors, v2 (Pro-3"
+    .ascii ", 64 colors, v3 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff

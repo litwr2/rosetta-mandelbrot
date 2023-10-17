@@ -126,40 +126,14 @@ nitera	=	.+2
 	sob	r2, 1$		; to next iteration
 2$:
 .if ne SUPER
-    mov r2,r0
-    bic #65408,r0   ;$fff8
-    movb ts8(r0),r0
-
-    asr r2
-    asr r2
-    asr r2
-    mov r2,r1
-    bic #65408,r1   ;$fff8
-    movb ts8(r1),r1
-    ash #6,r1
-    add r1,r0
-
-    asr r2
-    asr r2
-    asr r2
-    mov r2,r1
-    bic #65408,r1   ;$fff8
-    movb ts8(r1),r1
-    asl r1
-    add r1,r0
-
-    asr r2
-    asr r2
-    asr r2
-    bic #65408,r2   ;$fff8
-    movb ts8(r2),r2
-    ash #7,r2
-    add r0,r2
+    call sshift
 .endc
 	mov @sp,r1
 	mov #^B0000000000010010,6(r1)  ;plane 1, the MOV-op
 	mov #^B0001000000010000,8(r1)  ;plane 2 & 3, the NOP-op
-    mov r2,20(r1)
+	mov r1,r3
+	add #20,r3
+    mov r2,(r3)
     mov @#YCU,16(r1)
     mov @#XC,14(r1)
     mov #4,18(r1)
@@ -169,7 +143,7 @@ nitera	=	.+2
     bpl .-2
 
     mov @#YCL,16(r1)
-    mov r2,20(r1)
+    mov r2,(r3)
     mov #4,18(r1)
     asr r2
     asr r2
@@ -180,12 +154,12 @@ nitera	=	.+2
 
     mov #^B0000000000010000,6(r1) ;plane 1, the NOP-op
     mov #^B0001000000010010,8(r1) ;plane 2 & 3, the MOV/NOP-op
-    mov r2,20(r1)
+    mov r2,(r3)
     mov #4,18(r1)
     tst (r0)   ;transfer done?
     bpl .-2
 
-    mov r2,20(r1)
+    mov r2,(r3)
     mov @#YCU,16(r1)
     mov #4,18(r1)
     asr r2
@@ -196,12 +170,12 @@ nitera	=	.+2
     bpl .-2
 
     mov #^B0001001000010000,8(r1) ;plane 2 & 3, the NOP/MOV-op
-    mov r2,20(r1)
+    mov r2,(r3)
     mov #4,18(r1)
     tst (r0)   ;transfer done?
     bpl .-2
 
-    mov r2,20(r1)
+    mov r2,(r3)
     mov @#YCL,16(r1)
     mov #4,18(r1)
     sub #4,@#XC
@@ -382,17 +356,49 @@ addr:    .word 0
 
 save4:   .blkw 5
 YCU: .word 0
-YCL: .word 0 
+YCL: .word 0
 XC: .word 0
 
 .if ne SUPER
-ts8 .byte 0,1,4,5,16,17,20,21
+sshift:
+    mov r2,r0
+    bic #65408,r0   ;$fff8
+    movb ts8(r0),r0
+
+    asr r2
+    asr r2
+    asr r2
+    mov r2,r1
+    bic #65408,r1   ;$fff8
+    movb ts8(r1),r1
+    ash #6,r1
+    add r1,r0
+
+    asr r2
+    asr r2
+    asr r2
+    mov r2,r1
+    bic #65408,r1   ;$fff8
+    movb ts8(r1),r1
+    asl r1
+    add r1,r0
+
+    asr r2
+    asr r2
+    asr r2
+    ;bic #65408,r2   ;$fff8
+    movb ts8(r2),r2
+    ash #7,r2
+    add r0,r2
+    return
+
+ts8: .byte 0,1,4,5,16,17,20,21
 .endc
 
 smsg:
     .ascii "Superfast Mandelbrot generator, 256x2"
     .byte <VSIZE-200>/10+48,VSIZE-<<VSIZE/10>*10>+48
-    .ascii ", 4096 colors, v2 (Pro-3"
+    .ascii ", 4096 colors, v3 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff

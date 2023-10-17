@@ -144,7 +144,7 @@ nitera	=	.+2
     mov #4,18(r1)
     sub #4,@#XC
     bpl loop2
-    
+
     mov #508,@#XC
     inc @#YCU
     dec @#YCL
