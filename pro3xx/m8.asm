@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
 ;Mandelbrot for the DEC Professional 325/350/380 + EBO under RT-11
-1024x240/256 or 1024x480/512 if interlaced
+;1024x240/256 or 1024x480/512 if interlaced
 ;8 colors, unmapped color mode
 
 	.title mandelbrot8
@@ -356,7 +356,7 @@ XC: .word 0
 
 smsg:
     .ascii "Superfast Mandelbrot generator, 1024x"
-    .byte VVSZ/100+48,<VVSZ-<<VVDZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
+    .byte VVSZ/100+48,<VVSZ-<<VVSZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
     .ascii ", 8 colors, v3 (Pro-3"
 .if ne PRO380
     .ascii "80"

@@ -402,7 +402,7 @@ ts8: .byte 0,1,4,5,16,17,20,21
 
 smsg:
     .ascii "Superfast Mandelbrot generator, 256x"
-    .byte VVSZ/100+48,<VVSZ-<<VVDZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
+    .byte VVSZ/100+48,<VVSZ-<<VVSZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
     .ascii ", 4096 colors, v4 (Pro-3"
 .if ne PRO380
     .ascii "80"
