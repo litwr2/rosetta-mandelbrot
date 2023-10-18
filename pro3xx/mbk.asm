@@ -263,14 +263,14 @@ nitera	=	.+2
     beq 7$
     jmp @#mandl
 
-printsec:  ;prints R1:R2/100
+printsec:  ;prints R0:R1/100
         mov r1,r2
         mov r0,r1
         clr r4
-        mov #1,r5 
+        mov #1,r5
         mov #34464,r3  ;100000-65536
         call @#pr0
-        clr r5 
+        clr r5
         mov #10000,r3
         call @#pr0
         mov #1000,r3

@@ -81,7 +81,7 @@ fsqr:
 	inc	r2
 	br	fsqr
 
-niter	=	127+<VINT*128>
+niter	=	4095
 dx	=	-5
 dy	=	5-<2*VINT>
 x0	=	-dx*HSIZE/2-384
@@ -216,7 +216,7 @@ nitera	=	.+2
     mov r4,20(r1)
 12$:mov r4,16(r1)
     mov #0,14(r1)
-    mov #112,18(r1)
+    mov #144,18(r1)
     tst 4(r1)   ;transfer done?
     bpl .-4
 
@@ -229,6 +229,8 @@ nitera	=	.+2
     mov @#nitera,r2
     ;sub #niter,r2
     clr r1
+    mov #1000,r3
+    call @#pr0
     mov #100,r3
     call @#pr0
     mov #10,r3
@@ -280,14 +282,14 @@ nitera	=	.+2
     beq 7$
     jmp @#mandl
 
-printsec:  ;prints R1:R2/100
+printsec:  ;prints R0:R1/100
         mov r1,r2
         mov r0,r1
         clr r4
-        mov #1,r5 
+        mov #1,r5
         mov #34464,r3  ;100000-65536
         call @#pr0
-        clr r5 
+        clr r5
         mov #10000,r3
         call @#pr0
         mov #1000,r3
