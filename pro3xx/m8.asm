@@ -2,7 +2,8 @@
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;
-;1024x240/256 Mandelbrot for the DEC Professional 325/350/380 + EBO under RT-11
+;Mandelbrot for the DEC Professional 325/350/380 + EBO under RT-11
+1024x240/256 or 1024x480/512 if interlaced
 ;8 colors, unmapped color mode
 
 	.title mandelbrot8
@@ -12,6 +13,7 @@
 PRO380 = 1  ;set it to 0 on the Pro-325/350
 HSIZE = 1024  ;fixed!
 VSIZE = 256  ;may be 240 or 256
+INTERLACE = 0 ;may be 0 or 1, only works on the Pro-380
 
       .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
@@ -19,6 +21,9 @@ VSIZE = 256  ;may be 240 or 256
       $JSW =: ^O44
 
 sqr = 8192    ;the table base
+VINT = INTERLACE*PRO380
+VVSZ = VSIZE*<VINT+1>
+
 
 START:   bis #TTSPC$,@#$JSW
          .settop #-2
@@ -77,16 +82,16 @@ fsqr:
 
 niter	=	63
 dx	=	-2
-dy	=	5
+dy	=	5-<2*VINT>
 x0	=	-dx*HSIZE/2-384
 
 mandl:
     clr @#YCU
-    mov #VSIZE-1,@#YCL
+    mov #VVSZ-1,@#YCL
     mov #1020,@#XC
     .gtim #area,#time
 	mov #dy,r5
-	mul #VSIZE/2,r5
+	mul #VVSZ/2,r5
 loop0:
 	mov	#x0, r4		; r4 = a
 loop2:
@@ -330,9 +335,9 @@ sreg:  mov 2(sp),r1
        mov 14(r1),(r2)+
        mov 16(r1),(r2)
 .if eq VSIZE-240
-     mov #^B0000000000000000,4(r1)   ;240 lines
+     mov #^B0000000000000000!<4*VINT>,4(r1)   ;240 lines
 .iff
-     mov #^B0000000000000001,4(r1)   ;256 lines
+     mov #^B0000000000000001!<4*VINT>,4(r1)   ;256 lines
 .endc
        return
 
@@ -350,9 +355,9 @@ YCL: .word 0
 XC: .word 0
 
 smsg:
-    .ascii "Superfast Mandelbrot generator, 1024x2"
-    .byte <VSIZE-200>/10+48,VSIZE-<<VSIZE/10>*10>+48
-    .ascii ", 8 colors, v2 (Pro-3"
+    .ascii "Superfast Mandelbrot generator, 1024x"
+    .byte VVSZ/100+48,<VVSZ-<<VVDZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
+    .ascii ", 8 colors, v3 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
