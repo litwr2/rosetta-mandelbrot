@@ -14,7 +14,7 @@ PRO380 = 1  ;set it to 0 on the Pro-325/350
 HSIZE = 256  ;fixed!
 VSIZE = 256  ;may be 240 or 256
 INTERLACE = 0 ;may be 0 or 1, only works on the Pro-380
-SUPER = 0   ;0 is faster but the image is less fine
+SHARP = 0   ;0 is faster, 1 makes images sharper
 
       .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
@@ -130,7 +130,7 @@ nitera	=	.+2
 	add	r4, r0		; r0 = x^2-y^2+a, updated x
 	sob	r2, 1$		; to next iteration
 2$:
-.if ne SUPER
+.if ne SHARP
     call sshift
 .endc
 	mov @sp,r1
@@ -366,46 +366,51 @@ YCU: .word 0
 YCL: .word 0
 XC: .word 0
 
-.if ne SUPER
+.if ne SHARP
 sshift:
     mov r2,r0
     bic #65408,r0   ;$fff8
-    movb ts8(r0),r0
+    asl r0
+    mov ts16(r0),r0
 
     asr r2
     asr r2
     asr r2
     mov r2,r1
     bic #65408,r1   ;$fff8
-    movb ts8(r1),r1
-    ash #6,r1
-    add r1,r0
-
-    asr r2
-    asr r2
-    asr r2
-    mov r2,r1
-    bic #65408,r1   ;$fff8
-    movb ts8(r1),r1
+    asl r1
+    mov ts16(r1),r1
     asl r1
     add r1,r0
 
     asr r2
     asr r2
     asr r2
-    ;bic #65408,r2   ;$fff8
-    movb ts8(r2),r2
-    ash #7,r2
+    mov r2,r1
+    bic #65408,r1   ;$fff8
+    asl r1
+    mov ts16(r1),r1
+    asl r1
+    asl r1
+    add r1,r0
+
+    asr r2
+    asr r2
+    asr r2
+    bic #65408,r2   ;$fff8
+    asl r2
+    mov ts16(r2),r2
+    ash #3,r2
     add r0,r2
     return
 
-ts8: .byte 0,1,4,5,16,17,20,21
+ts16: .word 0,1,16,17,256,257,272,273
 .endc
 
 smsg:
     .ascii "Superfast Mandelbrot generator, 256x"
     .byte VVSZ/100+48,<VVSZ-<<VVSZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
-    .ascii ", 4096 colors, v4 (Pro-3"
+    .ascii ", 4096 colors, v5 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff

@@ -271,10 +271,10 @@ div32x16s: ;R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
 
 printsec:  ;prints R1:R2/100
         clr r4
-        mov #1,r5 
+        mov #1,r5
         mov #34464.,r3  ;100000-65536
         call @#pr0
-        clr r5 
+        clr r5
         mov #10000.,r3
         call @#pr0
         mov #1000.,r3
