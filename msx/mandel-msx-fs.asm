@@ -176,7 +176,6 @@ mandel:
     ld a,$c3     ;opcode for CALL
     ld ($fd9a),a   ;start timer
 
-    ld ixl,1   ;dot even/odd
     ld hl,0  ;scrbase
     push hl
 dy equ $+1
@@ -197,11 +196,17 @@ dy equ $+1
     pop de
     add hl,de      ;dy*106
     ld (r5),hl
-loop0:
-    ld iyh,0  ;scridx
+    exx
 x0 equ $+1
     ld hl,0
+    ld b,high(buf)
+    ld e,1   ;dot even/odd
+    exx
+loop0:
+    exx
+    ld c,0  ;scridx
     ld (r4),hl
+    exx
 loop2
     ld hl,(r4)
 dx equ $+1
@@ -253,25 +258,24 @@ r5 equ $+1
 loc2:
     ld a,ixh   ;color
     and 15
-    dec ixl
+    exx
+    dec e
     jp nz,lx1
 
-    ld iyl,a
+    ld d,a
+    exx
     jp loop2
 lx1
-    ld ixl,1
+    ld e,1
     rlca
     rlca
     rlca
     rlca
-    or iyl
-    dec iyh
-
-    ld b,high(buf)
-    ld c,iyh
+    or d
+    dec c
     ld (bc),a
-
     ld a,c
+    exx
     or a
     jp nz,loop2
 
@@ -562,7 +566,7 @@ ticks db 0,0,0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*        512x212, v4       *",13,10
+        db "*        512x212, v5       *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
         db "by Litwr, 2022-23. It is based",13,10

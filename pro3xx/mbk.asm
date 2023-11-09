@@ -13,7 +13,7 @@
 PRO380 = 1  ;set it to 0 on the Pro-325/350
 NOCALC = 0
 
-      .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
+      .MCall .exit, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
       TTSPC$ =: ^O10000
       $JSW =: ^O44
@@ -21,8 +21,7 @@ NOCALC = 0
 sqr = 8192    ;the table base
 
 START:   bis #TTSPC$,@#$JSW
-         .settop #-2
-         ;.rsum
+         ;.settop #-2
 .if eq PRO380    ;PRO380-1 if for xhomer
          mov #63488,R1    ;$f800
          mov #6,R3
@@ -349,7 +348,7 @@ YCL: .word 0
 XC: .word 0
 
 smsg:
-    .ascii "Superfast Mandelbrot generator, v3 (Pro-3"
+    .ascii "Superfast Mandelbrot generator, v4 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff

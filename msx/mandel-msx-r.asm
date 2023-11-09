@@ -190,16 +190,14 @@ x0 equ $+1
     ld (r4),hl
 endif
 loop2:
+niter equ $+2
+    ld ixh,initer
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
     ld (r4),hl
     ex de,hl    ;mov	r4, r0
-endif
-niter equ $+2
-    ld ixh,initer
-if NOCALC=0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -246,14 +244,14 @@ loc2:
 endif
     and 15
     ld b,a
+    ld hl,lbuf
+    ld e,iyl
     xor a
+    ld d,a
+    add hl,de
     cp ixl
     jr nz,lx1
 
-    ld hl,lbuf
-    ld e,iyl
-    ld d,0
-    add hl,de
     ld (hl),b
     dec iyl
     jp p,loop2  ;sets C=0
@@ -302,11 +300,7 @@ endif
     ld (r5),hl
     jp loop0
 lx1
-    ld hl,lbuf
-    ld e,iyl
     dec iyl
-    ld d,0
-    add hl,de
     ld a,b
     rlca
     rlca
@@ -678,13 +672,13 @@ lbuf ds 128
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*        generator         *",13,10
-        db "*       rotated, v4        *",13,10
+        db "*       rotated, v5        *",13,10
         db "****************************",13,10
         db "The original version was",13,10
         db "published for the BK0011 in",13,10
         db "2021 by Stanislav Maslovski.",13,10
         db "This MSX2 port was created",13,10
-        db "by Litwr, 2022.",13,10
+        db "by Litwr, 2022-23.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",13,10
         db "Press B to enter benchmark mode",0

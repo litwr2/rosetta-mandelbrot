@@ -183,7 +183,11 @@ mandel:
     ld a,$c3     ;opcode for CALL
     ld ($fd9a),a   ;start timer
 mandel1:
-    ld ixl,1   ;dot even/odd
+    ld e,1   ;dot even/odd
+    ld b,high(buf)
+x0 equ $+1
+    ld hl,ix0
+    exx
     ld iyl,0   ;line even/odd
     ld hl,0  ;scrbase
     push hl
@@ -196,23 +200,21 @@ mandel1:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld iyh,$40  ;scridx
+    exx
+    ld c,$40  ;scridx
 if NOCALC=0
-x0 equ $+1
-    ld hl,ix0
     ld (r4),hl
 endif
+    exx
 loop2:
+niter equ $+2
+    ld ixh,initer
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
     ld (r4),hl
     ex de,hl    ;mov	r4, r0
-endif
-niter equ $+2
-    ld ixh,initer
-if NOCALC=0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -258,27 +260,25 @@ loc2:
     ld a,ixh   ;color
 endif
     and 15
-    dec ixl
+    exx
+    dec e
     jp nz,lx1
 
-    ld (tcolor),a
+    ld d,a
+    exx
     jp loop2
 lx1
-    ld ixl,1
+    ld e,1
     rlca
     rlca
     rlca
     rlca
-tcolor equ $+1
-    ld b,0
-    or b
-    dec iyh
-
-    ld b,high(buf)
-    ld c,iyh
+    or d
+    dec c
     ld (bc),a
 
     ld a,c
+    exx
     or a
     jp nz,loop2
 
@@ -565,6 +565,13 @@ t1
 t2
 endm
 
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+  if (dx and $ff00) != ((mx+2) and $ff00)
+.ERROR ERROR2
+  endif
+
 div32x16r proc   ;HL:DE/BC -> HL - rem, DE - quo
      local t,t0,t1,t2,t3
      call t
@@ -589,13 +596,6 @@ t3
      div0
      RET
      endp
-
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-.ERROR ERROR2
-  endif
 
 PR0000  ld de,-1000
 	CALL PR0
@@ -668,13 +668,13 @@ bcount db 0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*        generator         *",13,10
-        db "*     interlaced, v3       *",13,10
+        db "*     interlaced, v4       *",13,10
         db "****************************",13,10
         db "The original version was",13,10
         db "published for the BK0011 in",13,10
         db "2021 by Stanislav Maslovski.",13,10
         db "This MSX2 port was created",13,10
-        db "by Litwr, 2022.",13,10
+        db "by Litwr, 2022-23.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",13,10
         db "Press B to enter benchmark mode",0

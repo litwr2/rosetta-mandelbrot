@@ -101,7 +101,7 @@ irqe2  pha      ;@202
 irqe3  pha    ;@206
        LDA #(108+VSize/2)  ;236 when VSize=256
        STA $FF1D
-       JSR comm1  
+       JSR comm1
        INC $FF09
        LDA #$A0    ;$800
        STA $FF14

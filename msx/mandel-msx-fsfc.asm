@@ -182,11 +182,16 @@ dy equ $+1
     pop de
     add hl,de      ;dy*106
     ld (r5),hl
-loop0:
-    ld iyh,0  ;scridx
+    exx
 x0 equ $+1
     ld hl,0
+    ld b,high(buf)
+    exx
+loop0:
+    exx
+    ld c,0  ;scridx
     ld (r4),hl
+    exx
 loop2
     ld hl,(r4)
 dx equ $+1
@@ -242,12 +247,12 @@ loc2:
     ;xor 255
     ;inc a
 
-    dec iyh
-    ld b,high(buf)
-    ld c,iyh
+    exx
+    dec c
     ld (bc),a
-
     ld a,c
+    exx
+
     or a
     jp nz,loop2
 
@@ -535,10 +540,10 @@ ticks db 0,0,0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*   fullscreen generator   *",13,10
-        db "*  256 colors, 256x212, v4 *",13,10
+        db "*  256 colors, 256x212, v5 *",13,10
         db "****************************",13,10
         db "This MSX2 code was created",13,10
-        db "by Litwr, 2022. It is based",13,10
+        db "by Litwr, 2022-23. It is based",13,10
         db "on code published for the",13,10
         db "BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10

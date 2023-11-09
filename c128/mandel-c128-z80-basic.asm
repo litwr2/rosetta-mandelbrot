@@ -14,7 +14,6 @@ PRIMM equ $FA17
 GETIN equ $FFE4
 
 INTRM1 equ 0    ;0 - CIA1TOD, 1 - raster interrrupts
-
 NOCALC equ 0
 
 initer	equ	7
@@ -104,9 +103,9 @@ start    db $20   ;JSR
          dw PRIMM
          db 14,"**************************************",13
 if INTRM1
-         db "* sUPERFAST mANDELBROT GENERATOR V1I *",13
+         db "* sUPERFAST mANDELBROT GENERATOR V2I *",13
 else
-         db "*  sUPERFAST mANDELBROT GENERATOR V1 *",13
+         db "*  sUPERFAST mANDELBROT GENERATOR V2 *",13
 endif
          db "*            z80 vdc 16kb            *",13
          db "*     run it on vic-ii display!!     *",13
@@ -263,27 +262,27 @@ mandel1:
     rra
     ld l,a       ;dy*128
     ld (r5),hl
+    ld h,high(pat1)
+    ld b,2
+    exx
 loop0:
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
 endif
+    exx
     ld de,lineb1+63  ;x
-loop1:
-    push de
-    ld ixl,2
+    exx
 loop2:
+niter equ $+2
+    ld ixh,initer
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
     ld (r4),hl
     ex de,hl    ;mov	r4, r0
-endif
-niter equ $+2
-    ld ixh,initer
-if NOCALC=0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -330,21 +329,21 @@ loc2:
 endif
     and 7
 patx equ $+1
-    ld hl,pat1
-    add a,l
+    add a,low(pat1)
+    exx
     ld l,a
     ld c,(hl)
-  xor 8
-  ld l,a
-  ld a,(hl)
-    dec ixl
-    jp z,loc8
+    xor 8
+    ld l,a
+    ld a,(hl)
+    dec b
+    jr z,loc8
 
     ld iyl,a  ;bottom
     ld iyh,c  ;top
+    exx
     jp loop2
 loc8
-    pop de
     rla
     rla
     rla
@@ -360,8 +359,10 @@ loc8
     ld hl,64
     add hl,de  ;lineb2
     ld (hl),a
+    ld b,2
     dec e
-    jp p,loop1
+    exx
+    jp p,loop2
 
     pop hl
     ld d,18
@@ -414,14 +415,8 @@ m3  ld hl,0
     add hl,de
     push hl
 
-    ld c,low(pat1)
     ld a,(patx)
-    cp c    ;sets C=0
-    jr nz,lx8
-
-    ld c,low(pat2)
-lx8:
-    ld a,c
+    xor 8     ;sets C=0
     ld (patx),a
 
     ld de,(dy)
@@ -772,21 +767,6 @@ setr:
      msetr
      ret
 
-ticks db 0,0,0,0
-benchmark db 0
-bcount db 0
-
-        org ($ + 255) & $ff00
-lineb1 ds 64
-lineb2 ds 64
-
-pat1: db	0,$e,$d,$c,$a,$5,$1,$f  ;pat1 & pat2 must be on the same page
-pat2: db	0,$b,$6,$3,$1,$a,$e,$f
-
-;getr:
-;     mgetr
-;     ret
-
 slow: ;ld bc,$d030
       ;xor a
       ;out (c),a
@@ -805,6 +785,27 @@ fast: ld bc,$d011
       ;ld a,1
       ;out (c),1
       ret
+
+waitk: db $20 ;JSR
+      dw GETIN
+      db 9, 0   ;ora #0
+      db $f0, $f9  ;beq waitk
+      db $60       ;rts
+
+ticks db 0,0,0,0
+benchmark db 0
+bcount db 0
+
+        org ($ + 255) & $ff00
+lineb1 ds 64
+lineb2 ds 64
+
+pat1: db	0,$e,$d,$c,$a,$5,$1,$f  ;pat1 & pat2 must be on the same page
+pat2: db	0,$b,$6,$3,$1,$a,$e,$f
+
+;getr:
+;     mgetr
+;     ret
 
 if INTRM1
 irqh  proc
@@ -834,12 +835,6 @@ l0    pop hl
 else
       include "mul16.s"
 endif
-
-waitk: db $20 ;JSR
-      dw GETIN
-      db 9, 0   ;ora #0
-      db $f0, $f9  ;beq waitk
-      db $60       ;rts
 
 sqrbase equ ($ + $16b0 + $ff) and $ff00
 stacka equ sqrbase+$17b0

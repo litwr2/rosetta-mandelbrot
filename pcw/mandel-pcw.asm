@@ -113,16 +113,19 @@ mandel1:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld hl,63  ;scrtop, x
-    push hl
 if NOCALC=0
 x0 equ $+1
     ld hl,ix0
     ld (r4),hl
 endif
+    ld de,63  ;scrtop, x
+    ld b,d
+    exx
 loop1:
     ld ixl,2
 loop2:
+niter equ $+2
+    ld ixh,initer
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
@@ -131,10 +134,6 @@ if NOCALC=0
     ;ld d,h
     ;ld e,l      ;mov	r4, r0
     ex de,hl
-endif
-niter equ $+2
-    ld ixh,initer
-if NOCALC=0
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
     push hl
@@ -180,22 +179,23 @@ endif
 loc2:
     ld a,ixh
     and 7
+    exx
 patx equ $+1
     ld hl,pat0
     add a,l
     ld l,a
     ld c,(hl)
-  xor 8
-  ld l,a
-  ld a,(hl)
+    xor 8
+    ld l,a
+    ld a,(hl)
     dec ixl
     jr z,lx1
 
     ld iyl,a  ;bottom
     ld iyh,c  ;top
+    exx
     jp loop2
 lx1
-    pop de
     rla
     rla
     rla
@@ -210,14 +210,13 @@ lx1
     rla
     rla
     or iyh
-    ld bc,$80
+    ld c,$80
     add hl,bc  ;linebuft
     ld (hl),a
     dec e
-    push de
+    exx
     jp p,loop1
 
-   pop de
    ld hl,ROLLBASE
    pop de    ;scrtop Y
    add hl,de   ;sets C=0
@@ -355,14 +354,8 @@ lx1
    endm
 ;   ei
 
-    ld c,low(pat0)
     ld a,(patx)
-    cp c    ;sets C=0
-    jr nz,lx8
-
-    ld c,low(pat1)
-lx8:
-    ld a,c
+    xor 8    ;sets C=0
     ld (patx),a
     ld de,(dy)
     ld hl,(r5)
@@ -596,11 +589,7 @@ exit_intr
       ret
 
 intr_save dw 0
-home db 27,"H$"
-cursoroff db 27,"f$"
 cursoron db 27,"e",27,"E$"
-
-time dw 0,0
 
         org ($ + 15)&$fff0
 ;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
@@ -608,6 +597,10 @@ time dw 0,0
 pat0 db	0,14,13,12,10, 5, 1,15
 pat1 db	0,11, 6, 3, 1,10,14,15
 
+time dw 0,0
+home db 27,"H$"
+
+cursoroff db 27,"f$"
 benchmark db 0
 bcount db 0   ;must follow benchmark
 
@@ -620,7 +613,7 @@ mx:     dw imx
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         4x1 textures, v4       *",13,10
+        db "*         4x1 textures, v5       *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10

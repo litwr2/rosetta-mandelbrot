@@ -133,11 +133,11 @@ dy equ $+1
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-    ld hl,89  ;scrtop, x
-    push hl
 x0 equ $+1
     ld hl,0
     ld (r4),hl
+    ld de,89  ;scrtop, x
+    exx
 loop1:
    ld ixl,$80
 loop2:
@@ -198,15 +198,14 @@ loc2:
     ld ixl,a
     jr nc,loop2
     
-    pop de
+    exx
     ld hl,linebuf
     add hl,de
     ld (hl),a
     dec e
-    push de
+    exx
     jp p,loop1
 
-   pop de
    ld hl,ROLLBASE
    pop de    ;scrtop Y
    add hl,de   ;sets C=0
@@ -591,7 +590,7 @@ data  ;     dx, dy, x0, niter - to convert to real values divide by 512
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     720x256, 2 colors, v3      *",13,10
+        db "*     720x256, 2 colors, v4      *",13,10
         db "**********************************",13,10
         db "This Amstrad PCW code was created by",13,10
         db "Litwr in 2023. It is based on code",13,10

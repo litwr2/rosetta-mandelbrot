@@ -15,7 +15,7 @@ HSIZE = 1024  ;fixed!
 VSIZE = 256  ;may be 240 or 256
 INTERLACE = 0 ;may be 0 or 1, only works on the Pro-380
 
-      .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
+      .MCall .exit, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
       TTSPC$ =: ^O10000
       $JSW =: ^O44
@@ -24,10 +24,8 @@ sqr = 8192    ;the table base
 VINT = INTERLACE*PRO380
 VVSZ = VSIZE*<VINT+1>
 
-
 START:   bis #TTSPC$,@#$JSW
-         .settop #-2
-         ;.rsum
+         ;.settop #-2
 .if eq PRO380
          mov #63488,R1    ;$f800
          mov #6,R3
@@ -357,7 +355,7 @@ XC: .word 0
 smsg:
     .ascii "Superfast Mandelbrot generator, 1024x"
     .byte VVSZ/100+48,<VVSZ-<<VVSZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
-    .ascii ", 8 colors, v3 (Pro-3"
+    .ascii ", 8 colors, v4 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff

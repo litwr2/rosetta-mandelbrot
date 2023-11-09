@@ -32,6 +32,7 @@ t = $66 ;$67
 tmp = $64 ;$65
 zpat1 = $ac   ;$ab
 zpat2 = $87   ;$88
+xtoggle = $fa
 
 dx = $5d
 dy = $5f
@@ -58,7 +59,7 @@ quotient = dividend ;save memory by reusing divident to store the quotient
 
 start: JSR PRIMM
        byte 14,"**************************************",13
-       byte "*  sUPERFAST mANDELBROT GENERATOR V1 *",13
+       byte "*  sUPERFAST mANDELBROT GENERATOR V2 *",13
        byte "*         8502 2mhZ vdc 16kb         *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
@@ -238,6 +239,8 @@ mandel1:
     lda #0
     ror
     sta r5lo    ;r5 = 128*dy
+    lda #2
+    sta xtoggle
 .mloop0:
     lda #63
     sta alo
@@ -370,10 +373,7 @@ r4hi = * + 1
     lda r2
     and #7   ;color index
     tay
-.xtoggle = * + 1
-    lda #0
-    eor #1
-    sta .xtoggle
+    dec xtoggle
     beq .loc8
 
     lda (zpat1),y
@@ -384,6 +384,8 @@ r4hi = * + 1
     jmp .mloop2
 
 .loc8:
+    lda #2
+    sta xtoggle
 .tcolor1 = * + 1
     lda #0
     lsr

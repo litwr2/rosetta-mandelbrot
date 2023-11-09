@@ -16,7 +16,7 @@ VSIZE = 256  ;may be 240 or 256
 INTERLACE = 0 ;may be 0 or 1, only works on the Pro-380
 SHARP = 0   ;0 is faster, 1 makes images sharper
 
-      .MCall .exit, .rsum, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
+      .MCall .exit, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
       TTSPC$ =: ^O10000
       $JSW =: ^O44
@@ -25,10 +25,8 @@ sqr = 8192    ;the table base
 VINT = INTERLACE*PRO380
 VVSZ = VSIZE*<VINT+1>
 
-
 START:   bis #TTSPC$,@#$JSW
-         .settop #-2
-         ;.rsum
+         ;.settop #-2
 .if eq PRO380
          mov #63488,R1    ;$f800
          mov #6,R3
@@ -410,7 +408,7 @@ ts16: .word 0,1,16,17,256,257,272,273
 smsg:
     .ascii "Superfast Mandelbrot generator, 256x"
     .byte VVSZ/100+48,<VVSZ-<<VVSZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
-    .ascii ", 4096 colors, v5 (Pro-3"
+    .ascii ", 4096 colors, v6 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
