@@ -93,12 +93,10 @@ x0a	=	.+2
 	mov	#x0, r4		; r4 = a
 .endc
 loop2:
-.if eq NOCALC
-	add	@#dxa, r4		; update a
-.endc
 nitera	=	.+2
 	mov	#niter, r2	; max iter. count
 .if eq NOCALC
+	add	@#dxa, r4		; update a
 	mov	r4, r0		; r0 = x = a
 	mov	r5, r1		; r1 = y = b
 1$:
