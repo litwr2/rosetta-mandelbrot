@@ -23,7 +23,7 @@ MPSW = 65534.
 sqr = 8192.    ;the table base
 
 START:   bis #TTSPC$,@#$JSW
-.if eq PRO380-1    ;PRO380-1 if for xhomer
+.if eq PRO380    ;PRO380-1 if for xhomer
          mov #63488.,R1    ;$f800
          mov #6,R3
 2$:      .trpset #area,#3$
