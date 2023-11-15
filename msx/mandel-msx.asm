@@ -287,7 +287,7 @@ lx1
     push hl
     ;ld bc,$4098
     ld c,$98
-    ;jr z,oddli
+    ;jr z,oddli  ;faster?
     jp z,oddli
 
     ld iyl,1
