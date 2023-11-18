@@ -265,8 +265,8 @@ nitera	=	.+2
          adc r2
          mov r2,r0
 9$:      call @#printsec
-    call @#sreg
     .ttyin
+    call @#sreg  ;it doesn't change R0
     bic #^B1111111100100000,r0
     cmpb #"Q",r0
     beq 7$
@@ -376,7 +376,7 @@ ts8: .byte 0,1,4,5,16,17,20,21
 smsg:
     .ascii "Superfast Mandelbrot generator, 512x"
     .byte VVSZ/100+48,<VVSZ-<<VVSZ/100>*100>>/10+48,VVSZ-<<VVSZ/10>*10>+48
-    .ascii ", 64 colors, v6 (Pro-3"
+    .ascii ", 64 colors, v7 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
