@@ -7,22 +7,23 @@
 
 	.title mandelbrotrs
 	.sbttl (C) 2023 litwr
-    .radix 10
 
 PRO380 = 1  ;set it to 0 on the Pro-325/350
+TWORSETS = 1  ;use two register sets of the J11
 NOCALC = 0
+
+MPSW = 65534.
 
       .MCall .exit, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
       CONFIG = ^O300
       TTSPC$ =: ^O10000
       $JSW =: ^O44
 
-sqr = 8192    ;the table base
+sqr = 8192.    ;the table base
 
 START:   bis #TTSPC$,@#$JSW
-         ;.settop #-2
-.if eq PRO380    ;PRO380-1 if for xhomer
-         mov #63488,R1    ;$f800
+.if eq PRO380-1    ;PRO380-1 if for xhomer
+         mov #63488.,R1    ;$f800
          mov #6,R3
 2$:      .trpset #area,#3$
          cmpb #2,(R1)  ;ID for the Pro 325/350
@@ -30,16 +31,17 @@ START:   bis #TTSPC$,@#$JSW
 
          cmp -(SP),-(SP)
 3$:      cmp (SP)+,(SP)+
-         add #128,R1    ;$80, upto $fb00
+         add #128.,R1    ;$80, upto $fb00
          sob R3,2$
 
          .print #emsg
          .exit
 1$:       .trpset #area,#0
 .iff
-         mov #64256,r1 ;$fb00
+         mov #64256.,r1 ;$fb00
 .endc
-    mov #2050,sp  ;$802
+    mov #2052.,sp  ;$804
+    mov r1,-(sp)
     mov r1,-(sp)
     .print #smsg
     .ttyin
@@ -70,21 +72,41 @@ fsqr:
 	br	fsqr
 
 niter	=	7
-dx	=	-12*3
+dx	=	-12.*3
 dy	=	6*3
-x0	=	-62*dx
-mx	=	10*dx		; x move
-sf4	=	436/4		; sf/4 = 109
+x0	=	-62.*dx
+mx	=	10.*dx		; x move
+sf4	=	436./4		; sf/4 = 109
 
 mandl:
-    movb #16,@#bcount
+    movb #16.,@#bcount
     .gtim #area,#time
 mandl1:
-    mov #127,@#YC
+.if ne PRO380&TWORSETS
+    mov @#MPSW,r0
+    mov r0,@#loop2+2
+    mov r0,@#M2+2
+    mov r0,@#M3+2
+    bis #^B0000100000000000,r0
+    mov r0,@#M1+2
+    mov r0,@#MPSW
+    mov 2(sp),r1
+    add #14.,r1
+    mov r1,r2
+    mov #4,r4
+    add r4,r2
+    clr r3
+    mov #1020.,r5
+    mov #127.,r0
+M3:    
+    mov #0,@#MPSW
+.iff
+    mov #127.,@#YC
     clr @#XCL
-    mov #1020,@#XCR
+    mov #1020.,@#XCR
+.endc
 	mov	@#dya, r5
-	swab	r5
+	swab r5
 	asr	r5		; r5 = 128*dy = b
 loop0:
 .if eq NOCALC
@@ -92,12 +114,13 @@ x0a	=	.+2
 	mov	#x0, r4		; r4 = a
 .endc
 loop2:
-.if eq NOCALC
-	add	@#dxa, r4		; update a
+.if ne PRO380&TWORSETS
+    mov #0,@#MPSW
 .endc
 nitera	=	.+2
 	mov	#niter, r2	; max iter. count
 .if eq NOCALC
+	add	@#dxa, r4		; update a
 	mov	r4, r0		; r0 = x = a
 	mov	r5, r1		; r1 = y = b
 1$:
@@ -115,7 +138,7 @@ nitera	=	.+2
 	mov	sqr(r0), r0	; r0 = x^2
 	add	r3, r0		; r0 = x^2+y^2
 	cmp	r0, sp		; if r0 >= 4.0 then
-	;cmp r0,#2048      ;$800
+	;cmp r0,#2048.      ;$800
 	bge	2$		; overflow
 	
 .if ne PRO380
@@ -130,30 +153,53 @@ nitera	=	.+2
 	sob	r2, 1$		; to next iteration
 .endc
 2$:
+.if ne PRO380&TWORSETS
+    mov r2,@sp
+M1:
+    mov #0,@#MPSW
+	mov @sp,6(r1)
+    mov r3,@r1
+    mov r0,2(r1)
+    mov r4,@r2
+    tst -10.(r1)   ;transfer done?
+    bpl .-4
+
+    mov r5,@r1
+    mov r4,@r2
+    dec r0
+    bpl loop2
+
+    mov #127.,r0
+    add r4,r3
+    sub r4,r5
+M2:
+    mov #0,@#MPSW
+.iff
 	mov @sp,r1
-    mov r2,20(r1)
-    mov @#YC,16(r1)
-    mov @#XCL,14(r1)
-    mov #4,18(r1)
+    mov r2,20.(r1)
+    mov @#YC,16.(r1)
+    mov @#XCL,14.(r1)
+    mov #4,18.(r1)
     tst 4(r1)   ;transfer done?
     bpl .-4
 
-    mov @#XCR,14(r1)
-    mov #4,18(r1)
+    mov @#XCR,14.(r1)
+    mov #4,18.(r1)
     dec @#YC
     bpl loop2
 
-    mov #127,@#YC
+    mov #127.,@#YC
     add #4,@#XCL
     add #-4,@#XCR
+.endc
 	sub	@#dya,r5		; update b
 	bgt	loop0		; continue while b > 0
 .if eq NOCALC
 	add	@#mxa, @#x0a	; shift x0
 
 	; scale the params
-	mov	#3, r0
-	mov	#dxa, r1
+	mov	#3,r0
+	mov	#dxa,r1
 4$:
 	mov	(r1), r2		; x
 .if ne PRO380
@@ -187,32 +233,18 @@ nitera	=	.+2
     jmp @#mandl
 7$:
          call @#rreg
-         ;tst (sp)+
+         ;add #4,sp
          .print #term2
          bic #TTSPC$,@#$JSW
          .exit
-5$:
-;    mov @sp,r1
-;    clr r4
-;    mov r4,20(r1)
-;12$:mov r4,16(r1)
-;    mov #0,14(r1)
-;    mov #112,18(r1)
-;    tst 4(r1)   ;transfer done?
-;    bpl .-4
-;
-;    inc r4
-;    cmp #10,r4
-;    bne 12$
-
-    call @#rreg
+5$: call @#rreg
     .print #chome
     mov @#nitera,r2
     sub #7,r2
     clr r1
-    mov #100,r3
+    mov #100.,r3
     call @#pr0
-    mov #10,r3
+    mov #10.,r3
     call @#pr0
     call @#pr1
     mov #" ",r0
@@ -228,7 +260,7 @@ nitera	=	.+2
          mov r0,r4
          mov r3,r1
          mov r2,r0
-         bit #32,r4    ;50 or 60 Hz?
+         bit #32.,r4    ;50 or 60 Hz?
          bne 9$
 
          asl r1     ;*5
@@ -266,22 +298,22 @@ printsec:  ;prints R0:R1/100
         mov r0,r1
         clr r4
         mov #1,r5
-        mov #34464,r3  ;100000-65536
+        mov #34464.,r3  ;100000-65536
         call @#pr0
         clr r5
-        mov #10000,r3
+        mov #10000.,r3
         call @#pr0
-        mov #1000,r3
+        mov #1000.,r3
         call @#pr0
         inc r4
-        mov #100,r3
+        mov #100.,r3
         call @#pr0
         movb #'.,r0
         .ttyout
-        mov #10,r3
+        mov #10.,r3
         call @#pr0
 pr1:    mov r2,r0
-pr02:   add #48,r0
+pr02:   add #48.,r0
         .ttyout
         inc r4
 pr05:     return
@@ -295,7 +327,7 @@ pr07:     tst r4
         inc r4
         br pr02
 
-pr0:     mov #65535,r0
+pr0:     mov #65535.,r0
 4$:	    inc r0
         cmp r1,r5
         bcs pr07
@@ -309,25 +341,25 @@ pr0:     mov #65535,r0
         sub r5,r1
 	br 4$
 
-rreg:  mov 2(sp),r1
+rreg:  mov 4(sp),r1
        mov #save4,r2
        mov (r2)+,4(r1)
        mov (r2)+,6(r1)
-       mov (r2)+,8(r1)
-       mov (r2)+,14(r1)
-       mov (r2),16(r1)
+       mov (r2)+,8.(r1)
+       mov (r2)+,14.(r1)
+       mov (r2),16.(r1)
        return
 
-sreg:  mov 2(sp),r1
+sreg:  mov 4(sp),r1
        mov #save4,r2
        mov 4(r1),(r2)+
        mov 6(r1),(r2)+
-       mov 8(r1),(r2)+
-       mov 14(r1),(r2)+
-       mov 16(r1),(r2)
+       mov 8.(r1),(r2)+
+       mov 14.(r1),(r2)+
+       mov 16.(r1),(r2)
      mov #^B0000000000000000,4(r1)   ;240 lines
      mov #^B0000000000010010,6(r1)   ;256 dots, move to screen
-     mov #^B0000000000000000,8(r1)  ;disable planes 3 (red) and 2 (green)
+     mov #^B0000000000000000,8.(r1)  ;disable planes 3 (red) and 2 (green)
        return
 
 time:   .word 0,0
@@ -342,30 +374,33 @@ mxa:	.word	mx
 bcount: .byte 0
 benchmark: .byte 0
 save4:   .blkw 5
+.if ne PRO380&TWORSETS
+.iff
 YC:  .word 0
 XCL: .word 0
 XCR: .word 0
+.endc
 
 smsg:
-    .ascii "Superfast Mandelbrot generator, v5 (Pro-3"
+    .ascii "Superfast Mandelbrot generator, v6 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
     .ascii "25/350"
 .endc
     .ascii "), 256x128, 16 shades"
-    .byte 13,10
+    .byte 13.,10.
     .ascii "The original version was published in 2021 by Stanislav Maslovski."
-    .byte 13,10
+    .byte 13.,10.
     .ascii "This RT-11 port for the DEC Pro 325/350/380 was created by Litwr, 2023."
-    .byte 13,10
+    .byte 13.,10.
     .ascii "The T-key gives us timings. Press Q-key to quit"
-    .byte 13,10
+    .byte 13.,10.
     .asciz "Press B to enter benchmark mode"
 emsg:    .asciz "cannot find the graphic system"
 eol = . - 1
-chome:   .ascii <27> "[H" <128>    ;[home]
-term2:   .ascii <27> "[2J" <27> "[?25h" <128>  ;[clear] [show cursor]
-term1:   .ascii <27> "[?25l" <27> "[2J" <128>    ;[hide cursor] [clear]
+chome:   .ascii <27.> "[H" <128.>    ;[home]
+term2:   .ascii <27.> "[2J" <27.> "[?25h" <128.>  ;[clear] [show cursor]
+term1:   .ascii <27.> "[?25l" <27.> "[2J" <128.>    ;[hide cursor] [clear]
 .End	START
 
