@@ -16,7 +16,7 @@ VSIZE = 256  ;may be 240 or 256
 INTERLACE = 0 ;may be 0 or 1, only works on the Pro-380
 SHARP = 0   ;0 is faster, 1 makes images sharper
 
-      .MCall .exit, .trpset, .print, .ttyout, .ttyin, .gtim, .gval, .settop
+      .MCall .exit, .trpset, .print, .ttyout, .ttyin, .gtim, .gval
       CONFIG = ^O300
       TTSPC$ =: ^O10000
       $JSW =: ^O44
@@ -26,7 +26,6 @@ VINT = INTERLACE*PRO380
 VVSZ = VSIZE*<VINT+1>
 
 START:   bis #TTSPC$,@#$JSW
-         ;.settop #-2
 .if eq PRO380
          mov #63488,R1    ;$f800
          mov #6,R3
