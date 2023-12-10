@@ -39,6 +39,10 @@ trprou:  cmp (SP)+,(SP)+
 .endc
 vidok:
     mov r1,@#VRBASE
+.if ne PRO380&TWORSETS
+.iff
+    mov r1,-(sp)
+.endc
     SVTK$S
     QIOW$S #IO.WLB,#5,#5,,,,<#smsg,#emsg-smsg>
     QIOW$S #IO.RNE,#5,#5,,,,<#smsg,#1>
@@ -102,7 +106,6 @@ mandl1:
 M3:    
     mov #0,@#MPSW
 .iff
-    mov @#VRBASE,-(sp)
     clr @#YCU
     mov #255.,@#YCL
     mov #508.,@#XC
