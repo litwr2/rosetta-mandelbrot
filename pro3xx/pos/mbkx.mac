@@ -1,0 +1,368 @@
+;for macro-11 assembler
+;
+;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
+;
+;128x256 Mandelbrot for the DEC Professional 325/350/380 under P/OS
+;256x256 16 shade graphic mode
+;it requires a monitor that is capable to show 256 visible lines
+;it must be a privilidged task! use the /pr link option!
+
+	.title mandelbrot
+	.sbttl (C) 2023 litwr
+
+PRO380 = 0  ;set it to 0 on the Pro-325/350
+TWORSETS = 0  ;use two register sets of the J11
+NOCALC = 0
+
+MPSW = 65534.
+
+      .MCall QIOW$S, EXIT$S, GTIM$S, SVTK$S
+
+START:
+.if eq PRO380   ;-1, xhomer and the J-11
+         SVTK$S #VT0,#5
+         mov #63488.,R1    ;$f800
+         mov #6,R3
+vidsk:   cmpb #2,@R1  ;ID for the Pro 325/350
+         beq vidok
+
+         cmp -(SP),-(SP)
+trprou:  cmp (SP)+,(SP)+
+         add #128.,R1    ;$80, upto $fa80
+         sob R3,vidsk
+
+         SVTK$S
+         QIOW$S #IO.WLB,#5,#5,,,,<#emsg,#term1-emsg>
+         exit$s
+.iff
+         mov #63488.+768.,r1 ;0xfb00, slot 6
+.endc
+vidok:
+    mov r1,@#VRBASE
+    SVTK$S
+    QIOW$S #IO.WLB,#5,#5,,,,<#smsg,#emsg-smsg>
+    QIOW$S #IO.RNE,#5,#5,,,,<#smsg,#1>
+    movb @#smsg,r0 
+    bic #^B1111111100100000,r0
+    movb r0,@#benchmark
+    QIOW$S #IO.WLB,#5,#5,,,,<#term1,#eterm-term1>
+    call @#sreg
+	clr	r0		; 7 lower bits in high byte
+	clr	r1		; higher 11+1 bits
+	clr	r2		; operand-index
+	mov	#sqr, r4	; for lower half-table
+	mov	r4, r5		; for upper half-table
+fsqr:
+	mov	r1, (r5)+	; to upper half tbl
+	inc	r2		; R2 = x + 2^-9
+	mov	r2, -(sp)
+	asl	r2		; R2 = 2*x + 2^-8
+	swab	r2		; LLLLLL00 00HHHHHH
+	movb	r2, r3		; 00000000 00HHHHHH
+	add	r2, r0		; add up lower bits
+	adc	r1		; add carry to r1
+	add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+	mov	r1, -(r4)	; to lower half tbl
+	mov	(sp)+, r2
+	bcs	mandl	; exit on overflow
+
+	inc	r2
+	br	fsqr
+
+niter	=	7
+dx	=	-12.*3
+dy	=	6*3
+x0	=	-62.*dx
+mx	=	10.*dx		; x move
+sf4	=	436./4		; sf/4 = 109
+
+mandl:
+    movb #16.,@#bcount
+    gtim$s #T1
+mandl1:
+	mov	@#dya,r5
+	swab r5
+	asr	r5		; r5 = 128*dy = b
+.if ne PRO380&TWORSETS
+    mov @#MPSW,r0
+    mov r0,@#loop2+2
+    mov r0,@#M2+2
+    mov r0,@#M3+2
+    bis #^B0000100000000000,r0
+    mov r0,@#M1+2
+    mov r0,@#MPSW
+    mov @#VRBASE,r1
+    add #16.,r1
+    mov r1,r2
+    add #2,r2
+    mov #4,r4
+    clr r3
+    mov #255.,r5
+    mov #508.,r0
+M3:    
+    mov #0,@#MPSW
+.iff
+    mov @#VRBASE,-(sp)
+    clr @#YCU
+    mov #255.,@#YCL
+    mov #508.,@#XC
+.endc
+loop0:
+.if eq NOCALC
+x0a	=	.+2
+	mov	#x0, r4		; r4 = a
+.endc
+loop2:
+.if ne PRO380&TWORSETS
+    mov #0,@#MPSW
+.endc
+nitera	=	.+2
+	mov	#niter, r2	; max iter. count
+.if eq NOCALC
+	add	@#dxa,r4		; update a
+	mov	r4, r0		; r0 = x = a
+	mov	r5, r1		; r1 = y = b
+1$:
+.if ne PRO380
+    mov r1,r3
+    bic #1,r3
+    mov sqr(r3),r3
+.iff
+	mov	sqr(r1),r3	; r3 = y^2
+.endc
+	add	r0,r1		; r1 = x+y
+.if ne PRO380
+	bic #1,r0
+.endc
+	mov	sqr(r0),r0	; r0 = x^2
+	add	r3, r0		; r0 = x^2+y^2
+	cmp r0,#2048.      ;$800
+	bge	2$		; overflow
+	
+.if ne PRO380
+    bic #1,r1
+.endc
+	mov	sqr(r1), r1	; r1 = (x+y)^2
+	sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
+	add	r5, r1		; r1 = 2*x*y+b, updated y
+	sub	r3, r0		; r0 = x^2
+	sub	r3, r0		; r0 = x^2-y^2
+	add	r4, r0		; r0 = x^2-y^2+a, updated x
+	sob	r2, 1$		; to next iteration
+.endc
+2$:
+.if ne PRO380&TWORSETS
+    mov r2,@sp
+M1:
+    mov #0,@#MPSW
+	mov @sp,4(r1)
+    mov r0,-2(r1)
+    mov r3,@r1
+    mov r4,@r2
+    tst -12.(r1)   ;transfer done?
+    bpl .-4
+
+    mov r5,@r1
+    mov r4,@r2
+    sub r4,r0
+    bpl loop2
+
+    mov #508.,r0
+    inc r3
+    dec r5
+M2:
+    mov #0,@#MPSW
+.iff
+	mov @sp,r1
+    mov r2,20.(r1)
+    mov @#YCU,16.(r1)
+    mov @#XC,14.(r1)
+    mov #4,18.(r1)
+    tst 4(r1)   ;transfer done?
+    bpl .-4
+
+    mov @#YCL,16.(r1)
+    mov #4,18.(r1)
+    sub #4,@#XC
+    bpl loop2
+
+    mov #508.,@#XC
+    inc @#YCU
+    dec @#YCL
+.endc
+	sub	@#dya,r5		; update b
+	bgt	loop0		; continue while b > 0
+.if eq NOCALC
+	add	@#mxa, @#x0a	; shift x0
+
+	mov	#3,r0    	; scale the params
+	mov	#dxa, r1
+4$:
+	mov	(r1), r2		; x
+.if ne PRO380
+	add #sqr+sf4,r2
+	bic #1,r2
+	mov (r2),(r1)
+	sub #2*sf4,r2
+	sub (r2),(r1)+
+.iff
+	mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
+	sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
+.endc
+	sob	r0,4$
+.endc
+	inc	@#nitera	; increase the iteration count
+    gtim$s #T2
+    cmpb #"B",@#benchmark
+    bne 6$
+
+    decb @#bcount
+    beq 5$
+    jmp @#mandl1
+    
+6$: QIOW$S #IO.RNE,#5,#5,,,,<#smsg,#1>
+    movb @#smsg,r0
+    bic #^B1111111100100000,r0
+    cmpb #"T",r0
+    beq 5$
+
+    cmpb #"Q",r0
+    beq 7$
+    jmp @#mandl
+ 
+7$: call @#rreg
+    QIOW$S #IO.WLB,#5,#5,,,,<#term2,#smsg-term2>
+    exit$s
+
+5$: call @#rreg
+    QIOW$S #IO.WLB,#5,#5,,,,<#chome,#term2-chome>
+    mov @#nitera,r1
+    sub #7,r1
+    mov #smsg,r0
+    mov #10.+<2048.*3>,r2
+    call $CBTA
+    movb #32.,(r0)+
+    mov r0,-(sp)
+    
+   MOV  T2+12.,R4  ; Get ticks.
+  SUB  T1+12.,R4  ; Calculate delta.
+  BCC  12$
+
+  ADD  T2+14.,R4  ; If that was negative, we had wrap. Adjust.
+  DEC  T2+10.    ; And then we have one less second.
+12$: MOV R4,R0  ; Second part. Convert to 1/100s.
+    MOV #100.,R1
+    call $MUL    ;R0/R1 = R0:R1
+    mov r1,r2
+    mov r0,r1
+    mov T2+14.,r0
+    call $DDIV   ;R1:R2/R0 = R1:R2 mod R0
+    mov r2,r4
+
+  MOV T2+8.,R1  ; Get end minute.
+  SUB T1+8.,R1  ; Substract start minute.
+  BGE 3$    ; If result is >= 0 we're good.
+
+  ADD  #60.,R1    ; It was less. Adjust minutes.
+  
+3$: MOV T2+10.,R0  ; Get end second.
+  SUB T1+10.,R0  ; Substract start second.
+  BGE 14$
+
+  ADD #60.,R0    ; If negative, adjust up.
+  DEC R1    ; And one minute less.
+
+14$: mov r0,-(sp)  ; Now make seconds...
+    mov #60.,r0
+    call $mul           ;Minutes to seconds
+  ADD (sp)+,R1    ;Add in seconds
+    mov (sp)+,r0
+    MOV #<3*2048.>+10.,R2  ;3 places, base 10
+    CALL  $CBTA
+    movb #'.,(r0)+
+    MOV  R4,R1
+  MOV #<2*2048.>+512.+10.,R2  ;2 digits, base 10, with leading 0
+  CALL $CBTA
+    sub #smsg,r0
+    QIOW$S #IO.WLB,#5,#5,,,,<#smsg,r0>
+    QIOW$S #IO.RNE,#5,#5,,,,<#smsg,#1>
+    call @#sreg
+    movb @#smsg,r0
+    bic #^B1111111100100000,r0
+    cmpb #"Q",r0
+    beq 11$
+    jmp @#mandl
+11$:jmp 7$
+
+rreg:  mov @#VRBASE,r1
+       mov #save4,r2
+       mov (r2)+,4(r1)
+       mov (r2)+,6(r1)
+       mov (r2)+,8.(r1)
+       mov (r2)+,14.(r1)
+       mov (r2),16.(r1)
+       return
+
+sreg:  mov @#VRBASE,r1
+       mov #save4,r2
+       mov 4(r1),(r2)+
+       mov 6(r1),(r2)+
+       mov 8.(r1),(r2)+
+       mov 14.(r1),(r2)+
+       mov 16.(r1),(r2)
+     mov #^B0000000000000001,4(r1)   ;256 lines
+     mov #^B0000000000010010,6(r1)   ;256 dots, move to screen
+     mov #^B0000000000000000,8.(r1)  ;disable planes 3 (red) and 2 (green)
+       return
+
+dxa:	.word	dx
+dya:	.word	dy
+mxa:	.word	mx
+
+T1:  .BLKW  8.    ;Buffers for time stamps
+T2:  .BLKW  8.
+
+bcount: .byte 0
+benchmark: .byte 0
+save4:   .blkw 5
+vrbase: .word 0
+.if ne PRO380&TWORSETS
+;VT0: .word trprou,trprou,0,0,trprou  ;uncomment if xhomer and the j11
+.iff
+VT0: .word trprou,trprou,0,0,trprou
+YCU: .word 0
+YCL: .word 0
+XC: .word 0
+.endc
+
+chome:   .ascii <27.> "[H" <128.>    ;[home]
+term2:   .ascii <27.> "[2J" <27.> "[?25h" <128.>  ;[clear] [show cursor]
+.even
+smsg:
+    .ascii "Superfast Mandelbrot generator, v1 (Pro-3"
+.if ne PRO380
+    .ascii "80"
+.iff
+    .ascii "25/350"
+.endc
+    .ascii "), 128x256, 16 shades" <13.> <10.>
+    .ascii "The original version for the BK was published in 2021"
+    .ascii " by Stanislav Maslovski" <13.> <10.>
+    .ascii "This P/OS port for the DEC Pro 325/350/380"
+    .ascii " was created by Litwr, 2023" <13.> <10.>
+    .ascii "Help was also provided by bqt and Hunta" <13.> <10.>
+    .ascii "The T-key gives us timings. Press Q-key to quit"
+    .byte 13.,10.
+    .ascii "Press B to enter benchmark mode"
+emsg:    .ascii "cannot find the graphic system"
+term1:   .ascii <27.> "[?25l" <27.> "[2J" <128.>    ;[hide cursor] [clear]
+eterm:
+.even
+sqrsize = 11776.
+bsz = 10.
+bonus = <<eterm-smsg-bsz>/2>*2
+sqrbase = smsg + bsz
+sqr = sqrbase+<sqrsize/2>
+     .blkb sqrsize-bonus
+.End	START
+
