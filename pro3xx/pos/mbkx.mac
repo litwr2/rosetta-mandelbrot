@@ -353,7 +353,7 @@ smsg:
     .ascii " by Stanislav Maslovski" <13.> <10.>
     .ascii "This P/OS port for the DEC Pro 325/350/380"
     .ascii " was created by Litwr, 2023" <13.> <10.>
-    .ascii "Help was also provided by bqt and Hunta" <13.> <10.>
+    .ascii "Help was also provided by bqt, leegleason, and Hunta" <13.> <10.>
     .ascii "The T-key gives us timings. Press Q-key to quit"
     .byte 13.,10.
     .ascii "Press B to enter benchmark mode"
