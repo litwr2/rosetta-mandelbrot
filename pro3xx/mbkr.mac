@@ -345,8 +345,11 @@ rreg:  mov 4(sp),r1
        mov #save4,r2
        mov (r2)+,4(r1)
        mov (r2)+,6(r1)
+       bit #^B0010000000000000,4(r1)  ;EBO present
+       bne 1$
+
        mov (r2)+,8.(r1)
-       mov (r2)+,14.(r1)
+1$:    mov (r2)+,14.(r1)
        mov (r2),16.(r1)
        return
 
@@ -354,12 +357,15 @@ sreg:  mov 4(sp),r1
        mov #save4,r2
        mov 4(r1),(r2)+
        mov 6(r1),(r2)+
+       bit #^B0010000000000000,4(r1)  ;EBO present
+       bne 1$
+
        mov 8.(r1),(r2)+
-       mov 14.(r1),(r2)+
+       mov #^B0000000000000000,8.(r1)  ;disable planes 3 (red) and 2 (green)
+1$:    mov 14.(r1),(r2)+
        mov 16.(r1),(r2)
-     mov #^B0000000000000000,4(r1)   ;240 lines
-     mov #^B0000000000010010,6(r1)   ;256 dots, move to screen
-     mov #^B0000000000000000,8.(r1)  ;disable planes 3 (red) and 2 (green)
+       mov #^B0000000000000000,4(r1)   ;240 lines
+       mov #^B0000000000010010,6(r1)   ;256 dots, move to screen
        return
 
 time:   .word 0,0
@@ -382,7 +388,7 @@ XCR: .word 0
 .endc
 
 smsg:
-    .ascii "Superfast Mandelbrot generator, v6 (Pro-3"
+    .ascii "Superfast Mandelbrot generator, v7 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
