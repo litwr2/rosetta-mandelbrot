@@ -468,8 +468,8 @@ t3
      RET
      endp
 
-PR0000  ld de,-1000
-	CALL PR0
+;PR0000  ld de,-1000
+;	CALL PR0
 PR000	ld de,-100
 	CALL PR0
 PR00	ld de,-10
@@ -531,12 +531,12 @@ lf1 xor a
     ld c,a
     and 2
     jp z,lf2
-    
+
     ld b,'T'
     ld a,c
     and 16
     jp z,lf2
-  
+
     ld b,a
 lf2 ld a,$88
     out (0),a
@@ -565,7 +565,7 @@ palette db 0   ;RGB
 		db 0+6*8+0*64  ;1
 		db 0+4*8+0*64  ;2
 		db 0+2*8+0*64  ;3
-        db 0+0*8+3*64  ;4
+		db 0+0*8+3*64  ;4
 		db 6+0*8+0*64  ;5
 		db 4+0*8+0*64  ;6
 		db 2+0*8+0*64  ;7
@@ -577,12 +577,12 @@ palette db 0   ;RGB
 		db 2+2*8+3*64  ;13
 		db 4+7*8+2*64  ;14
 		db 7+7*8+3*64  ;15
-		
+
 msg     db $f,$d,$a
-        db "**********************************",13,10
-        db "* Superfast Mandelbrot generator *",13,10
-        db "*           16 colors, v1        *",13,10
-        db "**********************************",13,10
+        db "************************************",13,10
+        db "*  Superfast Mandelbrot generator  *",13,10
+        db "*            16 colors, v1         *",13,10
+        db "************************************",13,10
         db "The original version was published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav Maslovski.",13,10
         db "This Be",203,212,"op-06",227," port was created by Litwr, 2024.",13,10
