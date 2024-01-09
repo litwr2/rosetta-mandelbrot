@@ -3,18 +3,11 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the Vector-06C, 16 colors
+;256x256 (fullscreen) Mandelbrot for the  Vector-06C, 16 colors
 
 BDOS equ 5
 
-NOCALC equ 0
-
-initer	equ	7
-idx	equ	-36       ;-.0703125
-idy	equ	18        ;.03515625
-ix0	equ	-62*idx
-imx	equ	10*idx		; x move
-sf4	equ	436/4		; sf/4
+HSize equ 256   ;don't change!
 
 org #100
 
@@ -84,6 +77,35 @@ r4l:
 mandel0: 
     pop hl
 mandel:
+    ld hl,(dataindex)
+    ld a,(hl)
+    ld (dx),a
+    inc hl
+    ld a,(hl)
+    ld (dy),a
+    inc hl
+    ld a,(hl)
+    ld (x0),a
+    inc hl
+    ld a,(hl)
+    ld (x0+1),a
+    inc hl
+    ld a,(hl)
+    ld (niter),a
+    inc a
+    inc a
+    ld (hl),a
+    inc hl
+    ld a,low(data+5*12)
+    cp l
+    jp nz,le1
+
+    ld a,high(data+5*12)
+    cp h
+    jp nz,le1
+
+    ld hl,data
+le1 ld (dataindex),hl
     halt
     ;di
   		LD  c,15
@@ -110,7 +132,7 @@ PalLoop
     ld ($39),hl   ;start timer
     ;ei
 mandel1:
-    ld hl,$efff  ;scrtop
+    ld hl,$ffff  ;scrtop
     push hl
     ld hl,(dy)
     xor a   ;sets C=0
@@ -123,27 +145,23 @@ mandel1:
     ld l,a       ;dy*128
     ld (r5),hl
 loop0:
-if NOCALC=0
 x0 equ $+1
-    ld hl,ix0
+    ld hl,0
     ld (r4),hl
-endif
 loop1:
     ld hl,$8080
     push hl
     push hl
 loop2:
-if NOCALC=0
-    ld hl,(dx)
+dx equ $+1
+    ld hl,0ff00h
     ex de,hl
     ld hl,(r4)
     add hl,de
     ld (r4),hl
     ex de,hl    ;mov	r4, r0
-endif
 niter equ $+1
-    ld a,initer
-if NOCALC=0
+    ld a,0
     ld (ixhmem),a
     ld hl,(r5)  ;mov	r5, r1	
 loc1:
@@ -187,10 +205,8 @@ r4 equ $+1
     inc l
     ld h,(hl)
     ld l,a       ;(x+y)^2
-endif
 r5 equ $+1
     ld bc,0
-if NOCALC=0
     add hl,bc
     pop bc   ;r0
     ld a,l
@@ -203,10 +219,9 @@ ixhmem equ $+1
     ld a,0
     dec a
     ld (ixhmem),a     
-    jp nz,loc1   ;sob r2,1$
+    jp nz,loc1
 loc2:
     ld a,(ixhmem)   ;color
-endif
     ;and 15
     pop hl
     rra
@@ -280,12 +295,13 @@ lv1 ld b,h
     jp loop1
 lv2
     ld a,h
-    add a,$70
+    add a,$80
     ld h,a
     dec l
     push hl
 
-    ld hl,(dy)
+dy equ $+1
+    ld hl,0
     ld a,(r5)
     sub l
     ld l,a
@@ -295,56 +311,7 @@ lv2
     ld (r5+1),a
     or l
     jp nz,loop0
-if NOCALC=0
-    ld hl,(mx)
-    ex de,hl
-    ld hl,(x0)
-    add hl,de
-    ld (x0),hl   ;x0 += mx
-    ld hl,niter
-    inc (hl)     ;iter++
-    ld hl,dx
-    push hl
-lx5:
-    pop hl
-    ld a,l
-    cp low(mx)+2
-    jp z,lx2
 
-    ld (dx1p),a
-    ld (dx2p),a
-    inc l
-    inc l
-    push hl
-    ld de,-sf4
-dx1p equ $+1
-    ld hl,(dx)
-    push hl
-    add hl,de
-    sqrtab
-    ld c,(hl)
-    inc l
-    ld b,(hl)
-    ld de,sf4
-    pop hl
-    add hl,de
-    sqrtab
-    ld a,(hl)
-    inc l
-    ld h,(hl)
-    ld l,a
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a
-dx2p equ $+1
-    ld (dx),hl
-    jp lx5
-
-lx2:pop hl
-endif
     ld a,(benchmark)
     cp 'B'
     jp nz,loc3
@@ -355,6 +322,8 @@ endif
 loc3:
     ld hl,irqe
     ld ($39),hl   ;stop timer
+    ld hl,iter
+    inc (hl)
     cp 'B'
     jp z,loc4
 
@@ -374,8 +343,7 @@ loc4:
     ld de,curpos
     ld c,9
     call BDOS
-    ld a,(niter)
-    sub 7
+    ld a,(iter)
     ld l,a
     ld h,0
     call PR000
@@ -411,13 +379,6 @@ loc4:
 
 ;    call clscursor
     jp mandel
-
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
-.ERROR ERROR2
-  endif
 
 div0 macro
      local t1,t2
@@ -577,18 +538,38 @@ palette db 0   ;RGB
 		db 2+2*8+3*64  ;13
 		db 4+7*8+2*64  ;14
 		db 7+7*8+3*64  ;15
+
+mentry macro dx,dy,ni
+     db -dx, dy
+     dw dx*HSize/2-384   ;dx, dy, x0 = dx*HSize/2, niter
+     db ni
+endm
+
+iter db 0
+data mentry 15, 18, 7  ;1
+     mentry 13, 15, 8  ;2
+     mentry 11, 13, 9  ;3
+     mentry 9, 11, 10  ;4
+     mentry 7, 10, 11  ;5
+     mentry 7,  8, 12  ;6
+     mentry 7,  6, 13  ;7
+     mentry 6,  5, 14  ;8
+     mentry 6,  5, 15  ;9
+     mentry 6,  5, 16  ;10
+     mentry 6,  5, 25  ;11
+     mentry 6,  5, 37  ;12
+dataindex dw data
 		
 msg     db $f,$d,$a
-        db "**********************************",13,10
-        db "* Superfast Mandelbrot generator *",13,10
-        db "*           16 colors, v1        *",13,10
-        db "**********************************",13,10
-        db "The original version was published for",13,10
+        db "***************************************",13,10
+        db "*   Superfast Mandelbrot generator    *",13,10
+        db "* 16 colors, fullscreen (256x256), v1 *",13,10
+        db "***************************************",13,10
+        db "This Be",203,212,"op-06",227," code was created by Litwr, 2024.",13,10
+        db "It is based on code published for",13,10
         db "the ",226,"K0011 in 2021 by Stanislav Maslovski.",13,10
-        db "This Be",203,212,"op-06",227," port was created by Litwr, 2024.",13,10
         db "The T-key gives us timings.",13,10
-        db "Use the Q-key to quit.",13,10
-        db "Press B to enter benchmark mode$"
+        db "Use the Q-key to quit$"
 
 sqrbase equ ($ + $16b0 + $ff) and $ff00
    end start
