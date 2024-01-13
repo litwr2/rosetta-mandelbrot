@@ -106,16 +106,14 @@ x0 equ $+1
     ld (r4),hl
 endif
 loop2:
+niter equ $+2
+    ld ixh,initer   ;ixh = r2
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
     ld (r4),hl  ;r4 += dx
     ex de,hl    ;de = r0
-endif
-niter equ $+2
-    ld ixh,initer   ;ixh = r2
-if NOCALC=0
     ld hl,(r5)  ;hl = r1
 loc1:
     ;push hl
@@ -167,7 +165,7 @@ r5 equ $+1
 if NOCALC=0
     add hl,bc   ;r1 += r5
     dec ixh
-    jr nz,loc1   ;sob r2,1$
+    jr nz,loc1
 endif
 loc2:
     ld a,ixh   ;color

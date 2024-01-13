@@ -132,8 +132,8 @@ dx equ $+1
     add hl,de
     ld (r4),hl  ;r4 += dx
     ex de,hl    ;de = r0
-niter equ $+2   ;ixh = r2
-    ld ixh,0
+niter equ $+2
+    ld ixh,0    ;ixh = r2
     ld hl,(r5)  ;hl = r1
 loc1:
     ;push hl
@@ -183,7 +183,7 @@ r5 equ $+1
     ld bc,0
     add hl,bc   ;r1 += r5
     dec ixh
-    jr nz,loc1   ;sob r2,1$
+    jr nz,loc1
 loc2:
     ld a,ixh   ;color
     and 15   ;16 colors

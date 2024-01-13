@@ -125,56 +125,62 @@ loop1:
     ld ixl,2
 loop2:
 niter equ $+2
-    ld ixh,initer
+    ld ixh,initer   ;ixh = r2
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
-    ld (r4),hl
-    ;ld d,h
-    ;ld e,l      ;mov	r4, r0
-    ex de,hl
-    ld hl,(r5)  ;mov	r5, r1	
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
+    ld hl,(r5)  ;hl = r1
 loc1:
-    push hl
+    ;push hl
+    ld b,h
+    ld a,l
     sqrtab
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
-    pop hl
-    add hl,de   ;add	r0, r1
+    ld l,(hl)   ;bc = r3 = sqr(r1)
+    ;pop hl
+    ld h,b
+    ld b,l
+    ld l,a
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jr nz,loc2
 
-    push hl
-    sbc hl,bc   ;x^2  ;set C=0
-    sbc hl,bc   ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
+    ld l,a     ;r1 = sqr(r1)
+
+    sbc hl,de  ;r1 -= r0
+    ex de,hl   ;de - r1, hl - r0
+
+    xor a
+    sbc hl,bc  ;r0 -= r3
+    sbc hl,bc  ;r0 -= r3
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
 endif
 r5 equ $+1
     ld bc,0
 if NOCALC=0
-    add hl,bc    ;sets C=0
-    pop bc   ;r0
-    sbc hl,bc    ;2xy+y0
+    add hl,bc   ;r1 += r5
     dec ixh
-    jr nz,loc1   ;sob r2,1$
+    jr nz,loc1
 endif
 loc2:
     ld a,ixh
@@ -588,8 +594,7 @@ exit_intr
       ei
       ret
 
-intr_save dw 0
-cursoron db 27,"e",27,"E$"
+cursoroff db 27,"f$"
 
         org ($ + 15)&$fff0
 ;pat0 db	15,1,2, 3, 5,10,14,0   ;inv
@@ -598,28 +603,29 @@ pat0 db	0,14,13,12,10, 5, 1,15
 pat1 db	0,11, 6, 3, 1,10,14,15
 
 time dw 0,0
+intr_save dw 0
 home db 27,"H$"
+cursoron db 27,"e",27,"E$"
 
-cursoroff db 27,"f$"
 benchmark db 0
 bcount db 0   ;must follow benchmark
 
 dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
+if (dx and $ff00) != ((mx+2) and $ff00)
 .ERROR wrong alignment
-  endif
+endif
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         4x1 textures, v5       *",13,10
+        db "*         4x1 textures, v6       *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Amstrad PCW port was created by",13,10
-        db "Litwr, 2022-23.",13,10
+        db "Litwr, 2022-24.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",13,10
         db "Press B to enter benchmark mode$"

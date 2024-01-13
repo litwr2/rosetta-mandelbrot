@@ -139,55 +139,61 @@ x0 equ $+1
     ld de,89  ;scrtop, x
     exx
 loop1:
-   ld ixl,$80
+    ld ixl,$80
 loop2:
     ld hl,(r4)
 dx equ $+1
     ld de,$ff00
     add hl,de
-    ld (r4),hl
-    ;ld d,h
-    ;ld e,l      ;mov	r4, r0
-    ex de,hl
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
 niter equ $+2
-    ld ixh,0
-    ld hl,(r5)  ;mov	r5, r1	
+    ld ixh,0    ;ixh = r2
+    ld hl,(r5)  ;hl = r1
 loc1:
-    push hl
+    ;push hl
+    ld b,h
+    ld a,l
     sqrtab
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
-    pop hl
-    add hl,de   ;add	r0, r1
+    ld l,(hl)   ;bc = r3 = sqr(r1)
+    ;pop hl
+    ld h,b
+    ld b,l
+    ld l,a
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jr nz,loc2
 
-    push hl
-    sbc hl,bc   ;x^2  ;set C=0
-    sbc hl,bc   ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
+    ld l,a     ;r1 = sqr(r1)
+
+    sbc hl,de  ;r1 -= r0
+    ex de,hl   ;de - r1, hl - r0
+
+    xor a
+    sbc hl,bc  ;r0 -= r3
+    sbc hl,bc  ;r0 -= r3
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
 r5 equ $+1
     ld bc,0
-    add hl,bc    ;sets C=0
-    pop bc   ;r0
-    sbc hl,bc    ;2xy+y0
+    add hl,bc   ;r1 += r5
     dec ixh
     jr nz,loc1   ;sob r2,1$
 loc2:
@@ -590,10 +596,10 @@ data  ;     dx, dy, x0, niter - to convert to real values divide by 512
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*     720x256, 2 colors, v4      *",13,10
+        db "*     720x256, 2 colors, v5      *",13,10
         db "**********************************",13,10
         db "This Amstrad PCW code was created by",13,10
-        db "Litwr in 2023. It is based on code",13,10
+        db "Litwr in 2023-24. It is based on code",13,10
         db "published for the BK0011 in 2021 by",13,10
         db "Stanislav Maslovski.",13,10
         db "The T-key gives us timings.",13,10
