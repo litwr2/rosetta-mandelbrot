@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;512x256 Mandelbrot for the Commodore 128 (VDC, Z80) under ROM Basic, 2 colors are used to form 4x1 bricks to simulates 8 colors
+;512x256 Mandelbrot for the Commodore 128 (VDC, Z80) under ROM Basic, 2 colors are used to form 4x1 bricks to simulate 8 colors
 
 APORT equ $D600
 ;DPORT equ $D601
@@ -103,9 +103,9 @@ start    db $20   ;JSR
          dw PRIMM
          db 14,"**************************************",13
 if INTRM1
-         db "* sUPERFAST mANDELBROT GENERATOR V2I *",13
+         db "* sUPERFAST mANDELBROT GENERATOR V3I *",13
 else
-         db "*  sUPERFAST mANDELBROT GENERATOR V2 *",13
+         db "*  sUPERFAST mANDELBROT GENERATOR V3 *",13
 endif
          db "*            z80 vdc 16kb            *",13
          db "*     run it on vic-ii display!!     *",13
@@ -116,7 +116,7 @@ endif
          db "THE bk0011 IN 2021 BY sTANISLAV",13
          db "mASLOVSKI.",13
          db "tHIS cOMMODORE 128 PORT WAS CREATED",13
-         db "BY LITWR, 2023.",13
+         db "BY LITWR, 2023-24.",13
          db "tHE t-KEY GIVES US TIMINGS",13
          db 'pRESS b TO ENTER BENCHMARK MODE',0
 
@@ -276,14 +276,14 @@ endif
     exx
 loop2:
 niter equ $+2
-    ld ixh,initer
+    ld ixh,initer   ;ixh = r2
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
-    ld (r4),hl
-    ex de,hl    ;mov	r4, r0
-    ld hl,(r5)  ;mov	r5, r1	
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
+    ld hl,(r5)  ;hl = r1
 loc1:
     push hl
     sqrtab
@@ -297,33 +297,36 @@ loc1:
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jr nz,loc2    ;jp?
 
-    push hl
-    sbc hl,bc   ;x^2  ;set C=0
-    sbc hl,bc   ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
+    ld l,a     ;r1 = sqr(r1)
+
+    sbc hl,de  ;r1 -= r0
+    ex de,hl   ;de - r1, hl - r0
+
+    xor a
+    sbc hl,bc  ;r0 -= r3
+    sbc hl,bc  ;r0 -= r3
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
 endif
 r5 equ $+1
     ld bc,0
 if NOCALC=0
-    add hl,bc    ;sets C=0
-    pop bc   ;r0
-    sbc hl,bc    ;2xy+y0
+    add hl,bc   ;r1 += r5
     dec ixh
-    jp nz,loc1   ;sob r2,1$
+    jp nz,loc1
 loc2:
     ld a,ixh   ;color
 endif
