@@ -208,54 +208,57 @@ endif
     exx
 loop2:
 niter equ $+2
-    ld ixh,initer
+    ld ixh,initer   ;ixh = r2
 if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
-    ld (r4),hl
-    ex de,hl    ;mov	r4, r0
-    ld hl,(r5)  ;mov	r5, r1	
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
+    ld hl,(r5)  ;hl = r1
 loc1:
     push hl
     sqrtab
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
+    ld b,(hl)   ;bc = r3 = sqr(r1)
     pop hl
-    add hl,de   ;add	r0, r1
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jr nz,loc2    ;jp?
 
-    push hl
-    sbc hl,bc   ;x^2  ;set C=0
-    sbc hl,bc   ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
+    ld l,a     ;r1 = sqr(r1)
+
+    sbc hl,de  ;r1 -= r0
+    ex de,hl   ;de - r1, hl - r0
+
+    xor a
+    sbc hl,bc  ;r0 -= r3
+    sbc hl,bc  ;r0 -= r3
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
 endif
 r5 equ $+1
     ld bc,0
 if NOCALC=0
-    add hl,bc    ;sets C=0
-    pop bc   ;r0
-    sbc hl,bc    ;2xy+y0
+    add hl,bc   ;r1 += r5
     dec ixh
-    jp nz,loc1   ;sob r2,1$
+    jp nz,loc1
 loc2:
     ld a,ixh   ;color
 endif
@@ -568,9 +571,9 @@ endm
 dx:  	dw idx
 dy:	    dw idy
 mx:     dw imx
-  if (dx and $ff00) != ((mx+2) and $ff00)
+if (dx and $ff00) != ((mx+2) and $ff00)
 .ERROR ERROR2
-  endif
+endif
 
 div32x16r proc   ;HL:DE/BC -> HL - rem, DE - quo
      local t,t0,t1,t2,t3
@@ -597,8 +600,8 @@ t3
      RET
      endp
 
-PR0000  ld de,-1000
-	CALL PR0
+;PR0000  ld de,-1000
+;	CALL PR0
 PR000	ld de,-100
 	CALL PR0
 PR00	ld de,-10
@@ -668,13 +671,13 @@ bcount db 0
 msg     db "****************************",13,10
         db "*   Superfast Mandelbrot   *",13,10
         db "*        generator         *",13,10
-        db "*     interlaced, v4       *",13,10
+        db "*     interlaced, v5       *",13,10
         db "****************************",13,10
         db "The original version was",13,10
         db "published for the BK0011 in",13,10
         db "2021 by Stanislav Maslovski.",13,10
         db "This MSX2 port was created",13,10
-        db "by Litwr, 2022-23.",13,10
+        db "by Litwr, 2022-24.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",13,10
         db "Press B to enter benchmark mode",0
