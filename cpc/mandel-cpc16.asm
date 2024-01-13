@@ -110,54 +110,62 @@ if NOCALC=0
     ld hl,(r4)
     ld de,(dx)
     add hl,de
-    ld (r4),hl
-    ex de,hl    ;mov	r4, r0
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
 endif
 niter equ $+2
-    ld ixh,initer
+    ld ixh,initer   ;ixh = r2
 if NOCALC=0
-    ld hl,(r5)  ;mov	r5, r1	
+    ld hl,(r5)  ;hl = r1
 loc1:
-    push hl
+    ;push hl
+    ld b,h
+    ld a,l
     res 0,l
     set 7,h
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
-    pop hl
-    add hl,de   ;add	r0, r1
+    ld l,(hl)   ;bc = r3 = sqr(r1)
+    ;pop hl
+    ld h,b
+    ld b,l
+    ld l,a
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     res 0,l
     set 7,h
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jr nz,loc2
 
-    push hl
-    sbc hl,bc   ;x^2  ;set C=0
-    sbc hl,bc   ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     set 7,h
     res 0,l
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
+    ld l,a     ;r1 = sqr(r1)
+
+    sbc hl,de  ;r1 -= r0
+    ex de,hl   ;de - r1, hl - r0
+
+    xor a
+    sbc hl,bc  ;r0 -= r3
+    sbc hl,bc  ;r0 -= r3
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
 endif
 r5 equ $+1
     ld bc,0
 if NOCALC=0
-    add hl,bc    ;sets C=0
-    pop bc   ;r0
-    sbc hl,bc    ;2xy+y0
+    add hl,bc   ;r1 += r5
     dec ixh
     jr nz,loc1   ;sob r2,1$
 endif
@@ -333,13 +341,6 @@ loc4:
     jp nz,mandel
     rst 0
 
-ti:     dw 0,0
-dx:  	dw idx
-dy:	    dw idy
-mx:     dw imx
-c8t:    db 0, 8, $22, $88, $2a, $28, 2, $8a
-        db $80, $20, $a0, $a8, $82, $a2, $aa, $a
-
 div0 macro
      local t1,t2
      sla e
@@ -382,6 +383,16 @@ t3
      div0
      RET
      endp
+
+ti:     dw 0,0
+dx:  	dw idx
+dy:	    dw idy
+mx:     dw imx
+if (($ and $ff) > $f0) or ((dx and $ff00) != ((mx+2) and $ff00))
+.ERROR ALIGNMENT ERROR
+endif
+c8t:    db 0, 8, $22, $88, $2a, $28, 2, $8a
+        db $80, $20, $a0, $a8, $82, $a2, $aa, $a
 
 PR0000  ld de,-1000
 	CALL PR0
@@ -472,13 +483,13 @@ bcount db 0
 
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
-        db "*         16 colors, v8          *",13,10
+        db "*         16 colors, v9          *",13,10
         db "**********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Amstrad CPC port was created by",13,10
-        db "Litwr, 2021-23.",13,10
+        db "Litwr, 2021-24.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit.",13,10
         db "Press B to enter benchmark mode",0
