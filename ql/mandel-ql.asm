@@ -8,7 +8,7 @@
 
 NOCALC = 0
 
-initer	= 7
+initer	= 6
 idx	=	-36       ;-.0703125
 idy	=	18        ;.03515625, 1 = 1/512
 ix0	=	-62*idx
@@ -81,36 +81,36 @@ loop0:
   endif
 loop2:
   if NOCALC=0
-	add dx(a3),d4   ;add	@#dxa, r4		; update a
-	move niter(a3),d2	; max iter. count
-	move d4,d0		; r0 = x = a
-	move d5,d1		; r1 = y = b
+	add dx(a3),d4   ;r4 += dx, d4 - r4
+	move niter(a3),d2	;d2 = r2  ;max iter. count
+	move d4,d0		;d0 - r0
+	move d5,d1		;d1 - r1
 loc1:
     move d1,d7
-    and.b d6,d7    ;??
-	move (a4,d7.w),d3 ;mov	sqr(r1), r3	; r3 = y^2
-	add d0,d1       ;add	r0, r1		; r1 = x+y
+    and.b d6,d7
+	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+	add d0,d1       ;r1 += r0
     move d0,d7
     and.b d6,d7
-	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
-	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmp a6,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
+	move (a4,d7.w),d0    ;r0 = sqr(r0)
+	add d3,d0       ;r0 += r3
+	cmp a6,d0       ;if r0 >= 4.0 then
     ;cmp #$800,d0
-	bcc	loc2		; overflow
+	bcc	loc2
 
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d1 ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	sub d0,d1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-	add d5,d1       ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2-y^2
-	add d4,d0       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    subi #1,d2
-	bne loc1        ;sob	r2, 1$		; to the next iteration  ??dbra
+	move (a4,d7.w),d1 ;r1 = sqr(r1)
+	sub d0,d1       ;r1 -= r0
+	sub d3,d0       ;r0 -= r3
+	sub d3,d0       ;r0 -= r3
+	add d4,d0       ;r0 += r4
+	add d5,d1       ;r1 += r5
+	dbra d2,loc1
 loc2:
+    addi #1,d2
   endif
-	and #15,d2      ;bic	#177770, r2	; get bits of color
+	and #15,d2      ;get bits of color
     lsl d2
     move icolor(a3,d2.w),d0
     move tcolor(a3),d1

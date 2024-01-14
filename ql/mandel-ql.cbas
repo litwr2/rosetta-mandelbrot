@@ -5,14 +5,14 @@
 50 r=timer
 110 print" **********************************"
 120 print" * Superfast Mandelbrot generator *"
-130 print" *           8 colors, v3         *"
+130 print" *           8 colors, v4         *"
 135 print" *            fullscreen          *"
 140 print" **********************************"
-145 print"This QL code was created by Litwr, 2022-23"
+145 print"This QL code was created by Litwr, 2022-24"
 150 print"The original version was published for"
 155 print"It is based on code published for"
 160 print"the BK0011 in 2021 by Stanislav Maslovski."
-170 print"This QL port was created by Litwr, 2022-23"
+170 print"This QL port was created by Litwr, 2022-24"
 180 print"The T-key gives us timings."
 190 print"Use the Q-key to quit."
 195 print"Press B to enter benchmark mode"
@@ -29,11 +29,13 @@
 400 a$="":r=0:mode 8
 405 sum=0:c=16
 410 mandl:r=r+1
-415 sum=sum+timer:if b$<>"B" and b$<>"b" then a$=inkey$(-1):else c=c-1:if c<>0 then goto 410
-420 if a$="q" or a$="Q" then goto 500
-430 if c<>0 and a$<>"t" and a$<>"T" then goto 405
-435 at 1,1
-440 print r,sum/50
-450 a$=inkey$(-1)
-460 if a$<>"q" and a$<>"Q" then goto 405
+420 sum=sum+timer
+425 if b$<>"B" and b$<>"b" then a$=inkey$(-1):else c=c-1:if c<>0 then goto 410
+430 a$=inkey$(-1)
+440 if a$="q" or a$="Q" then goto 500
+450 if c<>0 and a$<>"t" and a$<>"T" then goto 405
+460 at 1,1
+470 print r,sum/50
+480 a$=inkey$(-1)
+490 if a$<>"q" and a$<>"Q" then goto 405
 500 mode 4
