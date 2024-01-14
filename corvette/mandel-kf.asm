@@ -36,6 +36,15 @@ start
     ld c,9
     call BDOS
     call waitk
+
+    ld hl,$fafb   ;palette
+    ld a,$80
+    ld c,16
+lo3 ld (hl),a
+    add a,$11
+    dec c
+    jp nz,lo3
+
     ld de,curoff
     ld c,9
     call BDOS
@@ -143,70 +152,70 @@ dx equ $+1
     ex de,hl
     ld hl,(r4)
     add hl,de
-    ld (r4),hl
-    ex de,hl    ;mov	r4, r0
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
+    ld hl,(r5)  ;hl = r1
 niter equ $+1
     ld a,0
-    ld (ixhmem),a
-    ld hl,(r5)  ;mov	r5, r1	
 loc1:
+    ld (ixhmem),a
     push hl
     sqrtab
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
+    ld b,(hl)   ;bc = r3 = sqr(r1)
     pop hl
-    add hl,de   ;add	r0, r1
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jp nz,loc2
 
-    push hl
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a      ;x^2  ;set C=0
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a      ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
-r5 equ $+1
-    ld bc,0
-    add hl,bc
-    pop bc   ;r0
+    ld l,a       ;r1 = sqr(r1)
     ld a,l
-    sub c
+    sub e
     ld l,a
     ld a,h
-    sbc a,b
-    ld h,a    ;2xy+y0
+    sbc a,d
+    ld h,a      ;r1 -= r0
+    ex de,hl    ;de - r1, hl - r0
+
+    dec bc
+    ld a,c
+    cpl
+    ld c,a
+    ld a,b
+    cpl
+    ld b,a
+    add hl,bc  ;r0 -= r3
+    add hl,bc  ;r0 -= r3
+    
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
+r5 equ $+1
+    ld bc,0
+    add hl,bc    ;r1 += r5
 ixhmem equ $+1
     ld a,0
     dec a
-    ld (ixhmem),a
-    jp nz,loc1   ;sob r2,1$
+    jp nz,loc1
+    jp loc2x
 loc2:
     ld a,(ixhmem)   ;color
+loc2x:
     and 7
     rlca
     or $80
@@ -263,18 +272,56 @@ dy equ $+1
     or l
     jp nz,loop0
 
-lx2:ld hl,(KL+1)
+    ld hl,(KL+1)
     ld (INTRV),hl   ;stop timer
     ld hl,iter
     inc (hl)
-    call waitk
+wk: call waitk
     and 0dfh
     cp 'Q'
     jp nz,noq
 exit:
     rst 0
 
-noq:cp 'T'
+noq:cp 'C'
+    jp nz,noc
+
+    ld a,(xi1)
+    xor 2
+    ld (xi1),a
+    xor 2
+    ld (xi2),a
+    ld de,invon
+    ld c,9
+    call BDOS
+xi1 equ $+2
+    ld hl,$fe00
+    ld bc,512
+    ld a,' '
+lo1 ld (hl),a
+    inc hl
+    dec c
+    jp nz,lo1
+
+    dec b
+    jp nz,lo1
+
+    ld de,invoff
+    ld c,9
+    call BDOS
+xi2 equ $+2
+    ld hl,$fc00
+    ld bc,512
+    ld a,' '
+lo4 ld (hl),a
+    inc hl
+    dec c
+    jp nz,lo4
+
+    dec b
+    jp nz,lo4
+    jp wk
+noc:cp 'T'
     jp nz,mandel
 
     ld de,$4000
@@ -323,7 +370,7 @@ lt1:ld (de),a
     ld c,2
     call BDOS
 	POP hl
-        add hl,hl  ;*2
+    add hl,hl  ;*2
 	call PR00
     call waitk
     and 0dfh
@@ -382,8 +429,8 @@ t3
      RET
      endp
 
-PR0000  ld de,-1000
-	CALL PR0
+;PR0000  ld de,-1000
+;	CALL PR0
 PR000	ld de,-100
 	CALL PR0
 PR00	ld de,-10
@@ -443,6 +490,8 @@ clscursor:
 curoff db 27,";$"
 ;curon  db 27,":$"
 ;curpos db 1,33,65,"$"
+invon db 27,"6$"
+invoff db 27,"7$"
 
 mentry macro dx,dy,ni
      db -dx, dy
@@ -465,15 +514,14 @@ data mentry 9, 18, 7   ;1
      mentry 3,  5, 37  ;12
 dataindex dw data
 
-msg     db "**************************************",13,10
-        db "*   Superfast Mandelbrot generator   *",13,10
-        db "* 8 colors, fullscreen (512x256), v6 *",13,10
-        db "**************************************",13,10
-        db "This Corvette code was created by Litwr, 2022-23.",13,10
+msg     db "*****************************************",13,10
+        db "*    Superfast Mandelbrot generator     *",13,10
+        db "* 8/16 colors, fullscreen (512x256), v7 *",13,10
+        db "*****************************************",13,10
+        db "This Corvette code was created by Litwr, 2022-24.",13,10
         db "It is based on code published for",13,10
-        db "the ",226,"K0011 in 2021 by Stanislav",13,10
-        db "Maslovski.",13,10
-        db "The T-key gives us timings.",13,10
+        db "the ",226,"K0011 in 2021 by Stanislav Maslovski.",13,10
+        db "The T-key gives us timings. Press C-key to get more colors.",13,10
         db "Use the Q-key to quit$"
 sqrbase equ (msg + $16b0 + $ff) and $ff00
    end start

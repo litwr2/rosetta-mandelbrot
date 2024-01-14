@@ -87,7 +87,7 @@ r4l:
     inc de
     jp sqrloop
 
-mandel0: 
+mandel0:
     pop hl
 mandel:
     ld hl,(dataindex)
@@ -144,70 +144,70 @@ dx equ $+1
     ex de,hl
     ld hl,(r4)
     add hl,de
-    ld (r4),hl
-    ex de,hl    ;mov	r4, r0
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
+    ld hl,(r5)  ;hl = r1
 niter equ $+1
     ld a,0
-    ld (ixhmem),a
-    ld hl,(r5)  ;mov	r5, r1	
 loc1:
+    ld (ixhmem),a
     push hl
     sqrtab
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
+    ld b,(hl)   ;bc = r3 = sqr(r1)
     pop hl
-    add hl,de   ;add	r0, r1
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jp nz,loc2
 
-    push hl
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a      ;x^2  ;set C=0
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a      ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
-r5 equ $+1
-    ld bc,0
-    add hl,bc
-    pop bc   ;r0
+    ld l,a       ;r1 = sqr(r1)
     ld a,l
-    sub c
+    sub e
     ld l,a
     ld a,h
-    sbc a,b
-    ld h,a    ;2xy+y0
+    sbc a,d
+    ld h,a      ;r1 -= r0
+    ex de,hl    ;de - r1, hl - r0
+
+    dec bc
+    ld a,c
+    cpl
+    ld c,a
+    ld a,b
+    cpl
+    ld b,a
+    add hl,bc  ;r0 -= r3
+    add hl,bc  ;r0 -= r3
+    
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
+r5 equ $+1
+    ld bc,0
+    add hl,bc    ;r1 += r5
 ixhmem equ $+1
     ld a,0
     dec a
-    ld (ixhmem),a
-    jp nz,loc1   ;sob r2,1$
+    jp nz,loc1
+    jp loc2x
 loc2:
     ld a,(ixhmem)   ;color
+loc2x:
     and 15
 patx equ $+1
     ld hl,pat0
@@ -285,7 +285,7 @@ dy equ $+1
     or l
     jp nz,loop0
 
-lx2:ld hl,(KL+1)
+    ld hl,(KL+1)
     ld (INTRV),hl   ;stop timer
     ld hl,iter
     inc (hl)
@@ -404,8 +404,8 @@ t3
      RET
      endp
 
-PR0000  ld de,-1000
-	CALL PR0
+;PR0000  ld de,-1000
+;	CALL PR0
 PR000	ld de,-100
 	CALL PR0
 PR00	ld de,-10
@@ -456,9 +456,9 @@ pat0:	db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0
 pat1:	db 0x80,0x80,0x88,0x80,0x84,0x80,0x80,0x8e,0x80,0x84,0x82,0x86,0x80,0x8a,0x80,0x8c
         db 0x80,0x82,0x88,0x84,0x84,0x88,0x8a,0x8e,0x8c,0x8c,0x82,0x86,0x8e,0x8a,0x86,0x8c
 
-  if (pat0 and $ff00) != ((pat0+64) and $ff00)
+if (pat0 and $ff00) != ((pat0+64) and $ff00)
 .ERROR ERROR1
-  endif
+endif
 
 waitk:
     ld c,6  ;direct console i/o
@@ -501,12 +501,11 @@ dataindex dw data
 msg     db "**********************************",13,10
         db "* Superfast Mandelbrot generator *",13,10
         db "*       8 colors + textures      *",13,10
-        db "*    fullscreen (512x256), v6    *",13,10
+        db "*    fullscreen (512x256), v7    *",13,10
         db "**********************************",13,10
-        db "This Corvette code was created by Litwr, 2022-23.",13,10
+        db "This Corvette code was created by Litwr, 2022-24.",13,10
         db "It is based on code published for",13,10
-        db "the ",226,"K0011 in 2021 by Stanislav",13,10
-        db "Maslovski.",13,10
+        db "the ",226,"K0011 in 2021 by Stanislav Maslovski.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit$"
 sqrbase equ (msg + $16b0 + $ff) and $ff00
