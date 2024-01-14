@@ -7,7 +7,7 @@
 
 QCOLORS = 32 ;16
 HSize = 320
-BLITTER=1    ;it seems the blitter can only do a slight accelleration and the blitter code is larger
+BLITTER=0    ;it seems the blitter can only do a slight accelleration and the blitter code is larger
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -102,7 +102,7 @@ ScreenWidth = 320
 
          lea.l SOD,A3
 
-         include "system1.s"
+         include "system2.s"
 start:
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
@@ -136,6 +136,13 @@ mandel:
     move.w 2(a0,d0.w),x0(a3)
     move.b 4(a0,d0.w),niter+1(a3)
     addq.b #2,4(a0,d0.w)
+    add #6,d0
+    cmpi #12*6,d0
+    bne loc7
+
+    moveq #0,d0
+loc7:
+    move d0,dataindex(a3)
     clr.l time(a3)
     moveq #-2,d6   ;-2=$fe
     movea.l #ScreenWidth/8,a2
@@ -298,14 +305,6 @@ loc3:
 	bne loop0
 
 	addq #1,iter(a3)      ;increase the iteration count
-    move dataindex(pc),d0
-    add #6,d0
-    cmpi #12*6,d0
-    bne loc7
-
-    moveq #0,d0
-loc7:
-    move d0,dataindex(a3)
     move.l time(a3),d5
     bsr getkey
     andi.b #$df,d0
@@ -318,14 +317,14 @@ noquit:
 
     lsl.l d5
     move iter(a3),d0
-    move d0,datae(a3)
-    move d5,datae+2(a3)
-    lea.l datae(a3),a1
+    lea.l datae+2(a3),a1
+    move d5,(a1)
+    move d0,-(a1)
     lea.l fmt(a3),a0
     lea.l stuffChar(pc),a2
     move.l #-1,charCount(a3)
     move.l a3,-(sp)
-    lea.l msg(a3),a3
+    lea.l datae+4(a3),a3
     movea.l 4.w,a6
     jsr RawDoFmt(a6)
     movea.l (sp)+,a3
@@ -334,7 +333,7 @@ noquit:
     movepenq 0,6
     color 2
     move.l charCount(a3),d0
-    lea.l msg(a3),a0
+    lea.l datae+4(a3),a0
     lea.l -2(a0,d0.w),a2
     move.b (a2),d1
     move.b #".",(a2)+
@@ -524,8 +523,8 @@ WINDOW_HANDLE:	DC.L	0
 time dc.l 0
 fmt     dc.b "%d %02d",0   ;even number of bytes!
 CONHANDLE   DC.L 0
-datae = CONWINDOW
 CONWINDOW	DC.B	'CON:10/10/400/110/Superfast Fullscreen Mandelbrot',0
+datae = msg
 msg     dc.b "  **********************************",10
         dc.b "  * Superfast Mandelbrot generator *",10
         dc.b "  *     320x256, "
@@ -546,11 +545,6 @@ msg     dc.b "  **********************************",10
 endmsg
 
          align 1
-t1:
-sz = $1520
-  if t1-CONHANDLE+sz<$16b0
-     fail ERROR
-  endif
-         DCB.B	sz,0   ;its size + size of CONHANDLE... must be more than $16B0
+         DCB.B	$16b0,0
 sqrbase: DCB.B	$16b0,0
 

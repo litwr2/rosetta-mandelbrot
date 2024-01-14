@@ -96,7 +96,7 @@ mouseright_char = 2
 ScreenHeight = 256
 ScreenWidth = 128
 
-initer	= 7
+initer	= 6
 idx	=	-36       ;-.0703125
 idy	=	18        ;.03515625, 1 = 1/512
 ix0	=	-62*idx
@@ -108,7 +108,7 @@ sf4	=	436/4		; sf/4
 
          lea.l SOD,A3
 
-         include "system1.s"
+         include "system2.s"
 start:
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
@@ -150,35 +150,35 @@ loop0:
   endif
 loop2:
   if NOCALC=0
-	add dx(a3),d4   ;add	@#dxa, r4		; update a
-	move niter(a3),d2	; max iter. count
-	move d4,d0		; r0 = x = a
-	move d5,d1		; r1 = y = b
+	add dx(a3),d4   ;r4 += dx, d4 - r4
+	move niter(a3),d2	;d2 = r2;  max iter. count
+	move d4,d0		;d0 - r0
+	move d5,d1		;d1 - r1
 loc1:
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d3 ;mov	sqr(r1), r3	; r3 = y^2
-	add d0,d1       ;add	r0, r1		; r1 = x+y
+	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+	add d0,d1       ;r1 += r0
     move d0,d7
     and.b d6,d7
-	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
-	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmp a2,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
-	bcc	loc2		; overflow
+	move (a4,d7.w),d0    ;r0 = sqr(r0)
+	add d3,d0       ;r0 += r3
+	cmp a2,d0       ;if r0 >= 4.0 then
+	bcc	loc2
 
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d1 ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	sub d0,d1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-	add d5,d1       ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2-y^2
-	add d4,d0       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    subi #1,d2
-	bne loc1        ;sob	r2, 1$		; to next iteration  ??dbra
+	move (a4,d7.w),d1 ;r1 = sqr(r1)
+	sub d0,d1       ;r1 -= r0
+	sub d3,d0       ;r0 -= r3
+	sub d3,d0       ;r0 -= r3
+	add d4,d0       ;r0 += r4
+	add d5,d1       ;r1 += r5
+	dbra d2,loc1
 loc2:
+    addi #1,d2
   endif
-	;and #15,d2      ;bic	#177770, r2	; get bits of color
+	;andi #15,d2      ;get bits of color
     lea.l tcolor1(a3),a0
     movem.l (a0)+,d0/d1/d3/d7
     lsr d2
@@ -311,15 +311,15 @@ noquit:
 loc6:
     lsl.l d5
     move niter(a3),d0
-    subq #7,d0
-    move d0,data(a3)
-    move d5,data+2(a3)
-    lea.l data(a3),a1
+    subq #6,d0
+    lea.l datae+2(a3),a1
+    move d5,(a1)
+    move d0,-(a1)
     lea.l fmt(a3),a0
     lea.l stuffChar(pc),a2
     move.l #-1,charCount(a3)
     move.l a3,-(sp)
-    lea.l msg(a3),a3
+    lea.l datae+4(a3),a3
     movea.l 4.w,a6
     jsr RawDoFmt(a6)
     movea.l (sp)+,a3
@@ -328,7 +328,7 @@ loc6:
     movepenq 0,6
     color 2
     move.l charCount(a3),d0
-    lea.l msg(a3),a0
+    lea.l datae+4(a3),a0
     lea.l -2(a0,d0.w),a2
     move.b (a2),d1
     move.b #".",(a2)+
@@ -477,28 +477,23 @@ WINDOW_HANDLE:	DC.L	0
 time dc.l 0
 fmt     dc.b "%d %02d",0   ;even number of bytes
 CONHANDLE   DC.L 0
-benchmark ds.b 1
 bcount ds.b 1
 CONWINDOW	DC.B	'CON:10/10/400/100/Superfast Mandelbrot',0
-data = CONWINDOW
+datae = msg
+benchmark ;=datae
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v7         *",13,10
+        dc.b "  *          16 colors, v8         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        dc.b "This Amiga port was created by Litwr, 2021-23.",13,10
+        dc.b "This Amiga port was created by Litwr, 2021-24.",13,10
         dc.b "The T-key gives us timings.",13,10
         dc.b "Use the Q-key to quit.",13,10
         dc.b "Press Enter to use standard mode",13,10
         dc.b "Press B and then Enter to use benchmark mode"
 endmsg
          align 1
-t1:
-sz = $1530
-  if t1-CONHANDLE+sz<$16b0
-     fail ERROR
-  endif
-         DCB.B	sz,0   ;its size + size of CONHANDLE... must be more than $16B0
+         DCB.B	$16b0,0
 sqrbase: DCB.B	$16b0,0
 

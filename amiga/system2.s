@@ -48,12 +48,12 @@ STARTUP:
          MOVE.L #endmsg-msg,D3
          jsr Write(a6)
          move.l CONHANDLE(a3),d1
-         MOVE.L #data,D2
+         MOVE.L #datae,D2
          MOVE.L #1,D3
          jsr Read(a6)
-         move.b data(pc),d4
+         move.b datae(pc),d4
          andi.b #$df,d4
-         move.b d4,benchmark(a3)
+         move.b d4,datae(a3)
          movea.l doslib(a3),a6  ;??
          move.l CONHANDLE(a3),d1
 	     jsr Close(a6)
