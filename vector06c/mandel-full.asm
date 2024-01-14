@@ -158,70 +158,71 @@ dx equ $+1
     ex de,hl
     ld hl,(r4)
     add hl,de
-    ld (r4),hl
-    ex de,hl    ;mov	r4, r0
+    ld (r4),hl  ;r4 += dx
+    ex de,hl    ;de = r0
+    ld hl,(r5)  ;hl = r1
 niter equ $+1
     ld a,0
-    ld (ixhmem),a
-    ld hl,(r5)  ;mov	r5, r1	
 loc1:
+    ld (ixhmem),a   ;ixhmem = r2
     push hl
     sqrtab
     ld c,(hl)
     inc l
-    ld b,(hl)   ;mov	sqr(r1), r3
+    ld b,(hl)   ;bc = r3 = sqr(r1)
     pop hl
-    add hl,de   ;add	r0, r1
+    add hl,de   ;r1 += r0
     ex de,hl    ;de - r1, hl - r0, bc - r3
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;mov	sqr(r0), r0
-    add hl,bc    ;add	r3, r0
+    ld l,a       ;r0 = sqr(r0)
+    add hl,bc    ;r0 += r3
     ld a,h
-    and $f8
+    and $f8      ;sets C=0
     jp nz,loc2
 
-    push hl
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a      ;x^2  ;set C=0
-    ld a,l
-    sub c
-    ld l,a
-    ld a,h
-    sbc a,b
-    ld h,a      ;x^2-y^2
-r4 equ $+1
-    ld bc,0
-    add hl,bc   ;x^2-y^2+x0
     ex de,hl    ;de - r0, hl - r1
     sqrtab
     ld a,(hl)
     inc l
     ld h,(hl)
-    ld l,a       ;(x+y)^2
-r5 equ $+1
-    ld bc,0
-    add hl,bc
-    pop bc   ;r0
+    ld l,a       ;r1 = sqr(r1)
     ld a,l
-    sub c
+    sub e
     ld l,a
     ld a,h
-    sbc a,b
-    ld h,a    ;2xy+y0
+    sbc a,d
+    ld h,a      ;r1 -= r0
+    ex de,hl    ;de - r1, hl - r0
+
+    dec bc
+    ld a,c
+    cpl
+    ld c,a
+    ld a,b
+    cpl
+    ld b,a
+    add hl,bc  ;r0 -= r3
+    add hl,bc  ;r0 -= r3
+    
+r4 equ $+1
+    ld bc,0
+    add hl,bc   ;r0 += r4
+    ex de,hl    ;de - r0, hl - r1
+
+r5 equ $+1
+    ld bc,0
+    add hl,bc    ;r1 += r5
 ixhmem equ $+1
     ld a,0
     dec a
-    ld (ixhmem),a     
     jp nz,loc1
+    jp loc2x
 loc2:
     ld a,(ixhmem)   ;color
+loc2x:
     ;and 15
     pop hl
     rra
@@ -563,7 +564,7 @@ dataindex dw data
 msg     db $f,$d,$a
         db "***************************************",13,10
         db "*   Superfast Mandelbrot generator    *",13,10
-        db "* 16 colors, fullscreen (256x256), v1 *",13,10
+        db "* 16 colors, fullscreen (256x256), v2 *",13,10
         db "***************************************",13,10
         db "This Be",203,212,"op-06",227," code was created by Litwr, 2024.",13,10
         db "It is based on code published for",13,10
