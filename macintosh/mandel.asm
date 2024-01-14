@@ -163,7 +163,7 @@ loc1:
 loc2:
     addi #1,d2
   endif
-	andi #7,d2      ;bic	#177770, r2	; get bits of color
+	andi #7,d2      ;get bits of color
     lea.l tcolor0(pc),a0
     movem (a0),d1/d3
     swap d1
