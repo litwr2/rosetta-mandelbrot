@@ -533,10 +533,10 @@ msg     dc.b "  **********************************",10
   else
         dc.b "16"
   endif
-        dc.b" colors, v5     *",10
+        dc.b" colors, v6     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
-        dc.b "Litwr in 2022-23. It is based on code",10
+        dc.b "Litwr in 2022-24. It is based on code",10
         dc.b "published for the BK0011 in 2021 by",10
         dc.b "Stanislav Maslovski.",10
         dc.b "The T-key gives us timings.",10
