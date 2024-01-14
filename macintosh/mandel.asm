@@ -1,10 +1,10 @@
 ;for MPW assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2022
 ;
 ;512x256 Mandelbrot for the Macintosh (only the 68000 code)
-;512x342 2 colors, 4x1 texture bricks to simulate 8 colors
+;128x256 2 colors, 4x1 texture bricks to simulate 8 colors
+;512x342 2 colors video mode
 
 NOCALC equ 0
 
@@ -16,7 +16,7 @@ lutsz equ 11768
 
 vOff    equ 38
 
-initer	equ 7
+initer	equ 6
 idx	equ	-36       ;-.0703125
 idy	equ	18        ;.03515625, 1 = 1/512
 ix0	equ	-62*idx
@@ -135,33 +135,33 @@ loop0:
   endif
 loop2:
   if NOCALC=0 then
-	add dx(pc),d4   ;add	@#dxa, r4		; update a
-	move niter(pc),d2	; max iter. count
-	move d4,d0		; r0 = x = a
-	move d5,d1		; r1 = y = b
+	add dx(pc),d4   ;r4 += dx, d4 - r4
+	move niter(pc),d2	;d2 = r2;  max iter. count
+	move d4,d0		;d0 - r0
+	move d5,d1		;d1 - r1
 loc1:
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d3 ;mov	sqr(r1), r3	; r3 = y^2
-	add d0,d1       ;add	r0, r1		; r1 = x+y
+	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+	add d0,d1       ;r1 += r0
     move d0,d7
     and.b d6,d7
-	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
-	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmp a2,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
-	bcc.s loc2		; overflow
+	move (a4,d7.w),d0    ;r0 = sqr(r0)
+	add d3,d0       ;r0 += r3
+	cmp a2,d0       ;if r0 >= 4.0 then
+	bcc.s loc2
 
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d1 ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	sub d0,d1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-	add d5,d1       ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2-y^2
-	add d4,d0       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    subi #1,d2
-	bne.s loc1        ;sob	r2, 1$		; to next iteration  ??dbra
+	move (a4,d7.w),d1 ;r1 = sqr(r1)
+	sub d0,d1       ;r1 -= r0
+	sub d3,d0       ;r0 -= r3
+	sub d3,d0       ;r0 -= r3
+	add d4,d0       ;r0 += r4
+	add d5,d1       ;r1 += r5
+	dbra d2,loc1
 loc2:
+    addi #1,d2
   endif
 	andi #7,d2      ;bic	#177770, r2	; get bits of color
     lea.l tcolor0(pc),a0
@@ -259,7 +259,7 @@ loc4:
 
     clr.l d5
     move niter(pc),d5
-    subq #7,d5
+    subq #6,d5
     bsr PR000
 
          move.b #32,d1  ;space
@@ -406,11 +406,11 @@ msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1
 
 msg1     dc.b '  **********************************'
 msg2     dc.b '  * Superfast Mandelbrot generator *'
-msg3     dc.b '  *         2 colors, v3           *'
+msg3     dc.b '  *         2 colors, v4           *'
 msg4     dc.b '  **********************************'
 msg5     dc.b 'The original version was published for'
 msg6     dc.b 'the BK0011 in 2021 by Stanislav Maslovski.'
-msg7     dc.b 'This Apple Macintosh port was created by Litwr, 2022-23.'
+msg7     dc.b 'This Apple Macintosh port was created by Litwr, 2022-24.'
 msg8     dc.b 'The T-key gives us timings.'
 msg9     dc.b 'Use the Q-key to quit.'
 msg10    dc.b 'Press B to enter benchmark mode'

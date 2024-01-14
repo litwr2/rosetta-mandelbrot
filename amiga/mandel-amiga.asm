@@ -151,7 +151,7 @@ loop0:
 loop2:
   if NOCALC=0
 	add dx(a3),d4   ;r4 += dx, d4 - r4
-	move niter(a3),d2	;d2 = r2;  max iter. count
+	move niter(a3),d2	;d2 = r2  ;max iter. count
 	move d4,d0		;d0 - r0
 	move d5,d1		;d1 - r1
 loc1:
