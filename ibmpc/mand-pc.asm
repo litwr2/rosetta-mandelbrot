@@ -108,32 +108,32 @@ loop1:
     push bx
 loop2: ;r0 - si, r1 - di, r2 - cx, r3 - ax, r4 - bp, r5 - dx
 if NOCALC=0
-	add bp,[vdx] ;add	@#dxa, r4
-	mov cx,[niter] ;mov	#niter, r2	; max iter. count
-	mov si,bp    ;mov	r4, r0
-	mov di,dx    ;mov	r5, r1
+	add bp,[vdx] ;r4 += dx, bp - r4
+	mov cx,[niter] ;cx = r2
+	mov si,bp    ;si - r0
+	mov di,dx    ;di - r1
 .l1:
     lea bx,[sqr+di]
     and bl,ch
-	mov ax,[bx]     ;mov	sqr(r1), r3	; r3 = y^2
-    add di,si       ;add	r0, r1		; r1 = x+y
+	mov ax,[bx]     ;ax = r3 = sqr(r1)
+    add di,si       ;r1 += r0
     lea bx,[sqr+si]
     and bl,ch
-	mov si,[bx]     ;mov	sqr(r0), r0	; r0 = x^2
-	add si,ax       ;add	r3, r0		; r0 = x^2+y^2
-	cmp si,sp    ;cmp	r0, r6		; if r0 >= 4.0 then
-	jnc .l2         ;bge	2$		; overflow
+	mov si,[bx]     ;r0 = sqr(r0)
+	add si,ax       ;r0 += r3
+	cmp si,sp       ;if r0 >= 4.0
+	jnc .l2
 
     lea bx,[sqr+di]
     and bl,ch
-	mov di,[bx]     ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	sub di,si       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-    add di,dx	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	sub si,ax       ;sub	r3, r0		; r0 = x^2
-	sub si,ax       ;sub	r3, r0		; r0 = x^2-y^2
-	add si,bp       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
+	mov di,[bx]     ;r1 = sqr(r1)
+	sub di,si       ;r1 -= r0
+	sub si,ax       ;r0 -= r3
+	sub si,ax       ;r0 -= r3
+	add si,bp       ;r0 += r4
+    add di,dx	    ;r1 += r5
     dec cl
-	jnz .l1        ;sob	r2, 1$		; to next iteration
+	jnz .l1
 .l2:
 end if
     ;and cl,15
@@ -384,11 +384,11 @@ bcount db 0
     align 2
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *        EGA 16 colors, v5       *",13,10
+        db "  *        EGA 16 colors, v6       *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav Maslovski.",13,10
-        db "This IBM PC EGA port was created by Litwr, 2021-23.",13,10
+        db "This IBM PC EGA port was created by Litwr, 2021-24.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit",13,10
         db "Press B to enter benchmark mode$"
