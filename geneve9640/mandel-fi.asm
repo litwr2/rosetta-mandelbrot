@@ -268,7 +268,7 @@ lx1:
      limi 4
   .endif
 
-     s @vdy,5    ;sub	@#dya, r5
+     s @vdy,5
      b @loop0
 oddli:
      li 0,1
@@ -336,7 +336,7 @@ oddli:
      limi 4
   .endif
      ai 8,256
-     s @vdy,5    ;sub	@#dya, r5
+     s @vdy,5
      jeq !
      b @loop0
 !:
@@ -506,25 +506,25 @@ tick12 equ MANDEL+14
 savef equ MANDEL+16               *its size is up to 0x60
 
 sfast equ $
-     a @vdx,4 ;add	@#dxa, r4
-     mov @niter,2 ;mov	#niter, r2	; max iter. count
-     mov 4,10    ;mov	r4, r0
-     mov 5,1    ;mov	r5, r1
-!:   mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
-     a 10,1       ;add	r0, r1		; r1 = x+y
-	 mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
-	 a 3,10       ;add	r3, r0		; r0 = x^2+y^2
-     ci 10,>800    ;cmp	r0, r6		; if r0 >= 4.0 then
-	 jhe !         ;bge	2$		; overflow
+     a @vdx,4  ;r4 += dx
+     mov @niter,2
+     mov 4,10    ;r10 - r0
+     mov 5,1
+!:   mov @sqrbase(1),3     ;r3 = sqr(r1)
+     a 10,1       ;r1 += r0
+	 mov @sqrbase(10),10     ;r0 = sqr(r0)
+	 a 3,10       ;r0 += r3
+     ci 10,>800    ;if r0 >= 4.0 then
+	 jhe !
 
-	 mov @sqrbase(1),1     ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	 s 10,1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-     a 5,1	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	 s 3,10       ;sub	r3, r0		; r0 = x^2
-	 s 3,10       ;sub	r3, r0		; r0 = x^2-y^2
-	 a 4,10       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
+	 mov @sqrbase(1),1     ;r1 = sqr(r1)
+	 s 10,1       ;r1 -= r0
+     a 5,1	    ;r1 += r5
+	 s 3,10       ;r0 -= r3
+	 s 3,10       ;r0 -= r3
+	 a 4,10       ;r0 += r4
      dec 2
-     jne -!        ;sob	r2, 1$		; to next iteration
+     jne -!
 
 !:   andi 2,15
      dec 12

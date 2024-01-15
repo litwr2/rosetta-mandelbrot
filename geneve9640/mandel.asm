@@ -1,6 +1,6 @@
 * for xas99 assembler
 * General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-* 256x128 Mandelbrot for the Geneve 9640, 16 colors, rotated image (256x192 raster)
+* 256x128 Mandelbrot for the Geneve 9640, 16 colors, rotated image (on the 256x192 raster)
 
 VDP0 equ >F100
 VDP1 equ VDP0+2
@@ -246,7 +246,7 @@ slowcode:
 noop:
   .endif
      li 12,1
-     s @vdy,5    ;sub	@#dya, r5
+     s @vdy,5
      jmp loop0
 lx1:
      movb *9+,2
@@ -320,7 +320,7 @@ lx1:
      dec 8
      clr 12
      movb 12,8
-     s @vdy,5    ;sub	@#dya, r5
+     s @vdy,5
   .ifeq VDP,0
      jne loop0
   .else
@@ -381,10 +381,10 @@ lx1:
 	li 0,3      ;mov	#3, r0
 	li 1,vdx    ;mov	#dxa, r1
 !:	mov *1,2         ;mov	(r1), r2
-	mov @sqrbase+sf4(2),*1         ;mov	sqr+sf4(r2), (r1)	; (x + sf/4)^2
-    s @sqrbase-sf4(2),*1+         ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
+	mov @sqrbase+sf4(2),*1         ; (x + sf/4)^2
+    s @sqrbase-sf4(2),*1+         ; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
     dec 0
-	jne -!            ;sob	r0, 4$
+	jne -!
   .endif
 
 	inc @niter     ;inc	@#nitera	; increase the iteration count
@@ -557,25 +557,25 @@ savef equ MANDEL+16               *its size is 0x60 ??
 
 sfast equ $
      .ifeq NOCALC,0
-     a @vdx,4 ;add	@#dxa, r4
-     mov @niter,2 ;mov	#niter, r2	; max iter. count
-     mov 4,10    ;mov	r4, r0
-     mov 5,1    ;mov	r5, r1
-!:   mov @sqrbase(1),3     ;mov	sqr(r1), r3	; r3 = y^2
-     a 10,1       ;add	r0, r1		; r1 = x+y
-	 mov @sqrbase(10),10     ;mov	sqr(r0), r0	; r0 = x^2
-	 a 3,10       ;add	r3, r0		; r0 = x^2+y^2
-     ci 10,>800    ;cmp	r0, r6		; if r0 >= 4.0 then
-	 jhe !         ;bge	2$		; overflow
+     a @vdx,4  ;r4 += dx
+     mov @niter,2
+     mov 4,10    ;r10 - r0
+     mov 5,1
+!:   mov @sqrbase(1),3     ;r3 = sqr(r1)
+     a 10,1       ;r1 += r0
+	 mov @sqrbase(10),10     ;r0 = sqr(r0)
+	 a 3,10       ;r0 += r3
+     ci 10,>800    ;if r0 >= 4.0 then
+	 jhe !
 
-	 mov @sqrbase(1),1     ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	 s 10,1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-     a 5,1	    ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	 s 3,10       ;sub	r3, r0		; r0 = x^2
-	 s 3,10       ;sub	r3, r0		; r0 = x^2-y^2
-	 a 4,10       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
+	 mov @sqrbase(1),1     ;r1 = sqr(r1)
+	 s 10,1       ;r1 -= r0
+     a 5,1	    ;r1 += r5
+	 s 3,10       ;r0 -= r3
+	 s 3,10       ;r0 -= r3
+	 a 4,10       ;r0 += r4
      dec 2
-     jne -!        ;sob	r2, 1$		; to next iteration
+     jne -!
 
 !:   andi 2,15
      .endif
