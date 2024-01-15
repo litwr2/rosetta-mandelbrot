@@ -71,7 +71,14 @@ mandel:
     move 2(a0,d0.w),x0(a3)
     move.b 4(a0,d0.w),niter+1(a3)
     addq.b #2,4(a0,d0.w)
+    move dataindex(pc),d0
+    add #6,d0
+    cmpi #12*6,d0
+    bne loc7
 
+    moveq #0,d0
+loc7:
+    move d0,dataindex(a3)
          pea discursor(pc)
          move #9,-(sp)    ;print line
          trap #1
@@ -101,34 +108,34 @@ loop0:
 loop1:
         movea.l #$80000000,a0
 loop2:
-	add dx(pc),d4   ;add	@#dxa, r4		; update a
-	move niter(pc),d2	; max iter. count
-	move d4,d0		; r0 = x = a
-	move d5,d1		; r1 = y = b
+	add dx(pc),d4   ;r4 += dx, d4 - r4
+	move niter(pc),d2	;d2 = r2  ;max iter. count
+	move d4,d0		;d0 - r0
+	move d5,d1		;d1 - r1
 loc1:
     move d1,d7
-    and.b d6,d7    ;??
-	move (a4,d7.w),d3 ;mov	sqr(r1), r3	; r3 = y^2
-	add d0,d1       ;add	r0, r1		; r1 = x+y
+    and.b d6,d7
+	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+	add d0,d1       ;r1 += r0
     move d0,d7
     and.b d6,d7
-	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
-	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmp a1,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
+	move (a4,d7.w),d0    ;r0 = sqr(r0)
+	add d3,d0       ;r0 += r3
+	cmp a1,d0       ;if r0 >= 4.0 then
     ;cmp #$800,d0
-	bcc	loc2		; overflow
+	bcc	loc2
 
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d1 ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	sub d0,d1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-	add d5,d1       ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2-y^2
-	add d4,d0       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    subi #1,d2
-	bne loc1        ;sob	r2, 1$		; to the next iteration  ??dbra
+	move (a4,d7.w),d1 ;r1 = sqr(r1)
+	sub d0,d1       ;r1 -= r0
+	sub d3,d0       ;r0 -= r3
+	sub d3,d0       ;r0 -= r3
+	add d4,d0       ;r0 += r4
+	add d5,d1       ;r1 += r5
+	dbra d2,loc1
 loc2:
+    addi #1,d2
     move.l a0,d3
     roxr #1,d2
     roxr.l #1,d3
@@ -146,14 +153,6 @@ loc8
 
     move.l timer,d6
 	addq #1,iter(a3)      ;increase the iteration count
-    move dataindex(pc),d0
-    add #6,d0
-    cmpi #12*6,d0
-    bne loc7
-
-    moveq #0,d0
-loc7:
-    move d0,dataindex(a3)
 
          move.l	ssp(pc),-(sp)
          move.w	#32,-(sp)     ;super
@@ -274,18 +273,18 @@ screenbase dc.l 0
 
 dataindex dc.w 0
 iter dc.w 0
-data mentry 8, 12, 10 ;1
-     mentry 6, 10, 11 ;2
-     mentry 5,  8, 12 ;3
-     mentry 4,  7, 14 ;4
-     mentry 3,  6, 15 ;5
-     mentry 3,  5, 16 ;6
-     mentry 3,  4, 17 ;7
-     mentry 2,  4, 18 ;8
-     mentry 3,  3, 19 ;9
-     mentry 4,  3, 20 ;10
-     mentry 2,  5, 21 ;11
-     mentry 2,  3, 37 ;12
+data mentry 8, 12,  9 ;1
+     mentry 6, 10, 10 ;2
+     mentry 5,  8, 11 ;3
+     mentry 4,  7, 13 ;4
+     mentry 3,  6, 14 ;5
+     mentry 3,  5, 15 ;6
+     mentry 3,  4, 16 ;7
+     mentry 2,  4, 17 ;8
+     mentry 3,  3, 18 ;9
+     mentry 4,  3, 19 ;10
+     mentry 2,  5, 20 ;11
+     mentry 2,  3, 36 ;12
 
 linecount dc.b 0
 
@@ -294,10 +293,10 @@ discursor dc.b 27,"f",0
 ;encursor dc.b 27,"e",0
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *   mono fullscreen, 640x400, v1 *",13,10
+        dc.b "  *   mono fullscreen, 640x400, v2 *",13,10
         dc.b "  **********************************",13,10
         dc.b "This code for the Atari ST was created by",13,10
-        dc.b "Litwr in 2023. It is based on code",13,10
+        dc.b "Litwr, 2023-24. It is based on code",13,10
         dc.b "published for the BK0011 in 2021 by",13,10
         dc.b "Stanislav Maslovski.",13,10
         dc.b "The T-key gives us timings.",13,10

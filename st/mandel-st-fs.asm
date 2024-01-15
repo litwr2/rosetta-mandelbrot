@@ -84,7 +84,14 @@ mandel:
     move 2(a0,d0.w),x0(a3)
     move.b 4(a0,d0.w),niter+1(a3)
     addq.b #2,4(a0,d0.w)
+    move dataindex(pc),d0
+    add #6,d0
+    cmpi #12*6,d0
+    bne loc7
 
+    moveq #0,d0
+loc7:
+    move d0,dataindex(a3)
          clr.l -(sp)
 	     move #32,-(sp)    ;super
 	     trap #1
@@ -103,34 +110,34 @@ loop0:
     suba.l a0,a0      ;line counter
 	move x0(pc),d4
 loop2:
-	add dx(pc),d4   ;add	@#dxa, r4		; update a
-	move niter(pc),d2	; max iter. count
-	move d4,d0		; r0 = x = a
-	move d5,d1		; r1 = y = b
+	add dx(pc),d4   ;r4 += dx, d4 - r4
+	move niter(pc),d2	;d2 = r2  ;max iter. count
+	move d4,d0		;d0 - r0
+	move d5,d1		;d1 - r1
 loc1:
     move d1,d7
-    and.b d6,d7    ;??
-	move (a4,d7.w),d3 ;mov	sqr(r1), r3	; r3 = y^2
-	add d0,d1       ;add	r0, r1		; r1 = x+y
+    and.b d6,d7
+	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+	add d0,d1       ;r1 += r0
     move d0,d7
     and.b d6,d7
-	move (a4,d7.w),d0    ;mov	sqr(r0), r0	; r0 = x^2
-	add d3,d0       ;add	r3, r0		; r0 = x^2+y^2
-	cmp a1,d0      ;cmp	r0, r6		; if r0 >= 4.0 then
+	move (a4,d7.w),d0    ;r0 = sqr(r0)
+	add d3,d0       ;r0 += r3
+	cmp a1,d0       ;if r0 >= 4.0 then
     ;cmp #$800,d0
-	bcc	loc2		; overflow
+	bcc	loc2
 
     move d1,d7
     and.b d6,d7
-	move (a4,d7.w),d1 ;mov	sqr(r1), r1	; r1 = (x+y)^2
-	sub d0,d1       ;sub	r0, r1		; r1 = (x+y)^2-x^2-y^2 = 2*x*y
-	add d5,d1       ;add	r5, r1		; r1 = 2*x*y+b, updated y
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2
-	sub d3,d0       ;sub	r3, r0		; r0 = x^2-y^2
-	add d4,d0       ;add	r4, r0		; r0 = x^2-y^2+a, updated x
-    subi #1,d2
-	bne loc1        ;sob	r2, 1$		; to the next iteration  ??dbra
+	move (a4,d7.w),d1 ;r1 = sqr(r1)
+	sub d0,d1       ;r1 -= r0
+	sub d3,d0       ;r0 -= r3
+	sub d3,d0       ;r0 -= r3
+	add d4,d0       ;r0 += r4
+	add d5,d1       ;r1 += r5
+	dbra d2,loc1
 loc2:
+    addi #1,d2
     lea tcolor1(a3),a2
     movem (a2)+,d0/d1/d3/d7
     lsr d2
@@ -159,14 +166,6 @@ loc3:
 
     move.l timer,d6
 	addq #1,iter(a3)      ;increase the iteration count
-    move dataindex(pc),d0
-    add #6,d0
-    cmpi #12*6,d0
-    bne loc7
-
-    moveq #0,d0
-loc7:
-    move d0,dataindex(a3)
 
          move.l	ssp(pc),-(sp)
          move.w	#32,-(sp)     ;super
@@ -306,25 +305,25 @@ tcolor4 dc.w 0
 
 dataindex dc.w 0
 iter dc.w 0
-data mentry 9, 14, 15 ;1
-     mentry 7, 11, 16 ;2
-     mentry 6,  9, 18 ;3
-     mentry 5,  8, 20 ;4
-     mentry 4,  7, 21 ;5
-     mentry 4,  6, 22 ;6
-     mentry 4,  5, 23 ;7
-     mentry 3,  4, 24 ;8
-     mentry 3,  4, 25 ;9
-     mentry 3,  4, 26 ;10
-     mentry 3,  4, 27 ;11
-     mentry 4,  6, 37 ;12
+data mentry 9, 14, 14 ;1
+     mentry 7, 11, 15 ;2
+     mentry 6,  9, 17 ;3
+     mentry 5,  8, 19 ;4
+     mentry 4,  7, 20 ;5
+     mentry 4,  6, 21 ;6
+     mentry 4,  5, 22 ;7
+     mentry 3,  4, 23 ;8
+     mentry 3,  4, 24 ;9
+     mentry 3,  4, 25 ;10
+     mentry 3,  4, 26 ;11
+     mentry 4,  6, 36 ;12
 
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *    fullscreen, 16 colors, v2   *",13,10
+        dc.b "  *    fullscreen, 16 colors, v3   *",13,10
         dc.b "  **********************************",13,10
         dc.b "This code for the Atari ST was created by",13,10
-        dc.b "Litwr in 2023. It is based on code",13,10
+        dc.b "Litwr, 2023-24. It is based on code",13,10
         dc.b "published for the BK0011 in 2021 by",13,10
         dc.b "Stanislav Maslovski.",13,10
         dc.b "The T-key gives us timings.",13,10
