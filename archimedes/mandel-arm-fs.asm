@@ -1,7 +1,6 @@
 ;for fasmarm assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2022
 ;
 ;Fullscreen Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16/256 colors
 ;some video modes are not supported on the early Archimedes
@@ -132,10 +131,7 @@ Start:
     mov r1,r0
     mov r2,r0
 sqrloop:
-    mov r9,r1,lsr #16
-    strb r9,[r5],#1
-    mov r9,r1,lsr #24
-    strb r9,[r5],#1      ;mov	r1, (r5)+	; to upper half tbl
+    str r1,[r4],#4       ;mov	r1, (r5)+	; to upper half tbl
 	add r2,#0x10000      ;inc	r2		; R2 = x + 2^-9
     mov r6,r2	         ;mov	r2, -(r6)
 	mov r2,r2,lsl #1     ;asl	r2		; R2 = 2*x + 2^-8
@@ -144,13 +140,10 @@ sqrloop:
     add r2,r3,r12,lsl #16  ;swab	r2		; LLLLLL00 00HHHHHH
 	mov r3,r2,lsl #8
     mov r3,r3,asr #8     ;movb	r2, r3		; 00000000 00HHHHHH
-	adds r0,r2            ;add	r2, r0		; add up lower bits
-    addcs r1,r1,#0x10000 ;adc	r1		; add carry to r1
+	adds r0,r2           ;add	r2, r0		; add up lower bits
+    addcs r1,#0x10000    ;adc	r1		; add carry to r1
 	adds r1,r3           ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
-    mov r9,r1,lsr #24
-	strb r9,[r4,#-1]!
-    mov r9,r1,lsr #16
-    strb r9,[r4,#-1]!    ;mov	r1, -(r4)	; to lower half tbl
+	str r1,[r5,#-4]!
 	mov r2,r6            ;mov	(r6)+, r2
 	bcs mandel           ;bcs	mdlbrt		; exit on overflow
 
@@ -203,26 +196,17 @@ loop2:
     mov r0,r4
     mov r1,r5
 .l1:
-    tst r1,#0x20000
-    bic r3,r1,#0x30000
-    ldr r3,[r8,r3,asr 16]
-    movne r3,r3,lsr #16
-    mov r3,r3,lsl #16       ;r3 = sqr(r1)
-    tst r0,#0x20000
-    bic lr,r0,#0x30000
-    ldr lr,[r8,lr,asr 16]
-    movne lr,lr,lsr #16
-    mov lr,lr,lsl #16       ;r0 = sqr(r0)
+    bic r3,r1,#0x10000
+    ldr r3,[r8,r3,asr 15]   ;r3 = sqr(r1)
+    bic lr,r0,#0x10000
+    ldr lr,[r8,lr,asr 15]   ;r0 = sqr(r0)
     add lr,r3,lr            ;r0 += r3
     tst lr,#0xf8000000      ;cmp	r0, r6
     bne .l2
 
     add r1,r1,r0            ;r1 += r0
-    tst r1,#0x20000
-    bic r1,r1,#0x30000
-    ldr r1,[r8,r1,asr 16]
-    movne r1,r1,lsr #16
-    mov r1,r1,lsl #16       ;r1 = sqr(r1)
+    bic r1,r1,#0x10000
+    ldr r1,[r8,r1,asr 15]   ;r1 = sqr(r1)
     sub r1,r1,lr            ;r1 -= r0
     add r1,r1,r5            ;r1 += r5
     sub r0,lr,r3,lsl #1     ;r0 -= r3 // r0 -= r3
@@ -472,10 +456,10 @@ msg     db " ************************************",13,10
   if NColors<7
         db " "
   end if
-        db " colors, v1           *",13,10
+        db " colors, v2           *",13,10
         db " ************************************",13,10
         db "This Acorn Archimedes code was created",13,10
-        db "by Litwr, 2022. It is based on code",13,10
+        db "by Litwr, 2022,24. It is based on code",13,10
         db "published for the BK0011 in 2021 by",13,10
         db "Stanislav Maslovski.",13,10
         db "The T-key gives us timings.",13,10
@@ -483,7 +467,7 @@ msg     db " ************************************",13,10
 
     align 4
 sqr0:
-    rb 0x16b0-sqr0+(colors and 0xfffffffc)
-sqr:rb 0x16b0
+    rb 0x16b0*2-sqr0+(colors and 0xfffffffc)
+sqr:rb 0x16b0*2
     rb 16
 stack_base:

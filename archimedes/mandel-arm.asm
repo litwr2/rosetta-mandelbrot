@@ -1,11 +1,11 @@
 ;for fasmarm assembler
 ;
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
-;The next code was made by litwr in 2021
 ;
 ;128x256 Mandelbrot for the Acorn Archimedes (only the ARM2 code), 16 color mode
 
 NOCALC = 0
+BIGTABLE = 1 ;0 means slower and larger code but it also meams the smaller (11.5 KB) table for the squares instead of the larger one (23 KB)
 
 Screen_Mode = 9   ;320x200 16 colors
 
@@ -51,10 +51,14 @@ Start:
     mov r1,r0
     mov r2,r0
 sqrloop:
+if BIGTABLE=0
     mov r9,r1,lsr #16
     strb r9,[r5],#1
     mov r9,r1,lsr #24
     strb r9,[r5],#1      ;mov	r1, (r5)+	; to upper half tbl
+else
+    str r1,[r4],#4       ;mov	r1, (r5)+	; to upper half tbl
+end if
 	add r2,#0x10000      ;inc	r2		; R2 = x + 2^-9
     mov r6,r2	         ;mov	r2, -(r6)
 	mov r2,r2,lsl #1     ;asl	r2		; R2 = 2*x + 2^-8
@@ -63,13 +67,17 @@ sqrloop:
     add r2,r3,r12,lsl #16  ;swab	r2		; LLLLLL00 00HHHHHH
 	mov r3,r2,lsl #8
     mov r3,r3,asr #8     ;movb	r2, r3		; 00000000 00HHHHHH
-	adds r0,r2            ;add	r2, r0		; add up lower bits
-    addcs r1,r1,#0x10000 ;adc	r1		; add carry to r1
+	adds r0,r2           ;add	r2, r0		; add up lower bits
+    addcs r1,#0x10000    ;adc	r1		; add carry to r1
 	adds r1,r3           ;add	r3, r1		; R1:R0 = x^2 + 2^-8*x + 2^-16
+if BIGTABLE=0
     mov r9,r1,lsr #24
 	strb r9,[r4,#-1]!
     mov r9,r1,lsr #16
     strb r9,[r4,#-1]!    ;mov	r1, -(r4)	; to lower half tbl
+else
+    str r1,[r5,#-4]!
+end if
 	mov r2,r6            ;mov	(r6)+, r2
 	bcs mandel0          ;bcs	mdlbrt		; exit on overflow
 
@@ -114,26 +122,41 @@ if NOCALC=0
     mov r0,r4
     mov r1,r5
 .l1:
+if BIGTABLE=0
     tst r1,#0x20000
     bic r3,r1,#0x30000
     ldr r3,[r8,r3,asr 16]
     movne r3,r3,lsr #16
     mov r3,r3,lsl #16       ;r3 = sqr(r1)
+else
+    bic r3,r1,#0x10000
+    ldr r3,[r8,r3,asr 15]   ;r3 = sqr(r1)
+end if
+if BIGTABLE=0
     tst r0,#0x20000
     bic lr,r0,#0x30000
     ldr lr,[r8,lr,asr 16]
     movne lr,lr,lsr #16
     mov lr,lr,lsl #16       ;r0 = sqr(r0)
+else
+    bic lr,r0,#0x10000
+    ldr lr,[r8,lr,asr 15]   ;r0 = sqr(r0)
+end if
     add lr,r3,lr            ;r0 += r3
     tst lr,#0xf8000000      ;cmp	r0, r6
     bne .l2
 
     add r1,r1,r0            ;r1 += r0
+if BIGTABLE=0
     tst r1,#0x20000
     bic r1,r1,#0x30000
     ldr r1,[r8,r1,asr 16]
     movne r1,r1,lsr #16
     mov r1,r1,lsl #16       ;r1 = sqr(r1)
+else
+    bic r1,r1,#0x10000
+    ldr r1,[r8,r1,asr 15]   ;r1 = sqr(r1)
+end if
     sub r1,r1,lr            ;r1 -= r0
     add r1,r1,r5            ;r1 += r5
     sub r0,lr,r3,lsl #1     ;r0 -= r3 // r0 -= r3
@@ -165,8 +188,9 @@ if NOCALC=0
 
     mov r5,#3
     add r1,pc,dxa-$-8
-.l4:ldr r2,[r1]       ;mov	(r1), r2
+.l4:ldr r2,[r1]
     add r3,r2,#sf4
+if BIGTABLE=0
     tst r3,#0x20000
     bic r3,#0x30000
     ldr r3,[r8,r3,asr 16]
@@ -178,6 +202,14 @@ if NOCALC=0
     movne r4,r4,lsr #16
     sub r3,r3,r4
     mov r3,r3,lsl #16
+else
+    bic r3,#0x10000
+    ldr r3,[r8,r3,asr 15]
+    sub r4,r2,#sf4
+    bic r4,#0x10000
+    ldr r4,[r8,r4,asr 15]
+    sub r3,r3,r4
+end if
     str r3,[r1],#4     ;mov	sqr+sf4(r2), (r1) // sub	sqr-sf4(r2), (r1)+
     subs r5,#1
     bne .l4
@@ -382,20 +414,20 @@ colors:
 
 msg     db "  **********************************",13,10
         db "  * Superfast Mandelbrot generator *",13,10
-        db "  *          16 colors, v3         *",13,10
+        db "  *          16 colors, v4         *",13,10
         db "  **********************************",13,10
         db "The original version was published for",13,10
         db "the BK0011 in 2021 by Stanislav",13,10
         db "Maslovski.",13,10
         db "This Acorn Archimedes port was created",13,10
-        db "by Litwr, 2022-23.",13,10
+        db "by Litwr, 2022-24.",13,10
         db "The T-key gives us timings.",13,10
         db "Use the Q-key to quit.",13,10
         db "Press B to enter benchmark mode",0
 
     align 4
 sqr0:
-    rb 0x16b0-sqr0+colors
-sqr:rb 0x16b0
+    rb 0x16b0*(BIGTABLE+1)-sqr0+colors
+sqr:rb 0x16b0*(BIGTABLE+1)
     rb 16
 stack_base:
