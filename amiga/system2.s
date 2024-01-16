@@ -16,7 +16,7 @@ J	 BSR.S STARTUP
     moveq.l #INTB_VERTB,d0
     lea.l VBlankServer(pc),a1
     jsr RemIntServer(a6)
-    movea.l doslib(a3),a1
+    movea.l doslib(pc),a1
     jsr CloseLibrary(a6)
      clr.l d0
      rts
@@ -30,7 +30,7 @@ STARTUP:
 	 BSR TASK_FIND
 
          movea.l 4.w,a6
-         lea dosname(a3),a1
+         lea dosname(pc),a1
          jsr OldOpenLibrary(a6)
          move.l d0,doslib(a3)
         
@@ -40,22 +40,22 @@ STARTUP:
 
          MOVE.L	#CONWINDOW,D1
          MOVE.L	#MODE_OLD,D2
-         movea.l doslib(a3),a6
+         movea.l doslib(pc),a6
 	     jsr Open(a6)
 	     MOVE.L	D0,CONHANDLE(a3)
          MOVE.L D0,D1
          MOVE.L #msg,D2
          MOVE.L #endmsg-msg,D3
          jsr Write(a6)
-         move.l CONHANDLE(a3),d1
+         move.l CONHANDLE(pc),d1
          MOVE.L #datae,D2
          MOVE.L #1,D3
          jsr Read(a6)
          move.b datae(pc),d4
          andi.b #$df,d4
          move.b d4,datae(a3)
-         movea.l doslib(a3),a6  ;??
-         move.l CONHANDLE(a3),d1
+         movea.l doslib(pc),a6  ;??
+         move.l CONHANDLE(pc),d1
 	     jsr Close(a6)
 
 	 BSR INTULIB_OPEN
@@ -64,15 +64,15 @@ STARTUP:
 	 BSR WINDOW_OPEN
 	 BSR KEYB_INIT
 	 BSR COLORS_SET
-     move.l GRAPHICS_BASE(a3),a6 
-     movea.l RASTER_PORT(a3),a1
+     movea.l GRAPHICS_BASE(pc),a6 
+     movea.l RASTER_PORT(pc),a1
      moveq #0,d0
      jsr SetBPen(a6)
 	 MOVEQ	#-1,D0		; Set ok value
 	 RTS
 
 STARTUP_ERROR:
-	 MOVE.L	ERROR_STACK(A3),A7	; Restore old stackpointer
+	 MOVE.L	ERROR_STACK(pc),A7	; Restore old stackpointer
 	 MOVEQ	#0,D0		; Set error value
 .e:  rts
 
@@ -87,7 +87,7 @@ CLOSEDOWN:
 
      movea.l 4.w,a6
      jsr Forbid(a6)
-     movea.l wbmsg(a3),a1
+     movea.l wbmsg(pc),a1
      jmp ReplyMsg(a6)
 
 TASK_FIND:
@@ -118,34 +118,34 @@ TASK_FIND:
 
 KEYB_INIT:
 	MOVE.L	4.W,A6
-	LEA.l	CONSOLE_NAME(A3),A0	; Pointer to "Console.Device"
-	LEA.l	IO_REQUEST(A3),A1	; Io Buffer
+	LEA.l	CONSOLE_NAME(pc),A0	; Pointer to "Console.Device"
+	LEA.l	IO_REQUEST(pc),A1	; Io Buffer
 	MOVEQ	#-1,D0			; Flags, may be probably skipped
 	MOVEQ	#-1,D1			; Unit, this is the empty console, we need it to key translate only
 	JSR	OpenDevice(A6)		
 	TST.L	D0			; An error
 	bne STARTUP_ERROR
 
-	MOVE.L IO_REQUEST+20(a3),CONSOLE_DEVICE(a3)	; Get console device
-	MOVE.L WINDOW_HANDLE(a3),a0
+	MOVE.L IO_REQUEST+20(pc),CONSOLE_DEVICE(a3)	; Get console device
+	MOVE.L WINDOW_HANDLE(pc),a0
 	MOVE.L $56(a0),KEY_PORT(a3)	; Get this windows keyport
 	RTS
 
 COLORS_SET:
-    movea.l VIEW_PORT(a3),a0
-	movea.l GRAPHICS_BASE(a3),a6
-	lea.l	COLORS(a3),a1		; Pointer to the color list
+    movea.l VIEW_PORT(pc),a0
+	movea.l GRAPHICS_BASE(pc),a6
+	lea.l	COLORS(pc),a1		; Pointer to the color list
 	MOVEQ	#QCOLORS,D0			;16 colors to set
 	JMP	LoadRGB4(A6)		;Set the colors
 
 KEYB_EXIT:
-	LEA.l	IO_REQUEST(A3),A1
+	LEA.l	IO_REQUEST(pc),A1
 	MOVE.L	4.W,A6
 	JMP	CloseDevice(A6)
 
 INTULIB_OPEN:
 	MOVE.L	4.W,A6
-	LEA.l	INTUITION_NAME(A3),A1	; Pointer to "intuition.library"
+	LEA.l	INTUITION_NAME(pc),A1	; Pointer to "intuition.library"
 	JSR	OldOpenLibrary(A6)
 	MOVE.l d0,INTUITION_BASE(a3)	; Store pointer
 	BEQ	STARTUP_ERROR		; If error jump
@@ -153,12 +153,12 @@ INTULIB_OPEN:
 
 INTULIB_CLOSE:
 	MOVE.L	4.W,A6
-	MOVE.L	INTUITION_BASE(A3),A1
+	MOVE.L	INTUITION_BASE(pc),A1
 	JMP	CloseLibrary(A6)
 
 GRAPHLIB_OPEN:
 	MOVE.L	4.W,A6
-	LEA.l	GRAPHICS_NAME(A3),A1	; Pointer to "graphics.library"
+	LEA.l	GRAPHICS_NAME(pc),A1	; Pointer to "graphics.library"
 	JSR	OldOpenLibrary(A6)
 	MOVE.L	D0,GRAPHICS_BASE(A3)
 	BEQ	STARTUP_ERROR
@@ -166,12 +166,12 @@ GRAPHLIB_OPEN:
 
 GRAPHLIB_CLOSE:
 	MOVE.L	4.W,A6
-	MOVE.L	GRAPHICS_BASE(A3),A1
+	MOVE.L	GRAPHICS_BASE(pc),A1
 	JMP	CloseLibrary(A6)
 
 SCREEN_OPEN:
-	LEA.l	SCREEN_DEFS(A3),A0
-	MOVE.L	INTUITION_BASE(A3),A6
+	LEA.l	SCREEN_DEFS(pc),A0
+	MOVE.L	INTUITION_BASE(pc),A6
 	JSR	OpenScreen(A6)
 	MOVE.L	D0,SCREEN_HANDLE(A3)
 	BEQ	STARTUP_ERROR
@@ -182,7 +182,7 @@ SCREEN_OPEN:
     ;lea.l 84(a0),a2
     ;move.l a2,RASTER_PORT(a3)
 	LEA.l $C0(A0),A2		; Get bitplane pointers
-	LEA.l BITPLANE1_PTR(A3),A1
+	LEA.l BITPLANE1_PTR(pc),A1
 	MOVE.L (A2)+,(A1)+		; Bitplane 1
 	MOVE.L (A2)+,(A1)+		; Bitplane 2
 	MOVE.L (A2)+,(A1)+		; Bitplane 3
@@ -194,45 +194,45 @@ SCREEN_OPEN:
 	jmp ShowTitle(a6)
 
 SCREEN_CLOSE:
-	MOVE.L	SCREEN_HANDLE(A3),A0
-	MOVE.L	INTUITION_BASE(A3),A6
+	MOVE.L	SCREEN_HANDLE(pc),A0
+	MOVE.L	INTUITION_BASE(pc),A6
 	JMP	CloseScreen(A6)
 
 WINDOW_OPEN:
-	MOVE.L	INTUITION_BASE(A3),A6	; Pointer to intuition library
-	LEA.l	WINDOW_DEFS(A3),A0	; Pointer to window definitions
+	MOVE.L	INTUITION_BASE(pc),A6	; Pointer to intuition library
+	LEA.l	WINDOW_DEFS(pc),A0	; Pointer to window definitions
 	JSR	OpenWindow(A6)
 	MOVE.L	D0,WINDOW_HANDLE(A3)	; Store window handle
 	BEQ	STARTUP_ERROR		; Error jump
 
         movea.l d0,a0
         move.l 50(a0),RASTER_PORT(a3)
-	MOVE.L	TASK_PTR(A3),A0		; Get task pointer
+	MOVE.L	TASK_PTR(pc),A0		; Get task pointer
 	MOVE.L	$B8(A0),TASK_OLDWINDOW(A3)	; Store the old window
 	MOVE.L	D0,$B8(A0)		; Make Reguesters turn up on this Window
 	RTS				
 
 WINDOW_CLOSE:
-	MOVE.L	TASK_PTR(A3),A0		; Get task ptr
-	MOVE.L	TASK_OLDWINDOW(A3),$B8(A0)	; Restore old window
-	MOVE.L	INTUITION_BASE(A3),A6
-	MOVE.L	WINDOW_HANDLE(A3),A0
+	MOVEa.L	TASK_PTR(pc),A0		; Get task ptr
+	MOVE.L	TASK_OLDWINDOW(pc),$B8(A0)	; Restore old window
+	MOVEa.L	INTUITION_BASE(pc),A6
+	MOVEa.L	WINDOW_HANDLE(pc),A0
 	JMP	CloseWindow(A6)
 
 KEYB_STILLKEYSINBUFFER:
-        move.w KEYB_OUTBUFFER(A3),d1  ; Increase out pointer
+        move.w KEYB_OUTBUFFER(pc),d1  ; Increase out pointer
         addq.w #1,d1
         cmpi.w #KB2_SIZE,d1
         bne .l1
 
         moveq #0,d1
 .l1:	move.w d1,KEYB_OUTBUFFER(A3)
-        LEA.l	KEYB_BUFFER(A3),A0
+        LEA.l	KEYB_BUFFER(pc),A0
 	MOVE.B	(A0,D0.W),D0		; Get the oldest key
 	RTS
 
 KEYB_GETKEYS:
-	MOVE.L	KEY_PORT(A3),A0
+	MOVE.L	KEY_PORT(pc),A0
 	MOVE.L 4.W,A6
 	JSR	GetMsg(A6)
 	MOVE.L D0,KEY_MSG(A3)
@@ -262,11 +262,11 @@ KEYB_GETKEYS0:
 	MOVE.L 28(A4),IEADDR(A3)	; AND POINTER TO OLD KEYS
 
 ;---  Convert to ascii  ---
-	LEA.l	MY_EVENT(A3),A0	; Pointer to event structure
-	LEA.l	KEY_BUFFER(A3),A1	; Convert buffer
+	LEA.l	MY_EVENT(pc),A0	; Pointer to event structure
+	LEA.l	KEY_BUFFER(pc),A1	; Convert buffer
 	MOVEQ	#80,D1		; Max 80 characters
 	suba.l a2,a2		; A2 = 0 Keymap - Default
-	MOVE.L	CONSOLE_DEVICE(A3),A6
+	MOVEa.L	CONSOLE_DEVICE(pc),A6
 	JSR	RawKeyConvert(A6) ; Convert the rawkey into Ascii
 
 ;---  Copy keys to buffer  ---
@@ -274,9 +274,9 @@ KEYB_GETKEYS0:
     SUBQ.W	#1,D0
 	BMI.S	KEYB_ANSWER		; No chars ??
 
-     lea.l KEY_BUFFER(a3),a1
-.e:  lea.l KEYB_BUFFER(a3),a0
-     MOVE.W	KEYB_INBUFFER(A3),D1
+     lea.l KEY_BUFFER(pc),a1
+.e:  lea.l KEYB_BUFFER(pc),a0
+     MOVE.W	KEYB_INBUFFER(pc),D1
 .LOOP:	MOVE.B	(A1)+,(A0,D1.W)		;Copy the keys to the normal buffer
 	ADDQ.B	#1,D1
         cmpi.w #KB2_SIZE,D1
@@ -290,7 +290,7 @@ KEYB_GETKEYS0:
 
 ;******* ANSWER KEYPRESS *******
 KEYB_ANSWER:
-	MOVE.L	KEY_MSG(A3),A1
+	MOVEa.L	KEY_MSG(pc),A1
 	MOVE.L	4.W,A6
 	JSR	ReplyMsg(A6)
         moveq #0,d0
@@ -318,14 +318,14 @@ MOUSE_HANDLER:
     cmpi.b #$68,d4     ;left button
     bne.s .rightp
 
-    lea.l mouseleft(a3),a1
+    lea.l mouseleft(pc),a1
     move.b #mouseleft_char,(a1)
     bra.s KEYB_GETKEYS0\.e
 .rightp:
     cmpi.b #$69,d4     ;right button
     bne.s KEYB_ANSWER
 
-    lea.l mouseright(a3),a1
+    lea.l mouseright(pc),a1
     move.b #mouseright_char,(a1)
     bra KEYB_GETKEYS0\.e
 

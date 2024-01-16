@@ -78,16 +78,16 @@ BlitWait macro
 endm
 
 movepenq macro
-     ;move.l GRAPHICS_BASE(a3),a6
-	 movea.l RASTER_PORT(a3),a1
+     ;movea.l GRAPHICS_BASE(pc),a6
+	 movea.l RASTER_PORT(pc),a1
      moveq #\1,d0
      moveq #\2,d1
      jsr Move(a6)
 endm
 
 color macro
-     ;move.l GRAPHICS_BASE(a3),a6
-     movea.l RASTER_PORT(a3),a1
+     ;movea.l GRAPHICS_BASE(pc),a6
+     movea.l RASTER_PORT(pc),a1
      moveq #\1,d0
      jsr SetAPen(a6)
 endm
@@ -107,7 +107,7 @@ start:
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
 	clr	d2		;clr r2; operand-index
-	lea.l sqrbase(a3),a4	;mov	#sqr, r4; for lower half-table
+	lea.l sqrbase(pc),a4	;mov	#sqr, r4; for lower half-table
 	movea.l a4,a5		;mov	r4, r5; for upper half-table
 fillsqr:
 	move d1,(a5)+   ;mov r1, (r5)+; to upper half tbl
@@ -150,31 +150,29 @@ loc7:
   if BLITTER=0
     movea.l #ScreenWidth/8*ScreenHeight,a6 ;screen bottom
   endif
-    lea.l sqrbase(a3),a4
-	move dy(a3),d5
+    lea.l sqrbase(pc),a4
+	move dy(pc),d5
 	asl #7,d5		; r5 = 128*dy
 loop0:
-	move x0(a3),d4
+	move x0(pc),d4
 loop2:
-	add dx(a3),d4   ;r4 += dx, d4 - r4
-	move niter(a3),d2	;d2 = r2  ;max iter. count
+	add dx(pc),d4   ;r4 += dx, d4 - r4
+	move niter(pc),d2	;d2 = r2  ;max iter. count
 	move d4,d0		;d0 - r0
 	move d5,d1		;d1 - r1
-loc1:
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+loc1:  ;d7 is free
+    move d1,d3
+    and.b d6,d3
+	move (a4,d3.w),d3 ;d3 = r3 = sqr(r1)
 	add d0,d1       ;r1 += r0
-    move d0,d7
-    and.b d6,d7
-	move (a4,d7.w),d0    ;r0 = sqr(r0)
+    and.b d6,d0
+	move (a4,d0.w),d0    ;r0 = sqr(r0)
 	add d3,d0       ;r0 += r3
 	cmp #$800,d0       ;if r0 >= 4.0 then
 	bcc	loc2
 
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d1 ;r1 = sqr(r1)
+    and.b d6,d1
+	move (a4,d1.w),d1 ;r1 = sqr(r1)
 	sub d0,d1       ;r1 -= r0
 	sub d3,d0       ;r0 -= r3
 	sub d3,d0       ;r0 -= r3
@@ -184,7 +182,7 @@ loc1:
 loc2:
     addi #1,d2
 	;and #QCOLORS-1,d2      ;get bits of color
-    lea.l tcolor1(a3),a0
+    lea.l tcolor1(pc),a0
   if QCOLORS=16
     movem.l (a0)+,d0/d1/d3/d7
   else
@@ -214,7 +212,7 @@ loc3:
     subq.l #4,a6   ;?? .w
   endif
     subq.l #4,a5
-    lea.l BITPLANE1_PTR(a3),a0
+    lea.l BITPLANE1_PTR(pc),a0
     move.l (a0)+,d2
     move.l d1,(a5,d2.l)
   if BLITTER=0
@@ -251,7 +249,7 @@ loc3:
 	bne	loop2		; if not first word in line
 
   if BLITTER=1
-    move.l BITPLANE1_PTR(a3),a0
+    move.l BITPLANE1_PTR(pc),a0
     lea.l (a0,a5.l),a1
     move.l #ScreenWidth*(ScreenHeight-1)/8,d2
     sub.l a5,d2
@@ -266,7 +264,7 @@ loc3:
 	move.l a0,bltdpt(a6)	;destination top left corner
 	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
 
-    move.l BITPLANE2_PTR(a3),a0
+    move.l BITPLANE2_PTR(pc),a0
     lea.l (a0,a5.l),a1
     lea.l (a0,d2.l),a0
     BlitWait
@@ -274,7 +272,7 @@ loc3:
 	move.l a0,bltdpt(a6)	;destination top left corner
 	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
 
-    move.l BITPLANE3_PTR(a3),a0
+    move.l BITPLANE3_PTR(pc),a0
     lea.l (a0,a5.l),a1
     lea.l (a0,d2.l),a0
     BlitWait
@@ -282,7 +280,7 @@ loc3:
 	move.l a0,bltdpt(a6)	;destination top left corner
 	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
   if QCOLORS=32
-    move.l BITPLANE5_PTR(a3),a0
+    move.l BITPLANE5_PTR(pc),a0
     lea.l (a0,a5.l),a1
     lea.l (a0,d2.l),a0
     BlitWait
@@ -290,7 +288,7 @@ loc3:
 	move.l a0,bltdpt(a6)	;destination top left corner
 	move #64+ScreenWidth/16,bltsize(a6)	;rectangle size, starts blit
   endif
-    move.l BITPLANE4_PTR(a3),a0
+    move.l BITPLANE4_PTR(pc),a0
     lea.l (a0,a5.l),a1
     lea.l (a0,d2.l),a0
     BlitWait
@@ -301,11 +299,11 @@ loc3:
   endif
     movea.l #ScreenWidth/8,a2
     adda.l #ScreenWidth/4,a5
-	sub dy(a3),d5          ;sub	@#dya, r5
+	sub dy(pc),d5
 	bne loop0
 
 	addq #1,iter(a3)      ;increase the iteration count
-    move.l time(a3),d5
+    move.l time(pc),d5
     bsr getkey
     andi.b #$df,d0
     cmpi.b #"Q",d0
@@ -316,24 +314,24 @@ noquit:
     bne mandel
 
     lsl.l d5
-    move iter(a3),d0
-    lea.l datae+2(a3),a1
+    move iter(pc),d0
+    lea.l datae+2(pc),a1
     move d5,(a1)
     move d0,-(a1)
-    lea.l fmt(a3),a0
+    lea.l fmt(pc),a0
     lea.l stuffChar(pc),a2
     move.l #-1,charCount(a3)
     move.l a3,-(sp)
-    lea.l datae+4(a3),a3
+    lea.l datae+4(pc),a3
     movea.l 4.w,a6
     jsr RawDoFmt(a6)
     movea.l (sp)+,a3
-    movea.l RASTER_PORT(a3),a1
-    movea.l GRAPHICS_BASE(a3),a6
+    movea.l RASTER_PORT(pc),a1
+    movea.l GRAPHICS_BASE(pc),a6
     movepenq 0,6
     color 2
-    move.l charCount(a3),d0
-    lea.l datae+4(a3),a0
+    move.l charCount(pc),d0
+    lea.l datae+4(pc),a0
     lea.l -2(a0,d0.w),a2
     move.b (a2),d1
     move.b #".",(a2)+
@@ -349,8 +347,8 @@ noquit:
     rts
 
 getkey:
-	move KEYB_OUTBUFFER(A3),D0
-	cmp KEYB_INBUFFER(A3),D0	; Is buffer empty
+	move KEYB_OUTBUFFER(pc),D0
+	cmp KEYB_INBUFFER(pc),D0	; Is buffer empty
 	bne KEYB_STILLKEYSINBUFFER	; No ??
 
 	bsr KEYB_GETKEYS		; Empty, Wait on a key from
@@ -533,7 +531,7 @@ msg     dc.b "  **********************************",10
   else
         dc.b "16"
   endif
-        dc.b" colors, v6     *",10
+        dc.b" colors, v7     *",10
         dc.b "  **********************************",10
         dc.b "This code for the Amiga was created by",10
         dc.b "Litwr in 2022-24. It is based on code",10
