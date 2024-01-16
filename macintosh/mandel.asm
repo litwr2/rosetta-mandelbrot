@@ -127,6 +127,7 @@ mandel1:
          lea.l $16b0(a4),a4
 	move dy(pc),d5
 	asl #7,d5		; r5 = 128*dy
+	move #$8000,d7
 loop0:
   lea.l dotcnt(pc),a0
   move #32,(a0)
@@ -140,20 +141,18 @@ loop2:
 	move d4,d0		;d0 - r0
 	move d5,d1		;d1 - r1
 loc1:
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+    move d1,d3
+    and.b d6,d3
+	move (a4,d3.w),d3 ;d3 = r3 = sqr(r1)
 	add d0,d1       ;r1 += r0
-    move d0,d7
-    and.b d6,d7
-	move (a4,d7.w),d0    ;r0 = sqr(r0)
+    and.b d6,d0
+	move (a4,d0.w),d0    ;r0 = sqr(r0)
 	add d3,d0       ;r0 += r3
 	cmp a2,d0       ;if r0 >= 4.0 then
 	bcc.s loc2
 
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d1 ;r1 = sqr(r1)
+    and.b d6,d1
+	move (a4,d1.w),d1 ;r1 = sqr(r1)
 	sub d0,d1       ;r1 -= r0
 	sub d3,d0       ;r0 -= r3
 	sub d3,d0       ;r0 -= r3
@@ -164,25 +163,25 @@ loc2:
     addi #1,d2
   endif
 	andi #7,d2      ;get bits of color
-    lea.l tcolor0(pc),a0
-    movem (a0),d1/d3
+	lea.l tcolor0(pc),a0
+    move (a0),d1
     swap d1
-    swap d3
+    swap d7
     move.l cpat(pc),a1
     move.b (a1,d2.w),d1
-    move.b 8(a1,d2.w),d3
+    move.b 8(a1,d2.w),d7
     swap d1
-    swap d3
+    swap d7
     lsr.l #4,d1
-    lsr.l #4,d3
+    lsr.l #4,d7
     bcs.s @l18
 
-    movem d1/d3,(a0)
+    move d1,(a0)
     bra.s loop2
 @l18
     move d1,-(a6)
-    move d3,-(a3)
-    move #$8000,2(a0)
+    move d7,-(a3)
+    move #$8000,d7
     lea.l dotcnt(pc),a0
     subq.w #1,(a0)
     bne.s loop2
@@ -406,7 +405,7 @@ msg dc.w 0,msg2-msg1,msg3-msg1,msg4-msg1,msg5-msg1,msg6-msg1,msg7-msg1,msg8-msg1
 
 msg1     dc.b '  **********************************'
 msg2     dc.b '  * Superfast Mandelbrot generator *'
-msg3     dc.b '  *         2 colors, v4           *'
+msg3     dc.b '  *         2 colors, v5           *'
 msg4     dc.b '  **********************************'
 msg5     dc.b 'The original version was published for'
 msg6     dc.b 'the BK0011 in 2021 by Stanislav Maslovski.'
