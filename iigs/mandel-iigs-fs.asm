@@ -183,7 +183,7 @@ start:  jsr IOSAVE
 .mloop0:
 .x0 = * + 1
     lda #0
-    sta r4     ;mov	#x0, r4
+    sta r4
 .mloop1:
     stx .tindex
     sty .bindex
@@ -192,13 +192,12 @@ start:  jsr IOSAVE
     lda r4
     adc dx
     sta r4
-    tay        ;add	@#dxa, r4
-               ;mov	r4, r0
+    tay        ;r4 += dx, y - r0
 .niter = * + 1
     lda #0
-    sta r2        ;mov	#niter, r2
+    sta r2        ;max iter. count
 	lda r5
-    sta r1       ;mov	r5, r1
+    sta r1
 .loc1:
     clc
     lda r1
@@ -206,46 +205,46 @@ start:  jsr IOSAVE
     and #$fffe
     tax
     lda 0,x
-    sta r3         ;mov	sqr(r1), r3
+    sta r3         ;r3 = sqr(r1)
     clc
     tya
     adc #sqrbase
     and #$fffe
     tax
-    lda 0,x       ;mov	sqr(r0), r0
+    lda 0,x       ;a - r0 = sqr(r0)
     clc
-    adc r3
+    adc r3        ;r0 += r3
     cmp #$800
-    bcs .loc2
+    bcs .loc2     ;if r0 >= 4.0 then
 
-    sta t      ;add	r3, r0
-    tya
-    adc r1    ;C=0
-    ;sta r1      ;add	r0, r1
+    sta t      ;save new r0
+    tya        ;a - r0
+    adc r1    ;a - r1 += r0  ;uses C=0
+    ;sta r1
     clc
     adc #sqrbase
     and #$fffe
     tax
     lda 0,x
-    ;sta r1     ;mov sqr(r1), r1
+    ;sta r1     ;r1 = sqr(r1)
     clc
 r5 = * + 1
     adc #0   ;C=0
-    ;sta r1     ;add	r5, r1
+    ;sta r1     ;r1 += r5
     sec
     sbc t
-    sta r1     ;sub	r0, r1
+    sta r1     ;r1 -= r0
     sec
     lda t
     sbc r3
-    ;tay        ;sub	r3, r0
+    ;tay        ;r0 -= r3
 	;sec   ;it seems, C=1 is always here
     sbc r3
-    ;tay        ;sub	r3, r0
+    ;tay        ;r0 -= r3
 	clc
 r4 = * + 1
     adc #0
-    tay     ;add	r4, r0
+    tay     ;r0 += r4
     dec r2
     bne .loc1       ;sob	r2, 1$
 .loc2:

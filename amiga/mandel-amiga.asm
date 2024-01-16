@@ -143,7 +143,7 @@ mandel1:
     movea.w #16,a5	;screen top
     lea.l sqrbase(pc),a4
 	move dy(pc),d5
-	asl #7,d5		; r5 = 128*dy
+	asl #7,d5		;r5 = 128*dy
 	move.l #$80000000,d7  ;tcolor4
 loop0:
   if NOCALC=0
@@ -377,7 +377,7 @@ niter  dc.w    initer
 tcolor1 dc.l 0
 tcolor2 dc.l 0
 tcolor3 dc.l 0
-tcolor4 dc.l $80000000
+;tcolor4 dc.l $80000000
 
 doslib        dc.l 0
 charCount     dc.l 0
