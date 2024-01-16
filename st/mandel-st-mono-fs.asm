@@ -107,27 +107,25 @@ loop0:
 	move x0(pc),d4
 loop1:
         movea.l #$80000000,a0
-loop2:
+loop2:  ;D7 is free
 	add dx(pc),d4   ;r4 += dx, d4 - r4
 	move niter(pc),d2	;d2 = r2  ;max iter. count
 	move d4,d0		;d0 - r0
 	move d5,d1		;d1 - r1
 loc1:
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+    move d1,d3
+    and.b d6,d3
+	move (a4,d3.w),d3 ;d3 = r3 = sqr(r1)
 	add d0,d1       ;r1 += r0
-    move d0,d7
-    and.b d6,d7
-	move (a4,d7.w),d0    ;r0 = sqr(r0)
+    and.b d6,d0
+	move (a4,d0.w),d0    ;r0 = sqr(r0)
 	add d3,d0       ;r0 += r3
 	cmp a1,d0       ;if r0 >= 4.0 then
     ;cmp #$800,d0
 	bcc	loc2
 
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d1 ;r1 = sqr(r1)
+    and.b d6,d1
+	move (a4,d1.w),d1 ;r1 = sqr(r1)
 	sub d0,d1       ;r1 -= r0
 	sub d3,d0       ;r0 -= r3
 	sub d3,d0       ;r0 -= r3
@@ -141,7 +139,7 @@ loc2:
     roxr.l #1,d3
     movea.l d3,a0
     bcc.s loop2
-loc8
+loc8:
     move.l d3,-(a6)
     move.l d3,-(a5)
     subq.b #1,linecount(a3)
@@ -293,7 +291,7 @@ discursor dc.b 27,"f",0
 ;encursor dc.b 27,"e",0
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *   mono fullscreen, 640x400, v2 *",13,10
+        dc.b "  *   mono fullscreen, 640x400, v3 *",13,10
         dc.b "  **********************************",13,10
         dc.b "This code for the Atari ST was created by",13,10
         dc.b "Litwr, 2023-24. It is based on code",13,10

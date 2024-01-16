@@ -115,28 +115,26 @@ loop0:
   if NOCALC=0
 	move x0(pc),d4
   endif
-loop2:
+loop2: ;d7 is free
   if NOCALC=0
 	add dx(pc),d4   ;r4 += dx, d4 - r4
 	move niter(pc),d2	;d2 = r2  ;max iter. count
 	move d4,d0		;d0 - r0
 	move d5,d1		;d1 - r1
 loc1:
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+    move d1,d3
+    and.b d6,d3
+	move (a4,d3.w),d3 ;d3 = r3 = sqr(r1)
 	add d0,d1       ;r1 += r0
-    move d0,d7
-    and.b d6,d7
-	move (a4,d7.w),d0    ;r0 = sqr(r0)
+    and.b d6,d0
+	move (a4,d0.w),d0    ;r0 = sqr(r0)
 	add d3,d0       ;r0 += r3
 	cmp a1,d0       ;if r0 >= 4.0 then
     ;cmp #$800,d0
 	bcc	loc2
 
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d1 ;r1 = sqr(r1)
+    and.b d6,d1
+	move (a4,d1.w),d1 ;r1 = sqr(r1)
 	sub d0,d1       ;r1 -= r0
 	sub d3,d0       ;r0 -= r3
 	sub d3,d0       ;r0 -= r3
@@ -187,17 +185,17 @@ lx3
     lea.l -8(a5),a5
     lea.l 8(a6),a6
 .lx1
-	sub dy(pc),d5          ;sub	@#dya, r5
+	sub dy(pc),d5
 	bne loop0
   if NOCALC=0
 	move mx(pc),d0
-    add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
+    add d0,x0(a3)          ;shift x0
 
 	; scale the params
-	move #2,d0         ;mov	#3, r0
-	lea.l dx(pc),a1     ;mov	#dxa, r1
+	move #2,d0
+	lea.l dx(pc),a1
 loc4:
-	move (a1),d2        ;mov	(r1), r2		; x
+	move (a1),d2        ; x
     move d2,d3
     add #sf4,d2
     and.b #$fe,d2
@@ -206,9 +204,9 @@ loc4:
     and.b #$fe,d3
     move (a4,d3.w),d1
 	sub d1,(a1)+          ;sub	sqr-sf4(r2), (r1)+ 	; (x + sf/4)^2 - (x - sf/4)^2 = x*sf
-	dbra d0,loc4          ;sob	r0, 4$
+	dbra d0,loc4
   endif
-	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
+	addq #1,niter(a3)     ; increase the iteration count
     lea benchmark(pc),a5
     cmpi.b #'B',(a5)+
     bne.s loc3
@@ -241,7 +239,7 @@ loc5:
          addq.l #8,sp
 
     move niter(pc),d5
-    subq #7,d5
+    subq #6,d5
     bsr PR000
 
          move #32,-(sp)  ;space
@@ -348,7 +346,7 @@ palette
 
 msg     dc.b "  **********************************",13,10
         dc.b "  * Superfast Mandelbrot generator *",13,10
-        dc.b "  *          16 colors, v3         *",13,10
+        dc.b "  *          16 colors, v4         *",13,10
         dc.b "  **********************************",13,10
         dc.b "The original version was published for",13,10
         dc.b "the BK0011 in 2021 by Stanislav Maslovski.",13,10
