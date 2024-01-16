@@ -30,7 +30,7 @@ start:
    	clr	d0		;clr r0; 7 lower bits in high byte
 	clr	d1		;clr r1; higher 11+1 bits
 	clr	d2		;clr r2; operand-index
-	lea.l sqr0+$16b0(a3),a4	;mov	#sqr, r4; for lower half-table
+	lea.l sqr0+$16b0(pc),a4	;mov	#sqr, r4; for lower half-table
 	movea.l a4,a5		;mov	r4, r5; for upper half-table
 fillsqr:
 	move d1,(a5)+   ;mov r1, (r5)+; to upper half tbl
@@ -57,10 +57,10 @@ mandel0:
 mandel:
     lea.l SOD(pc),a3
 
-    lea.l serve_flag(a3),a0
+    lea.l serve_flag(pc),a0
     moveq.l #$1c,d0   ;MT.LPOLL
     move.w d0,(a0)+
-    lea.l updtimer(a3),a1
+    lea.l updtimer(pc),a1
     move.l a1,4(a0)
     clr.l 8(a0)     ;clear timer
     trap #1
@@ -72,35 +72,34 @@ mandel:
     moveq #-2,d6   ;-2=$fe
     movea.l #$20000+64,a5	;screen top
     movea.l #$20000+32768-64,a2 ;screen bottom
-    lea.l sqr0+$16b0(a3),a4
-	move dy(a3),d5
+    lea.l sqr0+$16b0(pc),a4
+	move dy(pc),d5
 	asl #7,d5		; r5 = 128*dy
+	move #$80,d7
 loop0:
   if NOCALC=0
-	move x0(a3),d4
+	move x0(pc),d4
   endif
 loop2:
   if NOCALC=0
 	add dx(a3),d4   ;r4 += dx, d4 - r4
-	move niter(a3),d2	;d2 = r2  ;max iter. count
+	move niter(pc),d2	;d2 = r2  ;max iter. count
 	move d4,d0		;d0 - r0
 	move d5,d1		;d1 - r1
 loc1:
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d3 ;d3 = r3 = sqr(r1)
+    move d1,d1
+    and.b d6,d1
+	move (a4,d1.w),d3 ;d3 = r3 = sqr(r1)
 	add d0,d1       ;r1 += r0
-    move d0,d7
-    and.b d6,d7
-	move (a4,d7.w),d0    ;r0 = sqr(r0)
+    and.b d6,d0
+	move (a4,d0.w),d0    ;r0 = sqr(r0)
 	add d3,d0       ;r0 += r3
 	cmp a6,d0       ;if r0 >= 4.0 then
     ;cmp #$800,d0
 	bcc	loc2
 
-    move d1,d7
-    and.b d6,d7
-	move (a4,d7.w),d1 ;r1 = sqr(r1)
+    and.b d6,d1
+	move (a4,d1.w),d1 ;r1 = sqr(r1)
 	sub d0,d1       ;r1 -= r0
 	sub d3,d0       ;r0 -= r3
 	sub d3,d0       ;r0 -= r3
@@ -113,28 +112,28 @@ loc2:
 	and #15,d2      ;get bits of color
     lsl d2
     move icolor(a3,d2.w),d0
-    move tcolor(a3),d1
-    lsr #2,d1
+    ;move tcolor(pc),d1
+    lsr #2,d7
     bcs.s loc3
 
-    or d0,d1
-    move d1,tcolor(a3)
+    or d0,d7
+    ;move d1,tcolor(a3)
     bra loop2
 loc3:
-    or d0,d1
-    move d1,-(a5)
-    move d1,-(a2)
-    move #$80,tcolor(a3)
+    or d0,d7
+    move d7,-(a5)
+    move d7,-(a2)
+    move #$80,d7   ;tcolor(a3)
     move a5,d0
     and.b #$3f,d0
 	bne	loop2		; if not first word in line
 
     lea.l 192(a5),a5
     lea.l -64(a2),a2
-	sub dy(a3),d5          ;sub	@#dya, r5
+	sub dy(pc),d5          ;sub	@#dya, r5
 	bne loop0
   if NOCALC=0
-	move mx(a3),d0
+	move mx(pc),d0
     add d0,x0(a3)          ;add @#mxa, @#x0a	; shift x0
 
 	; scale the params
@@ -154,10 +153,10 @@ loc4:
   endif
 	addq #1,niter(a3)     ;inc	@#nitera	; increase the iteration count
 
-    move.l a6_save(a3),a6
+    move.l a6_save(pc),a6
     andi #$07ff,sr
 
-    lea.l serve_flag(a3),a0
+    lea.l serve_flag(pc),a0
     moveq.l #$1d,d0   ;MT.RPOLL
     clr.w (a0)+
     trap #1
@@ -222,12 +221,13 @@ define     dc.w     1               ;One procedure
            dc.w     basini-*
            dc.b     5,'TIMER'
            dc.w     0
-tcolor dc.w $80
+;tcolor dc.w $80
 serve_flag dc.w     0	    ;Set if server is on
 serve_link dc.l     0       ;Points to server list
 serve_ptr  dc.l     0       ;Points to server code
 timer dc.l 0                ;must be after serve_ptr
 a6_save dc.l 0
+
 sqr0:
 ;         DCB.B	$16b0,0
 ;sqrbase: DCB.B	$16b0,0

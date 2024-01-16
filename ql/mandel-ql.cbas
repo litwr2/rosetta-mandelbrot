@@ -5,7 +5,7 @@
 50 r=timer
 110 print" **********************************"
 120 print" * Superfast Mandelbrot generator *"
-130 print" *           8 colors, v4         *"
+130 print" *           8 colors, v5         *"
 135 print" *            fullscreen          *"
 140 print" **********************************"
 145 print"This QL code was created by Litwr, 2022-24"
