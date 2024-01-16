@@ -127,45 +127,45 @@ x0 equ *+1
     lda #HSize/2
     sta <xcount
 loop2
-    ldd r4        ;add @#dxa,r4
+    ldd r4        ;r4 += dx
     addd <dx
     std r4
-    std <r0           ;mov r4,r0
+    std <r0
 niter equ *+1
     lda #0
-    sta <r2        ;mov #initer,r2
-    ldd r5        ;mov r5,r1
+    sta <r2        ;max iter. count
+    ldd r5
     std <r1
 loc1
-    ldd <r1        ;mov sqr(r1),r3
+    ldd <r1        ;r3 = sqr(r1)
     andb #$fe
     ldd d,u
     std <r3
 
-    ldd <r0        ;mov sqr(r0),r0
+    ldd <r0        ;r0 = sqr(r0)
     andb #$fe
     ldd d,u
 
-    addd <r3       ;add r3,r0
-	cmpa #8       ;cmp r0,r6
-    bcc loc2      ;bge loc2
+    addd <r3       ;r0 += r3
+	cmpa #8
+    bcc loc2      ;if r0 >= 4.0 then
 
     std <t
-    ldd <r0       ;add r0,r1
+    ldd <r0       ;r1 += r0
     addd <r1
-    andb #$fe     ;mov sqr(r1),r1
+    andb #$fe     ;r1 = sqr(r1)
     ldd d,u
-    subd <t       ;sub r0,r1
+    subd <t       ;r1 -= r0
 r5 equ *+1
-    addd #0      ;add r5,r1
+    addd #0      ;r1 += r5
     std <r1
-    ldd <t        ;sub r3,r0
+    ldd <t        ;r0 -= r3
     subd <r3
-    subd <r3       ;sub r3,r0
+    subd <r3       ;r0 -= r3
 r4 equ *+1
-    addd #0      ;add r4,r0
+    addd #0      ;r0 += r4
     std <r0
-    dec <r2       ;sob r2,1$
+    dec <r2
     bne loc1
 loc2
     lda <r2
@@ -194,7 +194,7 @@ tcolor equ *+1
     leay HSize,y
     ldd r5
     subd <dy
-    std r5   ;sub	@#dya, r5
+    std r5
 	lbne loop0
 
     inc <iter
