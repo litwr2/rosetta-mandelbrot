@@ -540,6 +540,7 @@ palette db 0   ;RGB
 		db 4+7*8+2*64  ;14
 		db 7+7*8+3*64  ;15
 
+;x-min = (x0+dx*HSize)/512, x-max = x0/512, y-max = dy*VSize/1024
 mentry macro dx,dy,ni
      db -dx, dy
      dw dx*HSize/2-384   ;dx, dy, x0 = dx*HSize/2, niter
