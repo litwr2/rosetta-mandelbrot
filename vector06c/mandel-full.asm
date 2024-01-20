@@ -25,8 +25,6 @@ start
     ld c,9
     call BDOS
     call waitk
-    and 0dfh
-    ld (benchmark),a
     call clscursor
     ld de,curpos
     ld c,9
@@ -122,8 +120,6 @@ PalLoop
 		OUT (0Ch),A
 		JP P,PalLoop
 
-    ld a,16
-    ld (bcount),a
     ld hl,0
     ld (tilo),hl
     ld hl,($39)
@@ -313,14 +309,6 @@ dy equ $+1
     or l
     jp nz,loop0
 
-    ld a,(benchmark)
-    cp 'B'
-    jp nz,loc3
-
-    ld hl,bcount
-    dec (hl)
-    jp nz,mandel1
-loc3:
     ld hl,irqe
     ld ($39),hl   ;stop timer
     ld hl,iter
@@ -456,9 +444,6 @@ PR0	ld A,$FF
 	ld L,C
 	jp PRD
 
-benchmark db 0
-bcount db 0
-
 irqp push hl
 tilo equ $+1
      ld hl,0
@@ -565,7 +550,7 @@ dataindex dw data
 msg     db $f,$d,$a
         db "***************************************",13,10
         db "*   Superfast Mandelbrot generator    *",13,10
-        db "* 16 colors, fullscreen (256x256), v2 *",13,10
+        db "* 16 colors, fullscreen (256x256), v3 *",13,10
         db "***************************************",13,10
         db "This Be",203,212,"op-06",227," code was created by Litwr, 2024.",13,10
         db "It is based on code published for",13,10
