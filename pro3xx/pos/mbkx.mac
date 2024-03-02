@@ -336,7 +336,7 @@ benchmark: .byte 0
 save4:   .blkw 5
 vrbase: .word 0
 .if eq PRO380
-;VT0: .word trprou,trprou,0,0,trprou  ;uncomment if xhomer and the j11]
+;VT0: .word trprou,trprou,0,0,trprou  ;uncomment if xhomer and the j-11
 .iff
 VT0: .word trprou,trprou,0,0,trprou
 YCU: .word 0
