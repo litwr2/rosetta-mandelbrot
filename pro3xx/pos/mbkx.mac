@@ -335,8 +335,8 @@ bcount: .byte 0
 benchmark: .byte 0
 save4:   .blkw 5
 vrbase: .word 0
-.if ne PRO380&TWORSETS
-;VT0: .word trprou,trprou,0,0,trprou  ;uncomment if xhomer and the j11
+.if eq PRO380
+;VT0: .word trprou,trprou,0,0,trprou  ;uncomment if xhomer and the j11]
 .iff
 VT0: .word trprou,trprou,0,0,trprou
 YCU: .word 0
@@ -348,7 +348,7 @@ chome:   .ascii <27.> "[H" <128.>    ;[home]
 term2:   .ascii <27.> "[2J" <27.> "[?25h" <128.>  ;[clear] [show cursor]
 .even
 smsg:
-    .ascii "Superfast Mandelbrot generator, v2 (Pro-3"
+    .ascii "Superfast Mandelbrot generator, v3 (Pro-3"
 .if ne PRO380
     .ascii "80"
 .iff
@@ -358,7 +358,7 @@ smsg:
     .ascii "The original version for the BK was published in 2021"
     .ascii " by Stanislav Maslovski" <13.> <10.>
     .ascii "This P/OS port for the DEC Pro 325/350/380"
-    .ascii " was created by Litwr, 2023" <13.> <10.>
+    .ascii " was created by Litwr, 2023-24" <13.> <10.>
     .ascii "Help was also provided by bqt, leegleason, and Hunta" <13.> <10.>
     .ascii "The T-key gives us timings. Press Q-key to quit"
     .byte 13.,10.

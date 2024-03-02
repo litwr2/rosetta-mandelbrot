@@ -187,7 +187,7 @@ loc1:
     ld b,a
     add hl,bc  ;r0 -= r3
     add hl,bc  ;r0 -= r3
-    
+
 r4 equ $+1
     ld bc,0
     add hl,bc   ;r0 += r4
