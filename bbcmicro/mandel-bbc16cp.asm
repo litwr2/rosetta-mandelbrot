@@ -10,7 +10,7 @@ OSRDCH = $FFE0
 OSWORD = $FFF1
 OSBYTE = $FFF4
 
-NOCALC = 0
+VIDEO = 1
 
 sqrbase = $2900 ;must be $xx00, it takes area $1250-$3fb0
 initer	= 7
@@ -176,16 +176,13 @@ mandel1:
     ror
     sta r5lo    ;r5 = 128*dy
 .mloop0:
-  if NOCALC=0
 .x0lo = * + 1
     lda #<ix0
     sta r4lo
 .x0hi = * + 1
     lda #>ix0
     sta r4hi  ;mov	#x0, r4
-  endif
 .mloop2:
-  if NOCALC=0
     clc
     lda r4lo
     adc dx
@@ -195,10 +192,8 @@ mandel1:
     adc #$ff
     sta r4hi      ;add	@#dxa, r4
     sta r0+1           ;mov	r4, r0
-  endif
 .niter = * + 1
     lda #initer
-  if NOCALC=0
     sta r2        ;mov	#niter, r2
     lda r5lo
     sta r1
@@ -254,17 +249,13 @@ mandel1:
     tay
     lda (tmp),y
     clc
-  endif
 r5lo = * + 1
     adc #0   ;C=0
-  if NOCALC=0
     tax 
     iny
     lda (tmp),y     ;mov sqr(r1), r1
-  endif
 r5hi = * + 1
     adc #0
-  if NOCALC=0
     tay        ;add	r5, r1
 
     sec
@@ -301,55 +292,68 @@ r4hi = * + 1
     ;bne .loc1
 	beq .loc2
     jmp .loc1       ;sob	r2, 1$
-  endif
 .loc2:
+  if VIDEO=1
     lda r2
     and #15   ;color index
     tay
+  endif
 .xtoggle = * + 1
     lda #0
     eor #1
     sta .xtoggle
     beq .loc8
 
+  if VIDEO=1
     lda pat,y
     sta .tcolor
+  endif
     jmp .mloop2
 
 .loc8:
 .tcolor = * + 1
     lda #0
+  if VIDEO=1
     lsr
     ora pat,y
     sta coio+4
+  endif
 .m1lo = * + 1
     lda #0
+  if VIDEO=1
     ;clc
     adc alo
     sta coio    
+  endif
 .m1hi = * + 1
     ldx #0
+  if VIDEO=1
     ;bcc *+3
     ;inx
     stx coio+1
     ldx #<coio
     ldy #>coio
     lda #6
-    jsr $fff1
+    jsr OSWORD
+  endif
 .m2lo = * + 1
     lda #7
+  if VIDEO=1
     clc
     adc alo
     sta coio    
+  endif
 .m2hi = * + 1
     ldx #0
+  if VIDEO=1
     ;bcc *+3
     ;inx
     stx coio+1
     ldx #<coio
     ldy #>coio
     lda #6
-    jsr $fff1
+    jsr OSWORD
+  endif
     lda alo
     sec
     sbc #8
@@ -397,7 +401,7 @@ r4hi = * + 1
 .loc7:
     lda r5lo
     bne .loop0t  ;bgt	loop0
-  if NOCALC=0
+
     clc
     lda .x0lo
     adc mx
@@ -442,7 +446,6 @@ r4hi = * + 1
     bpl .loc4  ;sob	r0, 4$
 
     inc	.niter
-  endif
     ldx benchmark
     cpx #"B"
     bne .loc3
