@@ -3,7 +3,7 @@
 ;General Mandelbrot calculation idea was taken from https://www.pouet.net/prod.php?which=87739
 ;Thanks to reddie for some help with optimization
 ;
-;128x256 Mandelbrot for the BBC Micro, 16 color mode
+;128x256 Mandelbrot for the BBC Micro, 16 color mode, the 2nd co-pro 6502
 
 OSWRCH = $FFE3
 OSRDCH = $FFE0
@@ -321,14 +321,36 @@ r4hi = * + 1
     lda #0
     lsr
     ora pat,y
-    ldx alo
-.m1hi = * + 2
+    sta coio+4
 .m1lo = * + 1
-    sta $4100,x
-.m2hi = * + 2
+    lda #0
+    ;clc
+    adc alo
+    sta coio    
+.m1hi = * + 1
+    ldx #0
+    ;bcc *+3
+    ;inx
+    stx coio+1
+    ldx #<coio
+    ldy #>coio
+    lda #6
+    jsr $fff1
 .m2lo = * + 1
-    sta $7f07,x
-    txa
+    lda #7
+    clc
+    adc alo
+    sta coio    
+.m2hi = * + 1
+    ldx #0
+    ;bcc *+3
+    ;inx
+    stx coio+1
+    ldx #<coio
+    ldy #>coio
+    lda #6
+    jsr $fff1
+    lda alo
     sec
     sbc #8
     sta alo
@@ -596,7 +618,7 @@ bcount byte 0
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*         16 colors, v6          *",13
+        byte "*    16 colors, v6 (co-pro)      *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13
@@ -607,13 +629,15 @@ msg     byte "**********************************",13
         byte "Use the Q-key to quit",13
         byte "Press B to enter benchmark mode",255
 
-emsg    byte 13,"Can't use CoPro",13,255
+emsg    byte 13,"No CoPro",13,255
 
 idata   byte 22,2    ;mode 2
         byte 23,0,1,64,0,0,0,0,0,0   ;64-chars wide
         byte 23,0,2,90,0,0,0,0,0,0
         byte 23,0,12,8,0,0,0,0,0,0   ;Gr.mem starts at $4000
         byte 255   ;the end
+
+coio    byte 0,0,0,0,0
 
 init:
    lda #16
@@ -631,7 +655,7 @@ init:
    ldy #$ff
    jsr OSBYTE
    inx
-   bne .cont
+   beq .cont
    
    ldx #>emsg
    lda #<emsg

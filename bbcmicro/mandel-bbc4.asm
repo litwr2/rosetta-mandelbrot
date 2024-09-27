@@ -155,7 +155,6 @@ sqrloop:
 mandel:
          lda #16
          sta bcount
-
          lda #0
          sta tmp
          sta ti
@@ -203,7 +202,7 @@ mandel1:
     lda #initer
   if NOCALC=0
     sta r2        ;mov	#niter, r2
-	lda r5lo
+    lda r5lo
     sta r1
     lda r5hi
     sta r1+1      ;mov	r5, r1
@@ -350,7 +349,7 @@ r4hi = * + 1
 
     dec .m1hi
     dec .m2hi
-    bne .loop2t ;=jmp
+    jmp .mloop2
 .loc6:
     inc .m1hi
     inc .m2hi
@@ -611,39 +610,26 @@ bcount byte 0
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*    4 colors + textures, v5     *",13
+        byte "*    4 colors + textures, v6     *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13
         byte "Maslovski.",13
         byte "This BBC Micro port was created by",13
-        byte "Litwr, 2021-23.",13
+        byte "Litwr, 2021-24.",13
         byte "The T-key gives us timings.",13
         byte "Use the Q-key to quit",13
-        byte "Press B to enter benchmark mode",0
+        byte "Press B to enter benchmark mode",255
+
+emsg    byte 13,"Can't use CoPro",13,255
+
+idata   byte 22,1    ;mode 1
+        byte 23,0,1,64,0,0,0,0,0,0   ;64-chars wide
+        byte 23,0,2,90,0,0,0,0,0,0
+        byte 23,0,12,8,0,0,0,0,0,0   ;Gr.mem starts at $4000
+        byte 255   ;the end
 
 init:
-   lda #16
-   ldx #0
-   jsr OSBYTE    ;no ADC
-   lda #>msg
-   sta r0+1
-   lda #<msg
-   sta r0
-   ldy #0
-.nchar:
-   lda (r0),y
-   beq .msgend
-
-   iny
-   bne *+4
-   inc r0+1
-   jsr OSWRCH
-   jmp .nchar
-.msgend:
-   jsr OSRDCH
-   and #$df
-   sta benchmark
    lda #>pat1
    sta zpat1+1
    ;lda #>pat2   ;pat1 & pat2 are on the same page
@@ -652,27 +638,46 @@ init:
    sta zpat2
    lda #<pat1
    sta zpat1
-   lda #22
-   jsr OSWRCH
-   lda #1     ;mode 1
-   jsr OSWRCH
-   sei
-   ldx #1
-   lda #$40
-   stx $fe00
-   sta $fe01
+   lda #16
+   ldx #0
+   jsr OSBYTE    ;no ADC
+   ldx #>msg
+   lda #<msg
+   jsr .send
+   jsr OSRDCH
+   and #$df
+   sta benchmark
+
+   lda #$ea
+   ldx #0
+   ldy #$ff
+   jsr OSBYTE
    inx
-   lda #$5a
-   stx $fe00
-   sta $fe01
-   ldx #12
-   lda #$8    ;$4000 graph mem start
-   stx $fe00
-   sta $fe01
-   inx
-   lda #0
-   stx $fe00
-   sta $fe01
-   cli
+   bne .cont
+   
+   ldx #>emsg
+   lda #<emsg
+   jsr .send
+   pla
+   pla
+   rts
+.cont
+   ldx #>idata
+   lda #<idata
+.send
+   stx r0+1
+   sta r0
+   ldy #0
+.nbyte:
+   lda (r0),y
+   cmp #255
+   beq .tend
+
+   iny
+   bne *+4
+   inc r0+1
+   jsr OSWRCH
+   jmp .nbyte
+.tend:
    rts
 
