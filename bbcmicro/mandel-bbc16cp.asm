@@ -320,11 +320,9 @@ r4hi = * + 1
   endif
 .m1lo = * + 1
     lda #0
-  if VIDEO=1
     ;clc
     adc alo
     sta coio    
-  endif
 .m1hi = * + 1
     ldx #0
   if VIDEO=1
@@ -349,10 +347,6 @@ r4hi = * + 1
     ;bcc *+3
     ;inx
     stx coio+1
-    ldx #<coio
-    ldy #>coio
-    lda #6
-    jsr OSWORD
   endif
     lda alo
     sec
@@ -366,11 +360,24 @@ r4hi = * + 1
 
     dec .m1hi
     dec .m2hi
+.loop2t:
+  if VIDEO=1
+    ldx #<coio
+    ldy #>coio
+    lda #6
+    jsr OSWORD
+  endif
     jmp .mloop2
 .loc6:
     inc .m1hi
     inc .m2hi
     inc .m1lo
+  if VIDEO=1
+    ldx #<coio
+    ldy #>coio
+    lda #6
+    jsr OSWORD
+  endif
     lda .m1lo
     and #7
     beq .loc5
@@ -396,8 +403,6 @@ r4hi = * + 1
 	beq .loc7
 .loop0t:
     jmp .mloop0
-.loop2t:
-    jmp .mloop2
 .loc7:
     lda r5lo
     bne .loop0t  ;bgt	loop0
@@ -621,7 +626,7 @@ bcount byte 0
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*    16 colors, v6 (co-pro)      *",13
+        byte "*    16 colors, v7 (co-pro)      *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13

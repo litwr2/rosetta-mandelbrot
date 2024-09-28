@@ -258,7 +258,7 @@ mandel1:
 r5lo = * + 1
     adc #0   ;C=0
   if NOCALC=0
-    tax 
+    tax
     iny
     lda (tmp),y     ;mov sqr(r1), r1
   endif
