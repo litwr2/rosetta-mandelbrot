@@ -340,6 +340,7 @@ r4hi = * + 1
 
     dec .m1hi
     dec .m2hi
+.loop2t:
     jmp .mloop2
 .loc6:
     inc .m1hi
@@ -370,8 +371,6 @@ r4hi = * + 1
 	beq .loc7
 .loop0t:
     jmp .mloop0
-.loop2t:
-    jmp .mloop2
 .loc7:
     lda r5lo
     bne .loop0t  ;bgt	loop0
@@ -596,7 +595,7 @@ bcount byte 0
 
 msg     byte "**********************************",13
         byte "* Superfast Mandelbrot generator *",13
-        byte "*         16 colors, v6          *",13
+        byte "*         16 colors, v7          *",13
         byte "**********************************",13
         byte "The original version was published for",13
         byte "the BK0011 in 2021 by Stanislav",13
