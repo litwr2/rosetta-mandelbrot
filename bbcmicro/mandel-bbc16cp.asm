@@ -322,7 +322,7 @@ r4hi = * + 1
     lda #0
     ;clc
     adc alo
-    sta coio    
+    sta coio
 .m1hi = * + 1
     ldx #0
   if VIDEO=1
