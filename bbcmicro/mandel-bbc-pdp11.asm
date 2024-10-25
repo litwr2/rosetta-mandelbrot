@@ -312,7 +312,7 @@ coio2:    .byte 0,0,0,0,0
 msg:.byte 12.
     .ascii "Superfast Mandelbrot generator"
     .byte 10.,13.
-    .ascii "  4 colors + textures, v1"
+    .ascii "  16 colors, v2"
     .byte 10.,13.
     .ascii "The original version was published for"
     .byte 10.,13.
