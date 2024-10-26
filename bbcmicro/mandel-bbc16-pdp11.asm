@@ -220,10 +220,9 @@ tcolor = . + 2
     emt OSRDCH
     bic #^B1111111100100000,r0
     cmpb #"Q",r0
-    beq 22$
+    beq 11$
     jmp @#mdlbrt
-22$:
-    br 11$
+
 init:
    mov #16.,r0
    clr r1
@@ -312,7 +311,7 @@ coio2:    .byte 0,0,0,0,0
 msg:.byte 12.
     .ascii "Superfast Mandelbrot generator"
     .byte 10.,13.
-    .ascii "  16 colors, v2"
+    .ascii "  16 colors, v3"
     .byte 10.,13.
     .ascii "The original version was published for"
     .byte 10.,13.

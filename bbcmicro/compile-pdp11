@@ -1,7 +1,10 @@
-#USAGE: compile-pdp11 mandel-bbc-pdp11.asm
-F=${1%%asm}
-D=m16pdp
-macro11 -yus -ysl 16 -o ${F}obj -l ${F}lst $1
+#USAGE: compile-pdp11
+#set number of colors in C
+#C=16
+C=4
+F=mandel-bbc${C}-pdp11.
+D=m${C}pdp
+macro11 -yus -ysl 16 -o ${F}obj -l ${F}lst ${F}asm
 dumpobj ${F}obj >${F}dump
 bk-obj2bin <${F}dump >${F}bin
 dd if=${F}bin of=$D bs=1 skip=4
