@@ -731,7 +731,7 @@ mul16:   ;multiply r0 by r2l -> y:x
     lda r2
     bne .t3
     rts
-    
+
 div32x16w:        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
         ldy #16
