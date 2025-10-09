@@ -146,12 +146,19 @@ irqe3  pha    ;@206
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
        byte "* sUPERFAST mANDELBROT GENERATOR V9F *",13
+       byte "*             "
+    if colors < 10
+       byte " ", colors%10+48
+    else
+       byte colors/10+48,colors%10+48
+    endif
+       byte " COLORS              *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
        byte "THE bk0011 IN 2021 BY sTANISLAV",13
-       byte "mASLOVSKI.",13
-       byte "tHIS cOMMODORE+4 PORT WAS CREATED BY",13,0
+       byte "mASLOVSKI.",13,0
        JSR JPRIMM
+       byte "tHIS cOMMODORE+4 PORT WAS CREATED BY",13
        byte "LITWR, 2021-23,25.",13
        byte "tHE t-KEY GIVES US TIMINGS",13
        byte 'pRESS b TO ENTER BENCHMARK MODE',0

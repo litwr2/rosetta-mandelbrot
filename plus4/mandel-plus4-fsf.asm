@@ -139,10 +139,17 @@ start: JSR JPRIMM
        byte "*    gENERATOR V8 "
        byte HSize/100+48,HSize/10%10+48,HSize%10+48,"x"
        byte VSize/100+48,VSize/10%10+48,VSize%10+48," fLASHED    *",13
+       byte "*             "
+    if colors < 10
+       byte " ", colors%10+48
+    else
+       byte colors/10+48,colors%10+48
+    endif
+       byte " COLORS              *",13
        byte "**************************************",13
-       byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
-       byte "2022-23, 25. iT IS BASED ON CODE",13,0
+       byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13,0
        JSR JPRIMM
+       byte "2022-23, 25. iT IS BASED ON CODE",13
        byte "PUBLISHED FOR THE bk0011 IN 2021 BY",13
        byte "sTANISLAV mASLOVSKI.",13
        byte "tHE t-KEY GIVES US TIMINGS",0
