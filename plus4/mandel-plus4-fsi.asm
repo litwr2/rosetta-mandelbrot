@@ -123,17 +123,17 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*   gENERATOR V7 "
+       byte "*   gENERATOR V8 "
        byte HSize/100+48,HSize/10%10+48,HSize%10+48,"x"
        byte VSize/100+48,VSize/10%10+48,VSize%10+48," iNTERLACED  *",13
        byte "**************************************",13
        byte "tHIS pLUS4 CODE WAS CREATED BY lITWR IN",13
-       byte "2022-23. iT IS BASED ON CODE PUBLISHED",13,0
+       byte "2022-23, 25. iT IS BASED ON CODE",13,0
        JSR JPRIMM
-       byte "FOR THE bk0011 IN 2021 BY sTANISLAV",13
-       byte "mASLOVSKI.",13
+       byte "PUBLISHED FOR THE bk0011 IN 2021 BY",13
+       byte "sTANISLAV mASLOVSKI.",13
        byte "tHE t-KEY GIVES US TIMINGS",0
-       JSR getkey
+       JSR waitkey
   if 0
        LDA #$55
        LDY #0
@@ -605,8 +605,8 @@ r4hi = * + 1
     bne .loop0t  ;bgt	loop0
 
     inc	.niter
-    sei
     sec
+    sei
     lda $a5
     sbc ti
     sta ti
@@ -618,8 +618,9 @@ r4hi = * + 1
     sta ti+2
     cli
     inc counter
-    jsr getkey
-    cpx #$c0  ;T-key?
+    jsr waitkey
+    lda kmatrix+2
+    and #$40  ;T-key?
     beq *+5
     jmp .mandel
 
@@ -678,7 +679,7 @@ r4hi = * + 1
     iny
     bne .delay
 
-    jsr getkey
+    jsr waitkey
 .mandel
 	jmp	mandel
 
@@ -754,14 +755,42 @@ div32x16w:        ;dividend+2 < divisor, divisor < $8000
 	;sta dividend+3
 	rts
 
-getkey:
-   ldx #$7f
-.waitkey:
-   stx $fd30
-   stx $ff08
-   ldx $ff08
-   inx
-   beq .waitkey
+kmatrix blk 8
+;   0   1   2   3   4   5   6   7  $ff08
+;0 del ret ukp hlp f1  f2  f3   @
+;1  3   W   A   4   Z   S   E  sht
+;2  5   R   D   6   C   F   T   X
+;3  7   Y   G   8   B   H   U   V
+;4  9   I   J   0   M   K   O   N
+;5 cd   P   L  cu   .   :   -   ,
+;6 cl   *   ;  cr  esc  =   +   /
+;7  1  clr ctr  2  spc cbm  Q  run
+
+getkmtrix:
+    ldx #7
+    lda #$7f
+    sec
+.l1 sta $fd30
+    sta $ff08
+    pha
+    lda $ff08
+    sta kmatrix,x
+    pla
+    dex
+    ror
+    bcs .l1
+    rts
+
+waitkey:
+.l2 jsr getkmtrix
+    ldx #7
+    lda #$ff
+.l1 and kmatrix,x
+    dex
+    bpl .l1
+
+    cmp #$ff
+    beq .l2
    rts
 
 pr000:   ;prints ac:xr < 10000
