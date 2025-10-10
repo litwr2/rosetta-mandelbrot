@@ -5,14 +5,14 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;160xN (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing/interlacing
-;16 colors actually are 10 for interlacing
+;16 colors (for interlacing) actually are rather 10 because 6 pseudocolors differ only by their phases
 ;interactive version
 
-; text data for 32 lines:
+; text data for 32 rows:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
 ;    $1be8 - 1bff, $1fe8 - 1fff    24 chars
 ;    $1800 - 18ff, $1c00 - 1cff   256 chars
-; graph mc data for 32 lines: A1=$2000, B1=$4000
+; graph mc data for 32 rows: A1=$2000, B1=$4000
 ;    A+$0000 - 1f3f  8000 bytes
 ;    B+$0140 - 9ff  2240 bytes
 ;colors = $a000/$a800
@@ -26,7 +26,7 @@ sqrbase = $C800 ;must be $xx00
 colorpat1 = $1f60
 colorpat2 = $1f70
 HSize = 160
-VSize = 280  ;must be a multiple of 8, up to 280 @vsize@
+VSize = 256  ;must be a multiple of 8 and in range 208-280 @vsize@
 
 r0 = $d0
 r1 = $d2

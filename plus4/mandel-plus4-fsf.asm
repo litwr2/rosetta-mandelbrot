@@ -6,11 +6,11 @@
 ;
 ;160xN (fullscreen) Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using flashing
 
-; text data for 32 lines:
+; text data for 32 rows:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
 ;    $1be8 - 1bff, $1fe8 - 1fff    24 chars
 ;    $1800 - 18ff, $1c00 - 1cff   256 chars
-; graph mc data for 32 lines: A1=$2000, B1=$4000
+; graph mc data for 32 rows: A1=$2000, B1=$4000
 ;    A+$0000 - 1f3f  8000 bytes
 ;    B+$0140 - 9ff  2240 bytes
 ;colors = $800
@@ -20,9 +20,10 @@
 BSOUT = $FFD2
 JPRIMM = $FF4F
 
-colors = 8   ;2/4/8/16
-HSize = 160
-VSize = 280  ;must be a multiple of 8, up to 280
+colors = 16   ;2/4/8/16
+HSize = 160  ;fixed!
+VSize = 256  ;must be a multiple of 8 and in range 208-280
+CLRSCN = 0   ;1 cleans the initial graph screen
 
 sqrbase = $BF00 ;must be $xx00
 
@@ -154,7 +155,7 @@ start: JSR JPRIMM
        byte "sTANISLAV mASLOVSKI.",13
        byte "tHE t-KEY GIVES US TIMINGS",0
        JSR waitkey
-  if 0
+  if CLRSCN
        LDA #$55
        LDY #0
        LDX #$20
@@ -166,6 +167,8 @@ loopi: STA $2000,Y
        INX
        CPX #$C0
        BNE loopk
+   else
+       ldy #0
    endif
        LDA #(color2&$f0)|(color1&$f0)>>4    ;lum
        LDX #4

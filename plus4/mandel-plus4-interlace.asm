@@ -5,13 +5,13 @@
 ;Thanks to reddie for some help with optimization
 ;
 ;128x256 Mandelbrot for the Commodore +4, 4 color mode simulates 8/16 colors using "interlacing"
-;16 colors actually are 10
+;16 colors actually are rather 10 because 6 pseudocolors differ only by their phases
 
-; text data for 32 lines:
+; text data for 32 rows:
 ;    $a000 - a3e7, $a400 - a7e7  1000 chars
 ;    $1be8 - 1bff, $1fe8 - 1fff    24 chars
 ;    $1800 - 18ff, $1c00 - 1cff   256 chars
-; graph mc data for 32 lines: A1=$2000, B1=$4000
+; graph mc data for 32 rows: A1=$2000, B1=$4000
 ;    A+$0000 - 1f3f  8000 bytes
 ;    B+$0140 - 09ff  2240 bytes
 ;colors = $800
@@ -23,7 +23,7 @@ JPRIMM = $FF4F
 
 NOCALC = 0
 
-colors = 8   ;2/4/8/16
+colors = 16   ;2/4/8/16
 sqrbase = $BF00 ;must be $xx00
 initer	= 7
 idx	=	-36       ;-.0703125
@@ -146,7 +146,7 @@ start: JSR JPRIMM
        byte "mASLOVSKI.",13,0
        JSR JPRIMM
        byte "tHIS cOMMODORE+4 PORT WAS CREATED BY",13
-       byte "LITWR, 2021-23,25.",13
+       byte "LITWR, 2021-23, 25.",13
        byte "tHE t-KEY GIVES US TIMINGS",13
        byte 'pRESS b TO ENTER BENCHMARK MODE',0
        JSR waitkey
