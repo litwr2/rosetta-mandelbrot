@@ -280,8 +280,9 @@ mandel:
     lda r0
     ora #1
     tay
-    lda (tmp),y   ;y=1
-    tax
+    ;lda (tmp),y   ;y=1
+    ;tax
+    byte $b3,tmp   ;ldxlda (tmp),y
     dey
     lda (tmp),y   ;mov	sqr(r0), r0
     clc

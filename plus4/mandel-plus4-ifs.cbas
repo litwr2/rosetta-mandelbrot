@@ -1,10 +1,10 @@
 10 printchr$(9)chr$(14)
 15 print"**************************************"
 20 print"*  {red}Superfast Fullscreen Mandelbrot{blk}   *"
-25 print"*      {blu}Interactive Generator v4{blk}      *"
+25 print"*      {blu}Interactive Generator v5{blk}      *"
 30 print"*      {pur}2/4/8/16 Colors 160X@vsize@{blk}       *"
 35 print"**************************************"
-40 print"This Plus4 code was created by Litwr in 2022-23. It is based on code published for ";
+40 print"This Plus4 code was created by Litwr in 2022-23,25. It is based on code published for ";
 50 print"the BK0011 in 2021 by Stanislav Maslovski. The visible Mandelbrot set is in area ";
 60 print"{grn}X{blk} in {grn}[-2, 0.47]{blk} and {grn}Y{blk} in {grn}[-1.12, 1.12]{blk}"
 70 xi=-2:xa=.5:y=1.3:n=16:c=16

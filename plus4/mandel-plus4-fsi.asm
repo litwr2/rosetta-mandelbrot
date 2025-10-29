@@ -124,7 +124,7 @@ start: JSR JPRIMM
        byte 9,14
        byte "**************************************",13
        byte "*  sUPERFAST fULLSCREEN mANDELBROT   *",13
-       byte "*   gENERATOR V8 "
+       byte "*   gENERATOR V9 "
        byte HSize/100+48,HSize/10%10+48,HSize%10+48,"x"
        byte VSize/100+48,VSize/10%10+48,VSize%10+48," iNTERLACED  *",13
        byte "*             "
@@ -404,8 +404,9 @@ mandel:
     lda r0
     ora #1
     tay
-    lda (tmp),y   ;y=1
-    tax
+    ;lda (tmp),y   ;y=1
+    ;tax
+    byte $b3,tmp   ;ldxlda (tmp),y
     dey
     lda (tmp),y   ;mov	sqr(r0), r0
     clc

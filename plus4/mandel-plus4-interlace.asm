@@ -132,7 +132,7 @@ irqe3  pha    ;@206
 
 start: JSR JPRIMM
        byte 9,14,"**************************************",13
-       byte "* sUPERFAST mANDELBROT GENERATOR V9I *",13
+       byte "* sUPERFAST mANDELBROT GENERATOR V10I*",13
        byte "*             "
     if colors < 10
        byte " ", colors%10+48
@@ -445,8 +445,9 @@ mandel1:
     lda r0
     ora #1
     tay
-    lda (tmp),y   ;y=1
-    tax
+    ;lda (tmp),y   ;y=1
+    ;tax
+    byte $b3,tmp   ;ldxlda (tmp),y
     dey
     lda (tmp),y   ;mov	sqr(r0), r0
     clc
