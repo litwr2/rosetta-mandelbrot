@@ -1,0 +1,9 @@
+format super-fast-mandelbrot,88 d64 super-fast-mandelbrot.d64
+attach super-fast-mandelbrot.d64
+write cat.prg cat
+write mandel-flashing.prg 128-flashing
+write mandel-interlace.prg 128-interlaced
+write mandel-fsf.prg 160-flashing
+write mandel-fsi.prg 160-interlaced
+write mandel-interactive.prg interactive
+q

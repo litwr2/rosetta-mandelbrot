@@ -1,0 +1,17 @@
+#D=/home/micro/new/litwr2.github.io/plus4
+for i in flashing fsi interlace fsf
+do
+    compile mandel-plus4-$i.asm
+    cp mandel-plus4-$i.prg mandel-$i.prg
+done
+c-mandel-i
+cp mandel-plus4-ifs.prg mandel-interactive.prg
+petcat -w3 cat.bas >cat.prg
+c1541 <disk-ini.txt
+#for i in flashing fsi interlace fsf interactive
+#do
+#    mv mandel-$i.prg $D
+#done
+xz -k super-fast-mandelbrot.d64
+rm cat.prg
+
