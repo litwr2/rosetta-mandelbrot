@@ -59,7 +59,7 @@ quotient = dividend ;save memory by reusing divident to store the quotient
 
 start: JSR PRIMM
        byte 14,"**************************************",13
-       byte "*  sUPERFAST mANDELBROT GENERATOR V2 *",13
+       byte "*  sUPERFAST mANDELBROT GENERATOR V3 *",13
        byte "*         8502 2mhZ vdc 16kb         *",13
        byte "**************************************",13
        byte "tHE ORIGINAL VERSION WAS PUBLISHED FOR",13
@@ -67,7 +67,7 @@ start: JSR PRIMM
        byte "mASLOVSKI.",13,0
        JSR PRIMM
        byte "tHIS cOMMODORE 128 PORT WAS CREATED",13
-       byte "BY LITWR, 2023.",13
+       byte "BY LITWR, 2023, 25.",13
        byte "tHE t-KEY GIVES US TIMINGS",13
        byte 'pRESS b TO ENTER BENCHMARK MODE',0
        JSR waitk
@@ -293,8 +293,9 @@ mandel1:
     lda r0
     ora #1
     tay
-    lda (tmp),y   ;y=1
-    tax
+    ;lda (tmp),y   ;y=1
+    ;tax
+    byte $b3,tmp  ;ldxlda ($tmp),y
     dey
     lda (tmp),y   ;mov	sqr(r0), r0
     clc
