@@ -1,4 +1,4 @@
-format super-fast-mandelbrot,88 d64 super-fast-mandelbrot.d64
+format super-fast-mandelbrot,87 d64 super-fast-mandelbrot.d64
 attach super-fast-mandelbrot.d64
 write cat.prg cat
 write mandel-flashing.prg 128-flashing
